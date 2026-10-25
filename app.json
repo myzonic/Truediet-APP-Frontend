@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "True Diet",
+    "slug": "true-diet-welcome",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA",
+        "MODIFY_AUDIO_SETTINGS",
+        "POST_NOTIFICATIONS",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.WAKE_LOCK",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
+    },
+    "ios": {
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "True Diet uses your microphone for video nutrition consultations and when you choose to record a voice meal note. Voice notes are transcribed on your device and never uploaded.",
+        "NSCameraUsageDescription": "True Diet uses your camera so you can join video nutrition consultations with your dietitian."
+      },
+      "bitcode": false
+    },
+    "scheme": "truediet",
+    "plugins": [
+      "expo-secure-store",
+      "@siteed/sherpa-onnx.rn",
+      [
+        "expo-notifications",
+        {
+          "color": "#0B3B36"
+        }
+      ],
+      "@stream-io/video-react-native-sdk",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "True Diet uses your camera so you can join video nutrition consultations.",
+          "microphonePermission": "True Diet uses your microphone for video consultations and voice meal notes."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "36b5446e-e719-4daa-bd44-aaa7632ec9b9"
+      }
+    }
+  }
+}
