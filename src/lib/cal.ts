@@ -1,7 +1,20 @@
+export interface CalConsultationConfig {
+  type: 'video' | 'phone';
+  label?: string;
+  eventTypeId?: string | number;
+}
+
 export interface CalConfig {
   configured: boolean;
   eventTypeId?: string | number;
   username?: string;
+  apiBaseUrl?: string;
+  bookingUrl?: string;
+  /** Both consultation formats and the event type each one books against. */
+  consultations?: {
+    video?: CalConsultationConfig;
+    phone?: CalConsultationConfig;
+  };
 }
 
 export interface CalSlot {

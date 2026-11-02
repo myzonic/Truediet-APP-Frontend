@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Clock3, Heart, Mic, Phone, Send, ShieldCheck, Video } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
@@ -8,14 +8,14 @@ import { recipes, findRecipe, Recipe } from '../../lib/recipeContent';
 import { loadRecipes } from '../../lib/contentLibrary';
 import { saveContent } from '../../lib/content';
 import { isSpeechSupported, prepareSpeech, startSpeechRecording, stopSpeechAndTranscribe, cancelSpeech } from '../../lib/speech';
-import { createCalBooking, getCalAvailableSlots, getCalConfig, type CalBookingResult } from '../../lib/cal';
+import { createCalBooking, getCalAvailableSlots, getCalConfig, type CalBookingResult, type CalConfig } from '../../lib/cal';
 import { createStreamCall, type StreamCallResponse } from '../../lib/stream';
 import { saveAppointment } from '../../lib/appointments';
 
 
 function Shell({children,navigation}:{children:React.ReactNode;navigation:any}){return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"><Pressable style={s.back} onPress={()=>navigation.goBack()}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>}
-export function RecipesScreen({navigation}:any){const [items,setItems]=useState<Recipe[]>(recipes);useEffect(()=>{let active=true;loadRecipes().then(r=>{if(active&&r.length)setItems(r);}).catch(()=>undefined);return()=>{active=false;};},[]);return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPES</Text><Text style={s.title}>Food ideas with flexibility.</Text><Text style={s.copy}>Practical recipes built around balance, variety, preferences and real life.</Text><View style={s.list}>{items.map(r=><Pressable key={r.id} style={s.card} onPress={()=>navigation.navigate('RecipeDetail',{recipeId:r.id,title:r.title})}><View style={s.recipeArt}><Heart size={24} color={colors.green}/></View><View style={s.cardCopy}><Text style={s.cardTitle}>{r.title}</Text><Text style={s.meta}>{r.time} · {r.category}</Text><Text style={s.desc}>{r.whyItWorks}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>)}</View></Shell>}
-export function RecipeDetailScreen({navigation,route}:any){const [recipe,setRecipe]=useState<Recipe|null>(null);useEffect(()=>{let active=true;const fallback=()=>{const byId=recipes.find(r=>r.id===route.params?.recipeId);return byId||findRecipe(route.params?.title||route.params?.recipeId);};loadRecipes().then(list=>{if(!active)return;const match=list.find(r=>r.id===route.params?.recipeId)||list.find(r=>r.title===route.params?.title);setRecipe(match||fallback());}).catch(()=>{if(active)setRecipe(fallback());});return()=>{active=false;};},[route.params?.recipeId,route.params?.title]);const [saving,setSaving]=useState(false);if(!recipe)return <Shell navigation={navigation}><ActivityIndicator color={colors.deepTeal} style={{marginTop:40}}/></Shell>;const onSave=async()=>{if(saving)return;setSaving(true);try{await saveContent(`recipe-${recipe.id}`,{title:recipe.title,subtitle:`${recipe.time} · ${recipe.category}`,route:'RecipeDetail',type:'recipe'});Alert.alert('Saved','This recipe was added to your saved content.');}catch(e:any){Alert.alert('Could not save',e?.message||'Please try again.');}finally{setSaving(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPE</Text><Text style={s.title}>{recipe.title}</Text><Text style={s.meta}>{recipe.time} · {recipe.category}</Text><View style={s.hero}><Heart size={38} color={colors.green}/></View><Text style={s.section}>Why it works</Text><Text style={s.copy}>{recipe.whyItWorks} This is a flexible template - not a prescription. Adapt ingredients to what you enjoy, need, and have available.</Text><Text style={s.section}>Ingredients</Text>{recipe.ingredients.map(x=><View key={x} style={s.step}><Text style={s.stepText}>• {x}</Text></View>)}<Text style={s.section}>Method</Text>{recipe.steps.map((x,i)=><View key={x} style={s.step}><Text style={s.stepNumber}>{i+1}</Text><Text style={s.stepText}>{x}</Text></View>)}<View style={{backgroundColor:colors.softGreen,borderRadius:16,padding:16,marginTop:20}}><Text style={{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.2,color:colors.green}}>TIP</Text><Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.text,marginTop:6}}>{recipe.tip}</Text></View><Pressable style={s.primary} onPress={onSave} disabled={saving}>{saving?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Save Recipe</Text>}</Pressable></Shell>}
+export function RecipesScreen({navigation}:any){const [items,setItems]=useState<Recipe[]>(recipes);useEffect(()=>{let active=true;loadRecipes().then(r=>{if(active&&r.length)setItems(r);}).catch(()=>undefined);return()=>{active=false;};},[]);return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPES</Text><Text style={s.title}>Food ideas with flexibility.</Text><Text style={s.copy}>Practical recipes built around balance, variety, preferences and real life.</Text><View style={s.list}>{items.map(r=><Pressable key={r.id} style={s.card} onPress={()=>navigation.navigate('RecipeDetail',{recipeId:r.id,title:r.title})}><View style={s.recipeArt}><Heart size={24} color={colors.green}/></View><View style={s.cardCopy}><Text style={s.cardTitle}>{r.title}</Text><Text style={s.meta}>{r.time} Â· {r.category}</Text><Text style={s.desc}>{r.whyItWorks}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>)}</View></Shell>}
+export function RecipeDetailScreen({navigation,route}:any){const [recipe,setRecipe]=useState<Recipe|null>(null);useEffect(()=>{let active=true;const fallback=()=>{const byId=recipes.find(r=>r.id===route.params?.recipeId);return byId||findRecipe(route.params?.title||route.params?.recipeId);};loadRecipes().then(list=>{if(!active)return;const match=list.find(r=>r.id===route.params?.recipeId)||list.find(r=>r.title===route.params?.title);setRecipe(match||fallback());}).catch(()=>{if(active)setRecipe(fallback());});return()=>{active=false;};},[route.params?.recipeId,route.params?.title]);const [saving,setSaving]=useState(false);if(!recipe)return <Shell navigation={navigation}><ActivityIndicator color={colors.deepTeal} style={{marginTop:40}}/></Shell>;const onSave=async()=>{if(saving)return;setSaving(true);try{await saveContent(`recipe-${recipe.id}`,{title:recipe.title,subtitle:`${recipe.time} Â· ${recipe.category}`,route:'RecipeDetail',type:'recipe'});Alert.alert('Saved','This recipe was added to your saved content.');}catch(e:any){Alert.alert('Could not save',e?.message||'Please try again.');}finally{setSaving(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPE</Text><Text style={s.title}>{recipe.title}</Text><Text style={s.meta}>{recipe.time} Â· {recipe.category}</Text><View style={s.hero}><Heart size={38} color={colors.green}/></View><Text style={s.section}>Why it works</Text><Text style={s.copy}>{recipe.whyItWorks} This is a flexible template - not a prescription. Adapt ingredients to what you enjoy, need, and have available.</Text><Text style={s.section}>Ingredients</Text>{recipe.ingredients.map(x=><View key={x} style={s.step}><Text style={s.stepText}>â€¢ {x}</Text></View>)}<Text style={s.section}>Method</Text>{recipe.steps.map((x,i)=><View key={x} style={s.step}><Text style={s.stepNumber}>{i+1}</Text><Text style={s.stepText}>{x}</Text></View>)}<View style={{backgroundColor:colors.softGreen,borderRadius:16,padding:16,marginTop:20}}><Text style={{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.2,color:colors.green}}>TIP</Text><Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.text,marginTop:6}}>{recipe.tip}</Text></View><Pressable style={s.primary} onPress={onSave} disabled={saving}>{saving?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Save Recipe</Text>}</Pressable></Shell>}
 export function VoiceFoodLogScreen({navigation}:any){
   const [status,setStatus]=useState<'idle'|'preparing'|'recording'|'transcribing'>('idle');
   const [transcript,setTranscript]=useState('');
@@ -64,14 +64,14 @@ export function VoiceFoodLogScreen({navigation}:any){
     const mealType:MealType=hour<11?'breakfast':hour<15?'lunch':hour<21?'dinner':'snack';
     try{
       await addMeal({mealType,description:transcript.trim(),source:'voice'});
-      Alert.alert('Meal note saved','Your voice food log was added to today’s entries.');
+      Alert.alert('Meal note saved','Your voice food log was added to todayâ€™s entries.');
       setTranscript('');
       navigation.goBack();
     }catch(e:any){
       setError(e?.message||'Could not save your meal note. Please try again.');
     }finally{setSaving(false);}
   };
-  const micLabel=status==='recording'?'Tap to finish':status==='transcribing'?'Transcribing…':'Tap to start recording';
+  const micLabel=status==='recording'?'Tap to finish':status==='transcribing'?'Transcribingâ€¦':'Tap to start recording';
   const pct=progress&&progress.total?Math.min(100,Math.round(progress.loaded/progress.total*100)):null;
   return <Shell navigation={navigation}>
     <Text style={s.eyebrow}>VOICE FOOD LOG</Text>
@@ -85,10 +85,10 @@ export function VoiceFoodLogScreen({navigation}:any){
       </View>
       <Text style={s.micLabel}>{micLabel}</Text>
     </Pressable>
-    {pct!==null?<View style={s.progressWrap}><View style={s.progressTrack}><View style={[s.progressFill,{width:`${pct}%`}]}/></View><Text style={s.progressText}>Preparing speech model… {pct}%</Text></View>:null}
+    {pct!==null?<View style={s.progressWrap}><View style={s.progressTrack}><View style={[s.progressFill,{width:`${pct}%`}]}/></View><Text style={s.progressText}>Preparing speech modelâ€¦ {pct}%</Text></View>:null}
     <View style={s.transcript}>
       <Text style={s.transcriptLabel}>MEAL NOTE</Text>
-      <TextInput value={transcript} onChangeText={setTranscript} multiline placeholder="Your voice note will appear here — you can edit it." placeholderTextColor={colors.muted} style={[s.transcriptText,{minHeight:70,padding:0}]}/>
+      <TextInput value={transcript} onChangeText={setTranscript} multiline placeholder="Your voice note will appear here â€” you can edit it." placeholderTextColor={colors.muted} style={[s.transcriptText,{minHeight:70,padding:0}]}/>
     </View>
     <View style={s.apiNote}>
       <ShieldCheck size={19} color={colors.deepTeal}/>
@@ -96,46 +96,52 @@ export function VoiceFoodLogScreen({navigation}:any){
     </View>
     {error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}
     <Pressable style={[s.primary,(!transcript.trim()||saving)&&s.disabled]} disabled={!transcript.trim()||saving} onPress={save}>
-      <Text style={s.primaryText}>{saving?'Saving…':'Save Meal Note'}</Text>
+      <Text style={s.primaryText}>{saving?'Savingâ€¦':'Save Meal Note'}</Text>
     </Pressable>
   </Shell>;
 }
-export function DietitianScreen({navigation}:any){const [message,setMessage]=useState('');const [sent,setSent]=useState(false);const [sending,setSending]=useState(false);const [error,setError]=useState('');const submit=async()=>{const body=message.trim();if(!body||sending)return;setSending(true);setError('');try{await sendMessage(body);setSent(true);setMessage('');}catch(e:any){setError(e?.message||'Could not send your message. Please try again.');}finally{setSending(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>ASK THE DIETITIAN</Text><Text style={s.title}>Guidance with context.</Text><Text style={s.copy}>Send a non-urgent nutrition education question to your Registered Dietitian.</Text><View style={s.secure}><ShieldCheck size={22} color={colors.green}/><View><Text style={s.cardTitle}>Secure messaging</Text><Text style={s.desc}>For education and support—not urgent or emergency care.</Text></View></View><Text style={s.label}>Your question</Text><TextInput value={message} onChangeText={(value)=>{setMessage(value);if(sent)setSent(false);}} multiline placeholder="What would you like to understand?" placeholderTextColor={colors.muted} style={s.textArea}/>{sent&&<Text style={s.sent}>Message saved for secure delivery.</Text>}{error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}<Pressable style={[s.primary,(!message.trim()||sending)&&s.disabled]} disabled={!message.trim()||sending} onPress={submit}><Send size={18} color="#fff"/><Text style={s.primaryText}>{sending?'Sending…':'Send Secure Message'}</Text></Pressable><Pressable onPress={()=>navigation.navigate('MessageDetail')} hitSlop={8}><Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>View my conversation →</Text></Pressable></Shell>}
+export function DietitianScreen({navigation}:any){const [message,setMessage]=useState('');const [sent,setSent]=useState(false);const [sending,setSending]=useState(false);const [error,setError]=useState('');const submit=async()=>{const body=message.trim();if(!body||sending)return;setSending(true);setError('');try{await sendMessage(body);setSent(true);setMessage('');}catch(e:any){setError(e?.message||'Could not send your message. Please try again.');}finally{setSending(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>ASK THE DIETITIAN</Text><Text style={s.title}>Guidance with context.</Text><Text style={s.copy}>Send a non-urgent nutrition education question to your Registered Dietitian.</Text><View style={s.secure}><ShieldCheck size={22} color={colors.green}/><View><Text style={s.cardTitle}>Secure messaging</Text><Text style={s.desc}>For education and supportâ€”not urgent or emergency care.</Text></View></View><Text style={s.label}>Your question</Text><TextInput value={message} onChangeText={(value)=>{setMessage(value);if(sent)setSent(false);}} multiline placeholder="What would you like to understand?" placeholderTextColor={colors.muted} style={s.textArea}/>{sent&&<Text style={s.sent}>Message saved for secure delivery.</Text>}{error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}<Pressable style={[s.primary,(!message.trim()||sending)&&s.disabled]} disabled={!message.trim()||sending} onPress={submit}><Send size={18} color="#fff"/><Text style={s.primaryText}>{sending?'Sendingâ€¦':'Send Secure Message'}</Text></Pressable><Pressable onPress={()=>navigation.navigate('MessageDetail')} hitSlop={8}><Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>View my conversation â†’</Text></Pressable></Shell>}
 export function TelehealthScreen({navigation}:any){
   const [visitType, setVisitType] = useState<'video'|'phone'>('video');
-  const [calConfig, setCalConfig] = useState<{configured:boolean;eventTypeId?:string|number}|null>(null);
+  const [calConfig, setCalConfig] = useState<CalConfig|null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState('');
-  // Every slot Cal.com offers in the window, keyed by its ISO timestamp.
   const [slotOptions, setSlotOptions] = useState<{key:string;label:string;iso:string}[]>([]);
   const [choice, setChoice] = useState('');
   const [booking, setBooking] = useState(false);
 
+  // Resolve the configuration once.
   useEffect(()=>{
     let active=true;
     (async()=>{
-      try{
-        const cfg:{configured:boolean;eventTypeId?:string|number}=await getCalConfig().catch(()=>({configured:false}));
-        if(!active) return;
-        setCalConfig(cfg);
-        if(!cfg.configured){
-          // No fake times: the app says so instead of inventing availability.
-          setSlotsError('Live availability is unavailable because scheduling is not configured on this server yet.');
-          return;
-        }
+      const cfg:CalConfig=await getCalConfig().catch(()=>({configured:false}));
+      if(active) setCalConfig(cfg);
+    })();
+    return ()=>{active=false;};
+  },[]);
 
-        setLoadingSlots(true);
+  // Video and phone consultations may be different Cal.com event types, so
+  // availability is refetched whenever the format changes.
+  useEffect(()=>{
+    if(!calConfig) return;
+    if(!calConfig.configured){
+      setSlotsError('Live availability is unavailable because scheduling is not configured on this server yet.');
+      return;
+    }
+    let active=true;
+    (async()=>{
+      setLoadingSlots(true);
+      setSlotsError('');
+      setSlotOptions([]);
+      setChoice('');
+      try{
+        const consultation=calConfig.consultations?.[visitType==='phone'?'phone':'video'];
+        const eventTypeId=consultation?.eventTypeId||calConfig.eventTypeId;
         const now=new Date();
         const toDate=new Date();
         toDate.setDate(toDate.getDate()+14);
 
-        let slotData:any={slots:{}};
-        try{
-          slotData=await getCalAvailableSlots(now.toISOString(),toDate.toISOString(),cfg.eventTypeId);
-        }catch{
-          if(active) setSlotsError('Could not load availability. Check your connection and try again.');
-          return;
-        }
+        const slotData=await getCalAvailableSlots(now.toISOString(),toDate.toISOString(),eventTypeId);
         if(!active) return;
 
         const flat:{key:string;label:string;iso:string}[]=[];
@@ -144,20 +150,14 @@ export function TelehealthScreen({navigation}:any){
         Object.keys(data).forEach((dateKey)=>{
           (data[dateKey]||[]).forEach((slotItem:any)=>{
             const timeStr=slotItem?.time||slotItem;
-            if(typeof timeStr!=='string') return;
-            if(seen.has(timeStr)) return;
-            seen.add(timeStr);
+            if(typeof timeStr!=='string'||seen.has(timeStr)) return;
             const d=new Date(timeStr);
             if(Number.isNaN(d.getTime())) return;
-            flat.push({
-              key:timeStr,
-              iso:timeStr,
-              label:d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
-            });
+            seen.add(timeStr);
+            flat.push({key:timeStr,iso:timeStr,label:d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})});
           });
         });
         flat.sort((a,b)=>a.iso.localeCompare(b.iso));
-
         if(!flat.length){
           setSlotsError('No consultation times are available in the next 14 days.');
           return;
@@ -165,28 +165,15 @@ export function TelehealthScreen({navigation}:any){
         setSlotOptions(flat);
         setChoice(flat[0].key);
       }catch{
-        if(active) setSlotsError('Could not load availability.');
+        if(active) setSlotsError('Could not load availability. Check your connection and try again.');
       }finally{
         if(active) setLoadingSlots(false);
       }
     })();
     return ()=>{active=false;};
-  },[]);
+  },[calConfig,visitType]);
 
-  // Group the slots by calendar day so a 9-5 week is readable instead of one
-  // unbroken list of hundreds of chips.
-  const dayGroups:{day:string;label:string;slots:{key:string;label:string;iso:string}[]}[]=[];
-  slotOptions.forEach((option)=>{
-    const day=option.iso.slice(0,10);
-    let group=dayGroups.find((g)=>g.day===day);
-    if(!group){
-      group={day,label:new Date(option.iso).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}),slots:[]};
-      dayGroups.push(group);
-    }
-    group.slots.push(option);
-  });
-
-  const request=async()=>{
+const request=async()=>{
     if(booking||!choice) return;
     setBooking(true);
 
@@ -199,8 +186,9 @@ export function TelehealthScreen({navigation}:any){
       let calBooking:CalBookingResult|null=null;
       if(calConfig?.configured){
         try{
+          const consultation=calConfig.consultations?.[visitType==='phone'?'phone':'video'];
           calBooking=await createCalBooking({
-            eventTypeId:calConfig.eventTypeId||7621485,
+            eventTypeId:consultation?.eventTypeId||calConfig.eventTypeId,
             start,
             notes:`${visitType==='phone'?'Phone consultation':'HD Video consultation'} via True Diet Telehealth.`,
           });
@@ -220,7 +208,7 @@ export function TelehealthScreen({navigation}:any){
       }
 
       const appointment={
-        slot:selected?`${selected.label} · ${new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:choice,
+        slot:selected?`${selected.label} Â· ${new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:choice,
         visitType,
         isoStart:start,
         bookingId:calBooking?.id,
@@ -242,6 +230,19 @@ export function TelehealthScreen({navigation}:any){
       setBooking(false);
     }
   };
+
+  // Group the slots by calendar day so a full working week stays readable
+  // instead of one unbroken list of hundreds of chips.
+  const dayGroups:{day:string;label:string;slots:{key:string;label:string;iso:string}[]}[]=[];
+  slotOptions.forEach((option)=>{
+    const day=option.iso.slice(0,10);
+    let group=dayGroups.find((g)=>g.day===day);
+    if(!group){
+      group={day,label:new Date(option.iso).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}),slots:[]};
+      dayGroups.push(group);
+    }
+    group.slots.push(option);
+  });
 
   return (
     <Shell navigation={navigation}>
@@ -282,7 +283,7 @@ export function TelehealthScreen({navigation}:any){
         {visitType==='video'?<Video size={24} color={colors.deepTeal}/>:<Phone size={24} color={colors.deepTeal}/>}
         <View style={{flex:1}}>
           <Text style={s.cardTitle}>{visitType==='video'?'Virtual Nutrition Consultation':'Phone Nutrition Consultation'}</Text>
-          <Text style={s.desc}>15 minutes · One-on-one with Maureen, Registered Dietitian</Text>
+          <Text style={s.desc}>15 minutes Â· One-on-one with Maureen, Registered Dietitian</Text>
         </View>
       </View>
 
@@ -291,7 +292,7 @@ export function TelehealthScreen({navigation}:any){
       {loadingSlots?(
         <View style={{paddingVertical:24,alignItems:'center'}}>
           <ActivityIndicator color={colors.deepTeal}/>
-          <Text style={[s.desc,{marginTop:8}]}>Retrieving live availability…</Text>
+          <Text style={[s.desc,{marginTop:8}]}>Retrieving live availabilityâ€¦</Text>
         </View>
       ):slotsError?(
         <View style={s.notice}>
@@ -320,7 +321,7 @@ export function TelehealthScreen({navigation}:any){
 
       {slotOptions.length>0?(
         <Text style={[s.desc,{marginTop:12}]}>
-          {slotOptions.length} time{slotOptions.length===1?'':'s'} available over the next 14 days · times shown in your device time zone.
+          {slotOptions.length} time{slotOptions.length===1?'':'s'} available over the next 14 days Â· times shown in your device time zone.
         </Text>
       ):null}
 
@@ -334,12 +335,12 @@ export function TelehealthScreen({navigation}:any){
       </View>
 
       <Pressable style={[s.primary,(booking||!choice)&&{opacity:0.5}]} disabled={booking||!choice} onPress={request}>
-        <Text style={s.primaryText}>{booking?'Confirming Appointment…':'Confirm Appointment'}</Text>
+        <Text style={s.primaryText}>{booking?'Confirming Appointmentâ€¦':'Confirm Appointment'}</Text>
       </Pressable>
 
       <Pressable onPress={()=>navigation.navigate('AppointmentDetail',{slot:(slotOptions.find((option)=>option.key===choice)?.label)||choice,visitType})}>
         <Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>
-          View appointment details →
+          View appointment details â†’
         </Text>
       </Pressable>
     </Shell>
