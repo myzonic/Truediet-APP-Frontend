@@ -145,8 +145,10 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
     try {
       await saveProfile(payload);
       setStatus('Your profile has been updated.');
-    } catch (e) {
-      setStatus('Saved on this device. It will sync to your account when you are connected.');
+    } catch (e: any) {
+      // The database is the source of truth. If the write failed the change
+      // is not saved, and the user has to be told.
+      setStatus(e?.message || 'Could not save your profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -217,8 +219,10 @@ export function SettingsScreen({ navigation }: any) {
     try {
       await savePreferences({ notifications: nextNotif, accessibility: nextAccess });
       setNote('Preferences saved.');
-    } catch (e) {
-      setNote('Saved on this device. It will sync when you are connected.');
+    } catch (e: any) {
+      // The server is the source of truth, so a failed write has to be shown
+      // as a failure rather than reported as saved.
+      setNote(e?.message || 'Could not save your preferences. Please try again.');
     }
   };
   const setN = (k: string) => (v: boolean) => { const next = { ...notif, [k]: v }; setNotif(next); persist(next, access); };
@@ -287,8 +291,8 @@ export function PrivacyScreen({ navigation }: any) {
     try {
       await savePreferences({ consents: next });
       setNote('Consent preferences updated.');
-    } catch (e) {
-      setNote('Saved on this device. It will sync when you are connected.');
+    } catch (e: any) {
+      setNote(e?.message || 'Could not save your consent preferences. Please try again.');
     }
   };
   const setC = (k: string) => (v: boolean) => { const next = { ...consent, [k]: v }; setConsent(next); persist(next); };
@@ -514,6 +518,7 @@ export function SavedContentScreen({ navigation }: any) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+  const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
     (async () => {
@@ -537,8 +542,14 @@ export function SavedContentScreen({ navigation }: any) {
     }
   };
   const remove = async (id: string) => {
-    setItems((prev) => prev.filter((x) => x.id !== id));
-    try { await unsaveContent(id); } catch (e) { /* keep optimistic removal */ }
+    // Keep the row visible until the server confirms the removal, so a
+    // failed delete never silently drops the item.
+    try {
+      await unsaveContent(id);
+      setItems((prev) => prev.filter((x) => x.id !== id));
+    } catch (e: any) {
+      setError(e?.message || 'Could not remove this item from your library.');
+    }
   };
   return (
     <Page navigation={navigation}>
@@ -559,6 +570,7 @@ export function SavedContentScreen({ navigation }: any) {
           ))}
         </View>
       )}
+      {error ? <Text style={s.error}>{error}</Text> : null}
       {offline ? <Text style={s.hint}>Connect your account to sync saved content across devices.</Text> : null}
     </Page>
   );
@@ -632,6 +644,7 @@ export function ProfileHubScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
+  error: { fontFamily: 'Roboto', fontSize: 12, color: colors.red, marginTop: 12 },
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },  content: { width: '100%', maxWidth: 412, padding: 24, paddingBottom: 48, backgroundColor: colors.background },
   back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 25 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },

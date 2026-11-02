@@ -1,13 +1,67 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft, ChevronRight } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
-import { findTopicByTitle } from '../../lib/learnContent';
+import { loadTopics, LearnArticle } from '../../lib/contentLibrary';
 
-export default function TopicScreen({navigation,route}:any){
-  const title=route.params?.title||route.params?.category||'Nutrition Basics';
-  const topic=findTopicByTitle(title)||findTopicByTitle(route.params?.category);
-  const articles=topic?.articles??[];
-  return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}><Pressable style={s.back} onPress={()=>navigation.goBack()}><ArrowLeft size={22} color={colors.text}/></Pressable><Text style={s.eyebrow}>LEARN</Text><Text style={s.title}>{topic?.title??title}</Text><Text style={s.copy}>{topic?.intro??'Practical, evidence-based nutrition education.'}</Text><Text style={s.section}>{articles.length} {articles.length===1?'Article':'Articles'}</Text>{articles.length===0?<View style={s.empty}><Text style={s.emptyTitle}>No articles in this topic yet</Text><Text style={s.emptyText}>New education is added regularly. Explore another topic from the Learn tab in the meantime.</Text></View>:null}{articles.map(a=><Pressable key={a.id} style={s.card} onPress={()=>navigation.navigate('Article',{articleId:a.id,title:a.title})}><View style={s.cardHead}><Text style={s.readTime}>{a.readTime}</Text><ChevronRight size={18} color={colors.muted}/></View><Text style={s.cardTitle}>{a.title}</Text><Text style={s.cardSummary}>{a.summary}</Text></Pressable>)}</ScrollView></SafeAreaView>;
+export default function TopicScreen({ navigation, route }: any) {
+  const title = route.params?.title || route.params?.category || 'Nutrition Basics';
+  const [topic, setTopic] = useState<{ title: string; intro: string; articles: LearnArticle[] } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    loadTopics()
+      .then((loaded) => {
+        if (!active) return;
+        const match =
+          loaded.find((t) => t.title === title) ||
+          loaded.find((t) => t.title === route.params?.category);
+        if (match) setTopic({ title: match.title, intro: match.intro, articles: match.articles });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [title, route.params?.category]);
+
+  const articles = topic?.articles ?? [];
+
+  return (
+    <SafeAreaView style={s.safe}>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <Pressable style={s.back} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={22} color={colors.text} />
+        </Pressable>
+        <Text style={s.eyebrow}>LEARN</Text>
+        <Text style={s.title}>{topic?.title ?? title}</Text>
+        <Text style={s.copy}>{topic?.intro ?? 'Practical, evidence-based nutrition education.'}</Text>
+        <Text style={s.section}>
+          {articles.length} {articles.length === 1 ? 'Article' : 'Articles'}
+        </Text>
+        {articles.length === 0 ? (
+          <View style={s.empty}>
+            <Text style={s.emptyTitle}>No articles in this topic yet</Text>
+            <Text style={s.emptyText}>
+              New education is added regularly. Explore another topic from the Learn tab in the meantime.
+            </Text>
+          </View>
+        ) : null}
+        {articles.map((a) => (
+          <Pressable
+            key={a.id}
+            style={s.card}
+            onPress={() => navigation.navigate('Article', { articleId: a.id, title: a.title })}
+          >
+            <View style={s.cardHead}>
+              <Text style={s.readTime}>{a.readTime}</Text>
+              <ChevronRight size={18} color={colors.muted} />
+            </View>
+            <Text style={s.cardTitle}>{a.title}</Text>
+            <Text style={s.cardSummary}>{a.summary}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:colors.softBlue,alignItems:'center'},content:{width:'100%',maxWidth:412,padding:24,paddingBottom:40,backgroundColor:colors.background},back:{width:42,height:42,borderRadius:21,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,alignItems:'center',justifyContent:'center',marginBottom:25},eyebrow:{fontFamily:'Roboto',color:colors.green,fontSize:10,fontWeight:'700',letterSpacing:1.4},title:{fontFamily:'Roboto',fontSize:30,lineHeight:38,fontWeight:'700',color:colors.text,marginTop:8},copy:{fontFamily:'Roboto',fontSize:14,lineHeight:22,color:colors.textSecondary,marginTop:9},section:{fontFamily:'Roboto',fontSize:13,fontWeight:'700',color:colors.textSecondary,marginTop:26,marginBottom:14,letterSpacing:0.4},card:{backgroundColor:colors.surface,borderRadius:20,borderWidth:1,borderColor:colors.border,padding:18,marginBottom:12},cardHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},readTime:{fontFamily:'Roboto',color:colors.green,fontSize:10,letterSpacing:1.1,fontWeight:'700'},cardTitle:{fontFamily:'Roboto',fontSize:17,lineHeight:24,fontWeight:'700',color:colors.text,marginTop:10},cardSummary:{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.textSecondary,marginTop:7},empty:{backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,borderRadius:20,padding:22},emptyTitle:{fontFamily:'Roboto',fontSize:16,fontWeight:'700',color:colors.text},emptyText:{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.textSecondary,marginTop:7}});
+const s = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.softBlue, alignItems: 'center' }, content: { width: '100%', maxWidth: 412, padding: 24, paddingBottom: 40, backgroundColor: colors.background }, back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginBottom: 25 }, eyebrow: { fontFamily: 'Roboto', color: colors.green, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }, title: { fontFamily: 'Roboto', fontSize: 30, lineHeight: 38, fontWeight: '700', color: colors.text, marginTop: 8 }, copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 9 }, section: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginTop: 26, marginBottom: 14, letterSpacing: 0.4 }, card: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 18, marginBottom: 12 }, cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, readTime: { fontFamily: 'Roboto', color: colors.green, fontSize: 10, letterSpacing: 1.1, fontWeight: '700' }, cardTitle: { fontFamily: 'Roboto', fontSize: 17, lineHeight: 24, fontWeight: '700', color: colors.text, marginTop: 10 }, cardSummary: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 20, color: colors.textSecondary, marginTop: 7 }, empty: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, padding: 22 }, emptyTitle: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text }, emptyText: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 20, color: colors.textSecondary, marginTop: 7 } });

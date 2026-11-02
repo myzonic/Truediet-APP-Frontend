@@ -28,14 +28,17 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.RECORD_AUDIO",
         "android.permission.SYSTEM_ALERT_WINDOW"
-      ]
+      ],
+      "package": "com.truediet.truedietwelcome"
     },
     "ios": {
       "infoPlist": {
         "NSMicrophoneUsageDescription": "True Diet uses your microphone for video nutrition consultations and when you choose to record a voice meal note. Voice notes are transcribed on your device and never uploaded.",
-        "NSCameraUsageDescription": "True Diet uses your camera so you can join video nutrition consultations with your dietitian."
+        "NSCameraUsageDescription": "True Diet uses your camera so you can join video nutrition consultations with your dietitian.",
+        "ITSAppUsesNonExemptEncryption": false
       },
-      "bitcode": false
+      "bitcode": false,
+      "bundleIdentifier": "com.truediet.truedietwelcome"
     },
     "scheme": "truediet",
     "plugins": [

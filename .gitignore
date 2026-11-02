@@ -1,10 +1,20 @@
-node_modules/
+﻿node_modules/
 .expo/
 dist/
 web-build/
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
 *.log
 server_deploy.zip
 server_deploy.tar.gz
+
+# Local embedded Postgres data (server/.pgdata)
+server/.pgdata/
+
+# The backend is its own repository (myzonic/Truediet-APP-Backend).
+# It must never be embedded in the frontend repo.
+server/
+

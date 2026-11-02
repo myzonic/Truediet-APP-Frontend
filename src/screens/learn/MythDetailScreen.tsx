@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
-import { findMyth, myths } from '../../lib/mythContent';
+import { findMyth, myths, Myth } from '../../lib/mythContent';
+import { loadMyths } from '../../lib/contentLibrary';
 import { saveContent } from '../../lib/content';
 
 const Section = ({ title, children }: { title: string; children: string }) => (
@@ -14,12 +15,35 @@ const Section = ({ title, children }: { title: string; children: string }) => (
 
 export default function MythDetailScreen({ navigation, route }: any) {
   const params = route.params || {};
-  const byId = params.mythId ? myths.find((m) => m.id === params.mythId) : undefined;
-  const myth = byId || findMyth(params.claim || params.mythId);
-  const claim = params.claim || myth.claim;
+  const [myth, setMyth] = useState<Myth | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const fallback = () => {
+      const byId = params.mythId ? myths.find((m) => m.id === params.mythId) : undefined;
+      return byId || findMyth(params.claim || params.mythId);
+    };
+    loadMyths()
+      .then((list) => {
+        if (!active) return;
+        const match =
+          list.find((m) => m.id === params.mythId) ||
+          list.find((m) => m.claim === params.claim);
+        setMyth(match || fallback());
+      })
+      .catch(() => {
+        if (active) setMyth(fallback());
+      });
+    return () => {
+      active = false;
+    };
+  }, [params.mythId, params.claim]);
+
+  const claim = params.claim || myth?.claim || '';
+
   const onSave = async () => {
-    if (saving) return;
+    if (saving || !myth) return;
     setSaving(true);
     try {
       await saveContent(`myth-${myth.id}`,{title:claim,subtitle:'Nutrition claim',route:'MythDetail',type:'myth'});
@@ -30,6 +54,15 @@ export default function MythDetailScreen({ navigation, route }: any) {
       setSaving(false);
     }
   };
+  if (!myth) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.loading}>
+          <ActivityIndicator color={colors.deepTeal} />
+        </View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.content}>
@@ -66,4 +99,4 @@ export default function MythDetailScreen({ navigation, route }: any) {
     </SafeAreaView>
   );
 }
-const s = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.softBlue, alignItems: 'center' }, content: { width: '100%', maxWidth: 412, padding: 24, paddingBottom: 50, backgroundColor: colors.background }, back: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginBottom: 27 }, eyebrow: { fontFamily: 'Roboto', color: colors.orange, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }, claim: { fontFamily: 'Roboto', fontSize: 30, lineHeight: 40, fontWeight: '700', color: colors.text, marginTop: 9 }, context: { backgroundColor: colors.softOrange, borderRadius: 20, padding: 20, marginTop: 25 }, contextLabel: { fontFamily: 'Roboto', color: colors.orange, fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }, contextText: { fontFamily: 'Roboto', color: colors.text, fontSize: 15, lineHeight: 23, marginTop: 8 }, section: { marginTop: 30 }, sectionTitle: { fontFamily: 'Roboto', fontSize: 21, fontWeight: '700', color: colors.text, marginBottom: 9 }, sectionText: { fontFamily: 'Roboto', fontSize: 15, lineHeight: 25, color: colors.textSecondary }, picture: { backgroundColor: colors.softGreen, borderRadius: 20, padding: 21, marginTop: 30 }, pictureLabel: { fontFamily: 'Roboto', color: colors.green, fontSize: 10, letterSpacing: 1.2, fontWeight: '700' }, pictureText: { fontFamily: 'Roboto', fontSize: 19, lineHeight: 27, color: colors.text, fontWeight: '700', marginTop: 8 }, save: { height: 56, borderRadius: 17, backgroundColor: colors.deepTeal, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30 }, saveText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff', marginLeft: 8 }, disclaimer: { fontFamily: 'Roboto', fontSize: 10, lineHeight: 16, color: colors.muted, marginTop: 18 } });
+const s = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.softBlue, alignItems: 'center' }, loading: { flex: 1, alignItems: 'center', justifyContent: 'center' }, content: { width: '100%', maxWidth: 412, padding: 24, paddingBottom: 50, backgroundColor: colors.background }, back: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginBottom: 27 }, eyebrow: { fontFamily: 'Roboto', color: colors.orange, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }, claim: { fontFamily: 'Roboto', fontSize: 30, lineHeight: 40, fontWeight: '700', color: colors.text, marginTop: 9 }, context: { backgroundColor: colors.softOrange, borderRadius: 20, padding: 20, marginTop: 25 }, contextLabel: { fontFamily: 'Roboto', color: colors.orange, fontSize: 10, fontWeight: '700', letterSpacing: 1.2 }, contextText: { fontFamily: 'Roboto', color: colors.text, fontSize: 15, lineHeight: 23, marginTop: 8 }, section: { marginTop: 30 }, sectionTitle: { fontFamily: 'Roboto', fontSize: 21, fontWeight: '700', color: colors.text, marginBottom: 9 }, sectionText: { fontFamily: 'Roboto', fontSize: 15, lineHeight: 25, color: colors.textSecondary }, picture: { backgroundColor: colors.softGreen, borderRadius: 20, padding: 21, marginTop: 30 }, pictureLabel: { fontFamily: 'Roboto', color: colors.green, fontSize: 10, letterSpacing: 1.2, fontWeight: '700' }, pictureText: { fontFamily: 'Roboto', fontSize: 19, lineHeight: 27, color: colors.text, fontWeight: '700', marginTop: 8 }, save: { height: 56, borderRadius: 17, backgroundColor: colors.deepTeal, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30 }, saveText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff', marginLeft: 8 }, disclaimer: { fontFamily: 'Roboto', fontSize: 10, lineHeight: 16, color: colors.muted, marginTop: 18 } });

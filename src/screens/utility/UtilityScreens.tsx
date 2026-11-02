@@ -152,9 +152,18 @@ export function AppointmentDetailScreen({navigation,route}:any){
         <View style={s.summaryRow}>
           <Text style={s.summaryLabel}>Status</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <CheckCircle2 size={16} color={colors.green} />
-            <Text style={[s.summaryValue, { color: colors.green }]}>
-              {isConfirmed ? 'Confirmed' : 'Confirmed'}
+            {isConfirmed ? (
+              <CheckCircle2 size={16} color={colors.green} />
+            ) : (
+              <Clock3 size={16} color={colors.muted} />
+            )}
+            <Text
+              style={[
+                s.summaryValue,
+                { color: isConfirmed ? colors.green : colors.textSecondary },
+              ]}
+            >
+              {isConfirmed ? 'Confirmed' : 'Requested'}
             </Text>
           </View>
         </View>

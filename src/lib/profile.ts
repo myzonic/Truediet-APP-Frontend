@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetch } from './api-client';
 import { OnboardingData } from '../context/OnboardingContext';
 
@@ -15,6 +16,29 @@ export interface ProfileRecord {
   isAssessmentComplete?: boolean;
 }
 
+// A local copy keeps the assessment answers on the device so a failed write
+// to the server does not lose them.
+const PROFILE_KEY = 'truediet.profile.v1';
+
+async function writeLocal(profile: ProfileRecord): Promise<void> {
+  try {
+    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } catch {
+    // storage unavailable - the server copy is still written
+  }
+}
+
+export async function readLocalProfile(): Promise<ProfileRecord | null> {
+  try {
+    const raw = await AsyncStorage.getItem(PROFILE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? (parsed as ProfileRecord) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function saveProfile(data: OnboardingData): Promise<ProfileRecord | null> {
   const res = await apiFetch<{ profile: ProfileRecord }>('/api/profile', {
     method: 'POST',
@@ -29,11 +53,20 @@ export async function saveProfile(data: OnboardingData): Promise<ProfileRecord |
       isAssessmentComplete: Boolean(data.goal),
     },
   });
-  return res?.profile ?? null;
+
+  const profile = res?.profile ?? null;
+  if (profile) {
+    await writeLocal(profile);
+  }
+  return profile;
 }
 
 export async function loadProfile(): Promise<{ user: any; profile: ProfileRecord | null }> {
-  return apiFetch<{ user: any; profile: ProfileRecord | null }>('/api/profile', {
+  const res = await apiFetch<{ user: any; profile: ProfileRecord | null }>('/api/profile', {
     method: 'GET',
   });
+  if (res?.profile) {
+    await writeLocal(res.profile);
+  }
+  return res;
 }

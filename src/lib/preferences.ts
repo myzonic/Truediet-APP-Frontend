@@ -62,13 +62,24 @@ export async function savePreferences(preferences: Partial<Preferences>): Promis
     consents: { ...local.consents, ...(preferences.consents || {}) },
   };
   await writeLocal(merged);
-  try {
-    const res = await apiFetch<{ preferences: Preferences }>('/api/preferences', {
-      method: 'PUT',
-      body: preferences,
-    });
-    return res?.preferences ?? merged;
-  } catch {
-    return merged;
+
+  // The server is the source of truth. A failed write has to be reported so
+  // the screen does not claim the preference was saved.
+  const res = await apiFetch<{ preferences: Preferences }>('/api/preferences', {
+    method: 'PUT',
+    body: preferences,
+  });
+
+  const saved = res?.preferences;
+  if (saved) {
+    const result: Preferences = {
+      notifications: { ...merged.notifications, ...saved.notifications },
+      accessibility: { ...merged.accessibility, ...saved.accessibility },
+      consents: { ...merged.consents, ...saved.consents },
+    };
+    await writeLocal(result);
+    return result;
   }
+
+  return merged;
 }

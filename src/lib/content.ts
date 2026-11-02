@@ -46,6 +46,9 @@ export async function loadContent(type?: string, q?: string): Promise<ContentSum
   const params = new URLSearchParams();
   if (type) params.set('type', type);
   if (q) params.set('q', q);
+  // The whole library is small enough to fetch in one request, and the app
+  // expects every item to be available locally once it has loaded.
+  params.set('limit', '100');
   const suffix = params.toString();
   const res = await apiFetch<{ items: ContentSummary[] }>(
     `/api/content${suffix ? `?${suffix}` : ''}`,
@@ -87,9 +90,24 @@ export async function saveContent(contentId: string, meta?: SaveMeta): Promise<v
     await writeSaved([item, ...existing]);
   }
   try {
-    await apiFetch('/api/saved', { method: 'POST', body: { contentId } });
-  } catch {
-    // Saved on this device; syncs once the account backend is connected.
+    // The metadata is sent so the server can create the content row for
+    // content that only ships inside the app bundle.
+    await apiFetch('/api/saved', {
+      method: 'POST',
+      body: {
+        contentId,
+        title: meta?.title,
+        subtitle: meta?.subtitle,
+        type: meta?.type,
+      },
+    });
+  } catch (error) {
+    // The server is the source of truth for saved content. If the save did
+    // not reach it, the caller has to know so it can report a real failure
+    // instead of showing a false success.
+    throw new Error(
+      error instanceof Error ? error.message : 'Could not save this item to your account.'
+    );
   }
 }
 
@@ -97,8 +115,9 @@ export async function unsaveContent(contentId: string): Promise<void> {
   const existing = await readSaved();
   await writeSaved(existing.filter((item) => item.id !== contentId));
   try {
-    await apiFetch(`/api/saved/${contentId}`, { method: 'DELETE' });
-  } catch {
-    // Removed locally; remote cleanup can retry later.
+    await apiFetch(`/api/saved/${encodeURIComponent(contentId)}`, { method: 'DELETE' });
+  } catch (error) {
+    // Surface the failure so the screen can restore the row and tell the user.
+    throw error instanceof Error ? error : new Error('Could not remove this item from your account.');
   }
 }

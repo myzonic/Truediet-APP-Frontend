@@ -72,8 +72,16 @@ export default function AccountSetupScreen({ navigation }: any) {
       await refetchSession();
       try {
         await saveProfile(data);
-      } catch {
-        // Profile sync is best-effort during development; user can continue and retry later.
+      } catch (e: any) {
+        // The account exists but the nutrition profile did not reach the
+        // server. The user has to be told so they can retry rather than
+        // believe the assessment was stored.
+        setErrorMessage(
+          e?.message ||
+            'Your account was created, but your nutrition profile could not be saved. Please sign in and save it again.'
+        );
+        setLoading(false);
+        return;
       }
       navigation.navigate('NutritionProfile');
     } catch (err: any) {

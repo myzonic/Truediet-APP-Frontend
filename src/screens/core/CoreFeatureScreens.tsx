@@ -4,7 +4,8 @@ import { ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Clock3, Heart, Mic
 import { colors } from '../../theme/colors';
 import { sendMessage } from '../../lib/messages';
 import { addMeal, MealType } from '../../lib/track';
-import { recipes, findRecipe } from '../../lib/recipeContent';
+import { recipes, findRecipe, Recipe } from '../../lib/recipeContent';
+import { loadRecipes } from '../../lib/contentLibrary';
 import { saveContent } from '../../lib/content';
 import { isSpeechSupported, prepareSpeech, startSpeechRecording, stopSpeechAndTranscribe, cancelSpeech } from '../../lib/speech';
 import { createCalBooking, getCalAvailableSlots, getCalConfig, type CalBookingResult } from '../../lib/cal';
@@ -13,8 +14,8 @@ import { saveAppointment } from '../../lib/appointments';
 
 
 function Shell({children,navigation}:{children:React.ReactNode;navigation:any}){return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"><Pressable style={s.back} onPress={()=>navigation.goBack()}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>}
-export function RecipesScreen({navigation}:any){return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPES</Text><Text style={s.title}>Food ideas with flexibility.</Text><Text style={s.copy}>Practical recipes built around balance, variety, preferences and real life.</Text><View style={s.list}>{recipes.map(r=><Pressable key={r.id} style={s.card} onPress={()=>navigation.navigate('RecipeDetail',{recipeId:r.id,title:r.title})}><View style={s.recipeArt}><Heart size={24} color={colors.green}/></View><View style={s.cardCopy}><Text style={s.cardTitle}>{r.title}</Text><Text style={s.meta}>{r.time} · {r.category}</Text><Text style={s.desc}>{r.whyItWorks}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>)}</View></Shell>}
-export function RecipeDetailScreen({navigation,route}:any){const byId=recipes.find(r=>r.id===route.params?.recipeId);const recipe=byId||findRecipe(route.params?.title||route.params?.recipeId);const [saving,setSaving]=useState(false);const onSave=async()=>{if(saving)return;setSaving(true);try{await saveContent(`recipe-${recipe.id}`,{title:recipe.title,subtitle:`${recipe.time} · ${recipe.category}`,route:'RecipeDetail',type:'recipe'});Alert.alert('Saved','This recipe was added to your saved content.');}catch(e:any){Alert.alert('Could not save',e?.message||'Please try again.');}finally{setSaving(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPE</Text><Text style={s.title}>{recipe.title}</Text><Text style={s.meta}>{recipe.time} · {recipe.category}</Text><View style={s.hero}><Heart size={38} color={colors.green}/></View><Text style={s.section}>Why it works</Text><Text style={s.copy}>{recipe.whyItWorks} This is a flexible template—not a prescription. Adapt ingredients to what you enjoy, need, and have available.</Text><Text style={s.section}>Ingredients</Text>{recipe.ingredients.map(x=><View key={x} style={s.step}><Text style={s.stepText}>• {x}</Text></View>)}<Text style={s.section}>Method</Text>{recipe.steps.map((x,i)=><View key={x} style={s.step}><Text style={s.stepNumber}>{i+1}</Text><Text style={s.stepText}>{x}</Text></View>)}<View style={{backgroundColor:colors.softGreen,borderRadius:16,padding:16,marginTop:20}}><Text style={{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.2,color:colors.green}}>TIP</Text><Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.text,marginTop:6}}>{recipe.tip}</Text></View><Pressable style={s.primary} onPress={onSave} disabled={saving}>{saving?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Save Recipe</Text>}</Pressable></Shell>}
+export function RecipesScreen({navigation}:any){const [items,setItems]=useState<Recipe[]>(recipes);useEffect(()=>{let active=true;loadRecipes().then(r=>{if(active&&r.length)setItems(r);}).catch(()=>undefined);return()=>{active=false;};},[]);return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPES</Text><Text style={s.title}>Food ideas with flexibility.</Text><Text style={s.copy}>Practical recipes built around balance, variety, preferences and real life.</Text><View style={s.list}>{items.map(r=><Pressable key={r.id} style={s.card} onPress={()=>navigation.navigate('RecipeDetail',{recipeId:r.id,title:r.title})}><View style={s.recipeArt}><Heart size={24} color={colors.green}/></View><View style={s.cardCopy}><Text style={s.cardTitle}>{r.title}</Text><Text style={s.meta}>{r.time} · {r.category}</Text><Text style={s.desc}>{r.whyItWorks}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>)}</View></Shell>}
+export function RecipeDetailScreen({navigation,route}:any){const [recipe,setRecipe]=useState<Recipe|null>(null);useEffect(()=>{let active=true;const fallback=()=>{const byId=recipes.find(r=>r.id===route.params?.recipeId);return byId||findRecipe(route.params?.title||route.params?.recipeId);};loadRecipes().then(list=>{if(!active)return;const match=list.find(r=>r.id===route.params?.recipeId)||list.find(r=>r.title===route.params?.title);setRecipe(match||fallback());}).catch(()=>{if(active)setRecipe(fallback());});return()=>{active=false;};},[route.params?.recipeId,route.params?.title]);const [saving,setSaving]=useState(false);if(!recipe)return <Shell navigation={navigation}><ActivityIndicator color={colors.deepTeal} style={{marginTop:40}}/></Shell>;const onSave=async()=>{if(saving)return;setSaving(true);try{await saveContent(`recipe-${recipe.id}`,{title:recipe.title,subtitle:`${recipe.time} · ${recipe.category}`,route:'RecipeDetail',type:'recipe'});Alert.alert('Saved','This recipe was added to your saved content.');}catch(e:any){Alert.alert('Could not save',e?.message||'Please try again.');}finally{setSaving(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPE</Text><Text style={s.title}>{recipe.title}</Text><Text style={s.meta}>{recipe.time} · {recipe.category}</Text><View style={s.hero}><Heart size={38} color={colors.green}/></View><Text style={s.section}>Why it works</Text><Text style={s.copy}>{recipe.whyItWorks} This is a flexible template - not a prescription. Adapt ingredients to what you enjoy, need, and have available.</Text><Text style={s.section}>Ingredients</Text>{recipe.ingredients.map(x=><View key={x} style={s.step}><Text style={s.stepText}>• {x}</Text></View>)}<Text style={s.section}>Method</Text>{recipe.steps.map((x,i)=><View key={x} style={s.step}><Text style={s.stepNumber}>{i+1}</Text><Text style={s.stepText}>{x}</Text></View>)}<View style={{backgroundColor:colors.softGreen,borderRadius:16,padding:16,marginTop:20}}><Text style={{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.2,color:colors.green}}>TIP</Text><Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.text,marginTop:6}}>{recipe.tip}</Text></View><Pressable style={s.primary} onPress={onSave} disabled={saving}>{saving?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Save Recipe</Text>}</Pressable></Shell>}
 export function VoiceFoodLogScreen({navigation}:any){
   const [status,setStatus]=useState<'idle'|'preparing'|'recording'|'transcribing'>('idle');
   const [transcript,setTranscript]=useState('');
@@ -101,125 +102,143 @@ export function VoiceFoodLogScreen({navigation}:any){
 }
 export function DietitianScreen({navigation}:any){const [message,setMessage]=useState('');const [sent,setSent]=useState(false);const [sending,setSending]=useState(false);const [error,setError]=useState('');const submit=async()=>{const body=message.trim();if(!body||sending)return;setSending(true);setError('');try{await sendMessage(body);setSent(true);setMessage('');}catch(e:any){setError(e?.message||'Could not send your message. Please try again.');}finally{setSending(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>ASK THE DIETITIAN</Text><Text style={s.title}>Guidance with context.</Text><Text style={s.copy}>Send a non-urgent nutrition education question to your Registered Dietitian.</Text><View style={s.secure}><ShieldCheck size={22} color={colors.green}/><View><Text style={s.cardTitle}>Secure messaging</Text><Text style={s.desc}>For education and support—not urgent or emergency care.</Text></View></View><Text style={s.label}>Your question</Text><TextInput value={message} onChangeText={(value)=>{setMessage(value);if(sent)setSent(false);}} multiline placeholder="What would you like to understand?" placeholderTextColor={colors.muted} style={s.textArea}/>{sent&&<Text style={s.sent}>Message saved for secure delivery.</Text>}{error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}<Pressable style={[s.primary,(!message.trim()||sending)&&s.disabled]} disabled={!message.trim()||sending} onPress={submit}><Send size={18} color="#fff"/><Text style={s.primaryText}>{sending?'Sending…':'Send Secure Message'}</Text></Pressable><Pressable onPress={()=>navigation.navigate('MessageDetail')} hitSlop={8}><Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>View my conversation →</Text></Pressable></Shell>}
 export function TelehealthScreen({navigation}:any){
-  const [visitType, setVisitType] = useState<'video' | 'phone'>('video');
-  const [calConfig, setCalConfig] = useState<{ configured: boolean; eventTypeId?: string | number } | null>(null);
+  const [visitType, setVisitType] = useState<'video'|'phone'>('video');
+  const [calConfig, setCalConfig] = useState<{configured:boolean;eventTypeId?:string|number}|null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  // Fallback consultation times if network is delayed
-  const defaultSlots = ['Tue · 10:00 AM', 'Wed · 2:30 PM', 'Thu · 11:00 AM'];
-  // Keep the ISO timestamp alongside each label: Cal.com needs the ISO value,
-  // the UI needs the friendly label.
-  const [slotOptions, setSlotOptions] = useState<{ label: string; iso?: string }[]>(defaultSlots.map((label) => ({ label })));
-  const [choice, setChoice] = useState('Tue · 10:00 AM');
+  const [slotsError, setSlotsError] = useState('');
+  // Every slot Cal.com offers in the window, keyed by its ISO timestamp.
+  const [slotOptions, setSlotOptions] = useState<{key:string;label:string;iso:string}[]>([]);
+  const [choice, setChoice] = useState('');
   const [booking, setBooking] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const cfg: { configured: boolean; eventTypeId?: string | number } = await getCalConfig().catch(() => ({ configured: false }));
-        if (!active) return;
+  useEffect(()=>{
+    let active=true;
+    (async()=>{
+      try{
+        const cfg:{configured:boolean;eventTypeId?:string|number}=await getCalConfig().catch(()=>({configured:false}));
+        if(!active) return;
         setCalConfig(cfg);
-
-        if (cfg.configured) {
-          setLoadingSlots(true);
-          const now = new Date();
-          const fromDate = now.toISOString();
-          const future = new Date();
-          future.setDate(future.getDate() + 7);
-          const toDate = future.toISOString();
-
-          const slotData = await getCalAvailableSlots(fromDate, toDate, cfg.eventTypeId).catch(() => ({ slots: {} }));
-          if (!active) return;
-
-          const flatSlots: { label: string; iso: string }[] = [];
-          if (slotData && slotData.slots) {
-            Object.keys(slotData.slots).forEach((dateKey) => {
-              const daySlots = slotData.slots[dateKey] || [];
-              daySlots.forEach((slotItem: any) => {
-                const timeStr = slotItem.time || slotItem;
-                if (typeof timeStr === 'string') {
-                  const d = new Date(timeStr);
-                  const label = `${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-                  flatSlots.push({ label, iso: timeStr });
-                }
-              });
-            });
-          }
-
-          if (flatSlots.length > 0) {
-            const topSlots = flatSlots.slice(0, 5);
-            setSlotOptions(topSlots);
-            setChoice(topSlots[0].label);
-          }
+        if(!cfg.configured){
+          // No fake times: the app says so instead of inventing availability.
+          setSlotsError('Live availability is unavailable because scheduling is not configured on this server yet.');
+          return;
         }
-      } catch {
-        // Fallback silently to preset slots
-      } finally {
-        if (active) setLoadingSlots(false);
+
+        setLoadingSlots(true);
+        const now=new Date();
+        const toDate=new Date();
+        toDate.setDate(toDate.getDate()+14);
+
+        let slotData:any={slots:{}};
+        try{
+          slotData=await getCalAvailableSlots(now.toISOString(),toDate.toISOString(),cfg.eventTypeId);
+        }catch{
+          if(active) setSlotsError('Could not load availability. Check your connection and try again.');
+          return;
+        }
+        if(!active) return;
+
+        const flat:{key:string;label:string;iso:string}[]=[];
+        const seen=new Set<string>();
+        const data=slotData?.slots||{};
+        Object.keys(data).forEach((dateKey)=>{
+          (data[dateKey]||[]).forEach((slotItem:any)=>{
+            const timeStr=slotItem?.time||slotItem;
+            if(typeof timeStr!=='string') return;
+            if(seen.has(timeStr)) return;
+            seen.add(timeStr);
+            const d=new Date(timeStr);
+            if(Number.isNaN(d.getTime())) return;
+            flat.push({
+              key:timeStr,
+              iso:timeStr,
+              label:d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+            });
+          });
+        });
+        flat.sort((a,b)=>a.iso.localeCompare(b.iso));
+
+        if(!flat.length){
+          setSlotsError('No consultation times are available in the next 14 days.');
+          return;
+        }
+        setSlotOptions(flat);
+        setChoice(flat[0].key);
+      }catch{
+        if(active) setSlotsError('Could not load availability.');
+      }finally{
+        if(active) setLoadingSlots(false);
       }
     })();
-    return () => {
-      active = false;
-    };
-  }, []);
+    return ()=>{active=false;};
+  },[]);
 
-  const displaySlots = slotOptions;
+  // Group the slots by calendar day so a 9-5 week is readable instead of one
+  // unbroken list of hundreds of chips.
+  const dayGroups:{day:string;label:string;slots:{key:string;label:string;iso:string}[]}[]=[];
+  slotOptions.forEach((option)=>{
+    const day=option.iso.slice(0,10);
+    let group=dayGroups.find((g)=>g.day===day);
+    if(!group){
+      group={day,label:new Date(option.iso).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}),slots:[]};
+      dayGroups.push(group);
+    }
+    group.slots.push(option);
+  });
 
-  const request = async () => {
-    if (booking) return;
+  const request=async()=>{
+    if(booking||!choice) return;
     setBooking(true);
 
-    const selected = slotOptions.find((option) => option.label === choice);
-    const start = selected?.iso || new Date(Date.now() + 86400000).toISOString();
-    let bookingNotice = '';
+    const selected=slotOptions.find((option)=>option.key===choice);
+    const start=selected?.iso||new Date(Date.now()+86400000).toISOString();
+    let bookingNotice='';
 
-    try {
+    try{
       // 1. Reserve the calendar slot first, so the video room can be named after it.
-      let calBooking: CalBookingResult | null = null;
-      if (calConfig?.configured) {
-        try {
-          calBooking = await createCalBooking({
-            eventTypeId: calConfig.eventTypeId || 7621485,
+      let calBooking:CalBookingResult|null=null;
+      if(calConfig?.configured){
+        try{
+          calBooking=await createCalBooking({
+            eventTypeId:calConfig.eventTypeId||7621485,
             start,
-            notes: `${visitType === 'phone' ? 'Phone consultation' : 'HD Video consultation'} via True Diet Telehealth.`,
+            notes:`${visitType==='phone'?'Phone consultation':'HD Video consultation'} via True Diet Telehealth.`,
           });
-        } catch (e: any) {
-          bookingNotice = e?.message || 'Unable to schedule via live calendar. Your request has been logged offline.';
+        }catch(e:any){
+          bookingNotice=e?.message||'Unable to schedule via live calendar. Your request has been logged offline.';
         }
       }
 
       // 2. Create the video room. Reusing the booking id keeps one stable room
       //    per appointment, so the visit can be rejoined later.
-      const fallbackCallId = calBooking?.id ? `visit-${calBooking.id}` : undefined;
-      let streamData: StreamCallResponse | null = null;
-      try {
-        streamData = await createStreamCall({
-          callId: fallbackCallId,
-          callMode: visitType,
-          callType: 'default',
-        });
-      } catch {
+      const fallbackCallId=calBooking?.id?`visit-${calBooking.id}`:undefined;
+      let streamData:StreamCallResponse|null=null;
+      try{
+        streamData=await createStreamCall({callId:fallbackCallId,callMode:visitType,callType:'default'});
+      }catch{
         // The appointment still stands; the call screen can retry on join.
       }
 
-      const appointment = {
-        slot: choice,
+      const appointment={
+        slot:selected?`${selected.label} · ${new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:choice,
         visitType,
-        isoStart: start,
-        bookingId: calBooking?.id,
-        meetingUrl: calBooking?.meetingUrl,
-        callId: streamData?.callId || fallbackCallId,
+        isoStart:start,
+        bookingId:calBooking?.id,
+        meetingUrl:calBooking?.meetingUrl,
+        callId:streamData?.callId||fallbackCallId,
       };
 
-      await saveAppointment(appointment).catch(() => undefined);
+      // The appointment is stored in the database so it is available on any
+      // device the member signs in from.
+      await saveAppointment(appointment);
       navigation.navigate('AppointmentDetail', appointment);
 
-      if (bookingNotice) {
-        Alert.alert('Booking Notice', bookingNotice);
+      if(bookingNotice){
+        Alert.alert('Booking Notice',bookingNotice);
       }
-    } catch (e: any) {
-      Alert.alert('Booking Notice', e?.message || 'Unable to complete the booking. Please try again.');
-    } finally {
+    }catch(e:any){
+      Alert.alert('Booking Notice',e?.message||'Unable to complete the booking. Please try again.');
+    }finally{
       setBooking(false);
     }
   };
@@ -232,115 +251,99 @@ export function TelehealthScreen({navigation}:any){
         Connect directly with Maureen Ashbarry, MS, RD for one-on-one nutrition therapy and tailored dietary planning.
       </Text>
 
-      {/* Format Selection: Video vs Phone */}
-      <Text style={[s.label, { marginTop: 22 }]}>Consultation format</Text>
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+      <Text style={[s.label,{marginTop:22}]}>Consultation format</Text>
+      <View style={{flexDirection:'row',gap:12,marginTop:8}}>
         <Pressable
-          onPress={() => setVisitType('video')}
-          style={{
-            flex: 1,
-            padding: 16,
-            borderRadius: 18,
-            borderWidth: 1.5,
-            borderColor: visitType === 'video' ? colors.deepTeal : colors.border,
-            backgroundColor: visitType === 'video' ? colors.softBlue : colors.surface,
-          }}
+          onPress={()=>setVisitType('video')}
+          style={{flex:1,padding:16,borderRadius:18,borderWidth:1.5,borderColor:visitType==='video'?colors.deepTeal:colors.border,backgroundColor:visitType==='video'?colors.softBlue:colors.surface}}
         >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Video size={24} color={visitType === 'video' ? colors.deepTeal : colors.muted} />
-            {visitType === 'video' && <CheckCircle2 size={18} color={colors.green} />}
+          <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+            <Video size={24} color={visitType==='video'?colors.deepTeal:colors.muted}/>
+            {visitType==='video'&&<CheckCircle2 size={18} color={colors.green}/>}
           </View>
-          <Text style={{ fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 10 }}>
-            Video Visit
-          </Text>
-          <Text style={{ fontFamily: 'Roboto', fontSize: 12, color: colors.textSecondary, marginTop: 3 }}>
-            Face-to-face consultation via secure video
-          </Text>
+          <Text style={{fontFamily:'Roboto',fontSize:15,fontWeight:'700',color:colors.text,marginTop:10}}>Video Visit</Text>
+          <Text style={{fontFamily:'Roboto',fontSize:12,color:colors.textSecondary,marginTop:3}}>Face-to-face consultation via secure video</Text>
         </Pressable>
 
         <Pressable
-          onPress={() => setVisitType('phone')}
-          style={{
-            flex: 1,
-            padding: 16,
-            borderRadius: 18,
-            borderWidth: 1.5,
-            borderColor: visitType === 'phone' ? colors.deepTeal : colors.border,
-            backgroundColor: visitType === 'phone' ? colors.softBlue : colors.surface,
-          }}
+          onPress={()=>setVisitType('phone')}
+          style={{flex:1,padding:16,borderRadius:18,borderWidth:1.5,borderColor:visitType==='phone'?colors.deepTeal:colors.border,backgroundColor:visitType==='phone'?colors.softBlue:colors.surface}}
         >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Phone size={22} color={visitType === 'phone' ? colors.deepTeal : colors.muted} />
-            {visitType === 'phone' && <CheckCircle2 size={18} color={colors.green} />}
+          <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+            <Phone size={22} color={visitType==='phone'?colors.deepTeal:colors.muted}/>
+            {visitType==='phone'&&<CheckCircle2 size={18} color={colors.green}/>}
           </View>
-          <Text style={{ fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 10 }}>
-            Phone Call
-          </Text>
-          <Text style={{ fontFamily: 'Roboto', fontSize: 12, color: colors.textSecondary, marginTop: 3 }}>
-            Direct voice consultation to your phone
-          </Text>
+          <Text style={{fontFamily:'Roboto',fontSize:15,fontWeight:'700',color:colors.text,marginTop:10}}>Phone Call</Text>
+          <Text style={{fontFamily:'Roboto',fontSize:12,color:colors.textSecondary,marginTop:3}}>Direct voice consultation to your phone</Text>
         </Pressable>
       </View>
 
-      {/* Provider & Visit Summary Card */}
-      <View style={[s.visit, { marginTop: 18 }]}>
-        {visitType === 'video' ? (
-          <Video size={24} color={colors.deepTeal} />
-        ) : (
-          <Phone size={24} color={colors.deepTeal} />
-        )}
-        <View style={{ flex: 1 }}>
-          <Text style={s.cardTitle}>
-            {visitType === 'video' ? 'Virtual Nutrition Consultation' : 'Phone Nutrition Consultation'}
-          </Text>
-          <Text style={s.desc}>
-            15 minutes · One-on-one with Maureen, Registered Dietitian
-          </Text>
+      <View style={[s.visit,{marginTop:18}]}>
+        {visitType==='video'?<Video size={24} color={colors.deepTeal}/>:<Phone size={24} color={colors.deepTeal}/>}
+        <View style={{flex:1}}>
+          <Text style={s.cardTitle}>{visitType==='video'?'Virtual Nutrition Consultation':'Phone Nutrition Consultation'}</Text>
+          <Text style={s.desc}>15 minutes · One-on-one with Maureen, Registered Dietitian</Text>
         </View>
       </View>
 
       <Text style={s.label}>Select an available time</Text>
 
-      {loadingSlots ? (
-        <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-          <ActivityIndicator color={colors.deepTeal} />
-          <Text style={[s.desc, { marginTop: 8 }]}>Retrieving live availability from Cal.com…</Text>
+      {loadingSlots?(
+        <View style={{paddingVertical:24,alignItems:'center'}}>
+          <ActivityIndicator color={colors.deepTeal}/>
+          <Text style={[s.desc,{marginTop:8}]}>Retrieving live availability…</Text>
         </View>
-      ) : (
-        displaySlots.map((option) => (
-          <Pressable
-            key={option.label}
-            onPress={() => setChoice(option.label)}
-            style={[s.slot, choice === option.label && s.slotActive]}
-          >
-            <CalendarDays size={19} color={choice === option.label ? '#fff' : colors.deepTeal} />
-            <Text style={[s.slotText, choice === option.label && s.slotTextActive]}>{option.label}</Text>
-          </Pressable>
+      ):slotsError?(
+        <View style={s.notice}>
+          <Clock3 size={18} color={colors.deepTeal}/>
+          <Text style={s.noticeText}>{slotsError}</Text>
+        </View>
+      ):(
+        dayGroups.map((group)=>(
+          <View key={group.day} style={{marginTop:14}}>
+            <Text style={s.dayHeader}>{group.label}</Text>
+            <View style={s.chips}>
+              {group.slots.map((option)=>(
+                <Pressable
+                  key={option.key}
+                  onPress={()=>setChoice(option.key)}
+                  style={[s.slot,choice===option.key&&s.slotActive]}
+                >
+                  <CalendarDays size={16} color={choice===option.key?'#fff':colors.deepTeal}/>
+                  <Text style={[s.slotText,choice===option.key&&s.slotTextActive]}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         ))
       )}
 
+      {slotOptions.length>0?(
+        <Text style={[s.desc,{marginTop:12}]}>
+          {slotOptions.length} time{slotOptions.length===1?'':'s'} available over the next 14 days · times shown in your device time zone.
+        </Text>
+      ):null}
+
       <View style={s.apiNote}>
-        <Clock3 size={19} color={colors.deepTeal} />
+        <Clock3 size={19} color={colors.deepTeal}/>
         <Text style={s.apiCopy}>
           {calConfig?.configured
-            ? 'Live schedule synchronized with Maureen Ashbarry via Cal.com.'
-            : 'Appointment availability will synchronize automatically with your scheduling calendar.'}
+            ? 'Times come from your scheduling calendar.'
+            : 'Live availability will appear here once scheduling is connected to this server.'}
         </Text>
       </View>
 
-      <Pressable style={s.primary} disabled={booking} onPress={request}>
-        <Text style={s.primaryText}>
-          {booking ? 'Confirming Appointment…' : 'Confirm Appointment'}
-        </Text>
+      <Pressable style={[s.primary,(booking||!choice)&&{opacity:0.5}]} disabled={booking||!choice} onPress={request}>
+        <Text style={s.primaryText}>{booking?'Confirming Appointment…':'Confirm Appointment'}</Text>
       </Pressable>
 
-      <Pressable onPress={() => navigation.navigate('AppointmentDetail', { slot: choice, visitType })}>
-        <Text style={[s.desc, { color: colors.deepTeal, fontWeight: '700', marginTop: 14, textAlign: 'center' }]}>
+      <Pressable onPress={()=>navigation.navigate('AppointmentDetail',{slot:(slotOptions.find((option)=>option.key===choice)?.label)||choice,visitType})}>
+        <Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>
           View appointment details →
         </Text>
       </Pressable>
     </Shell>
   );
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:colors.background,alignItems:'center'},content:{width:'100%',maxWidth:412,padding:24,paddingBottom:42},back:{width:42,height:42,borderRadius:21,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,alignItems:'center',justifyContent:'center',marginTop:8,marginBottom:25},eyebrow:{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.4,color:colors.green},title:{fontFamily:'Roboto',fontSize:30,lineHeight:38,fontWeight:'700',color:colors.text,marginTop:8},copy:{fontFamily:'Roboto',fontSize:14,lineHeight:22,color:colors.textSecondary,marginTop:9},list:{marginTop:26,gap:12},card:{minHeight:116,borderWidth:1,borderColor:colors.border,borderRadius:20,padding:14,backgroundColor:colors.surface,flexDirection:'row',alignItems:'center'},recipeArt:{width:58,height:58,borderRadius:18,alignItems:'center',justifyContent:'center',backgroundColor:colors.softGreen},cardCopy:{flex:1,marginHorizontal:12},cardTitle:{fontFamily:'Roboto',fontSize:15,fontWeight:'700',color:colors.text},meta:{fontFamily:'Roboto',fontSize:11,color:colors.green,marginTop:4},desc:{fontFamily:'Roboto',fontSize:11,lineHeight:16,color:colors.textSecondary,marginTop:5},hero:{height:152,borderRadius:22,backgroundColor:colors.softGreen,alignItems:'center',justifyContent:'center',marginTop:23},section:{fontFamily:'Roboto',fontSize:20,fontWeight:'700',color:colors.text,marginTop:28,marginBottom:8},step:{flexDirection:'row',alignItems:'center',marginTop:11},stepNumber:{fontFamily:'Roboto',width:26,height:26,borderRadius:13,overflow:'hidden',textAlign:'center',paddingTop:4,backgroundColor:colors.deepTeal,color:'#fff',fontWeight:'700'},stepText:{fontFamily:'Roboto',fontSize:14,color:colors.text,marginLeft:11},primary:{height:56,borderRadius:17,backgroundColor:colors.deepTeal,marginTop:28,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:8},primaryText:{fontFamily:'Roboto',fontSize:15,fontWeight:'700',color:'#fff'},recordTouch:{alignSelf:'center',alignItems:'center',marginTop:24},recordTouchPressed:{opacity:0.85},micWrap:{alignItems:'center',padding:7,borderRadius:60,borderWidth:2,borderColor:'transparent'},micWrapOn:{borderColor:'#F3B4B4'},mic:{width:84,height:84,borderRadius:42,backgroundColor:colors.deepTeal,alignItems:'center',justifyContent:'center',shadowColor:'#0B3B36',shadowOpacity:0.2,shadowRadius:12,shadowOffset:{width:0,height:6},elevation:4},micOn:{backgroundColor:colors.red},micLabel:{fontFamily:'Roboto',fontSize:13,fontWeight:'700',color:colors.text,marginTop:12,textAlign:'center'},progressWrap:{alignSelf:'stretch',marginTop:14,alignItems:'center'},progressTrack:{width:'70%',height:6,borderRadius:3,backgroundColor:colors.border,overflow:'hidden'},progressFill:{height:6,borderRadius:3,backgroundColor:colors.green},progressText:{fontFamily:'Roboto',fontSize:11,color:colors.textSecondary,marginTop:8,textAlign:'center'},transcript:{minHeight:105,borderWidth:1,borderColor:colors.border,borderRadius:18,padding:17,backgroundColor:colors.surface,marginTop:23},transcriptLabel:{fontFamily:'Roboto',fontSize:9,fontWeight:'700',letterSpacing:1.1,color:colors.green},transcriptText:{fontFamily:'Roboto',fontSize:14,lineHeight:21,color:colors.text,marginTop:8},apiNote:{flexDirection:'row',gap:10,backgroundColor:colors.softBlue,borderRadius:16,padding:14,marginTop:14},apiCopy:{fontFamily:'Roboto',fontSize:12,lineHeight:18,color:colors.deepTeal,flex:1},secure:{flexDirection:'row',gap:12,backgroundColor:colors.softGreen,padding:16,borderRadius:18,marginTop:26},label:{fontFamily:'Roboto',fontSize:14,fontWeight:'700',color:colors.text,marginTop:24,marginBottom:8},textArea:{minHeight:128,borderWidth:1,borderColor:colors.border,borderRadius:17,padding:15,textAlignVertical:'top',fontFamily:'Roboto',fontSize:14,color:colors.text,backgroundColor:colors.surface},sent:{fontFamily:'Roboto',fontSize:12,color:colors.green,marginTop:10},visit:{flexDirection:'row',gap:13,backgroundColor:colors.softBlue,borderRadius:19,padding:17,marginTop:26},slot:{height:54,borderWidth:1,borderColor:colors.border,borderRadius:15,backgroundColor:colors.surface,flexDirection:'row',alignItems:'center',paddingHorizontal:16,gap:12,marginBottom:10},slotActive:{backgroundColor:colors.deepTeal,borderColor:colors.deepTeal},slotText:{fontFamily:'Roboto',fontSize:14,fontWeight:'700',color:colors.text},slotTextActive:{color:'#fff'},disabled:{backgroundColor:colors.muted}});
+const s=StyleSheet.create({dayHeader:{fontFamily:'Roboto',fontSize:13,fontWeight:'700',color:colors.textSecondary,letterSpacing:.3,marginTop:6,marginBottom:8},chips:{flexDirection:'row',flexWrap:'wrap',gap:8},notice:{flexDirection:'row',gap:10,backgroundColor:colors.softBlue,borderRadius:16,padding:16,alignItems:'flex-start'},noticeText:{flex:1,fontFamily:'Roboto',fontSize:13,lineHeight:19,color:colors.textSecondary},safe:{flex:1,backgroundColor:colors.background,alignItems:'center'},content:{width:'100%',maxWidth:412,padding:24,paddingBottom:42},back:{width:42,height:42,borderRadius:21,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,alignItems:'center',justifyContent:'center',marginTop:8,marginBottom:25},eyebrow:{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.4,color:colors.green},title:{fontFamily:'Roboto',fontSize:30,lineHeight:38,fontWeight:'700',color:colors.text,marginTop:8},copy:{fontFamily:'Roboto',fontSize:14,lineHeight:22,color:colors.textSecondary,marginTop:9},list:{marginTop:26,gap:12},card:{minHeight:116,borderWidth:1,borderColor:colors.border,borderRadius:20,padding:14,backgroundColor:colors.surface,flexDirection:'row',alignItems:'center'},recipeArt:{width:58,height:58,borderRadius:18,alignItems:'center',justifyContent:'center',backgroundColor:colors.softGreen},cardCopy:{flex:1,marginHorizontal:12},cardTitle:{fontFamily:'Roboto',fontSize:15,fontWeight:'700',color:colors.text},meta:{fontFamily:'Roboto',fontSize:11,color:colors.green,marginTop:4},desc:{fontFamily:'Roboto',fontSize:11,lineHeight:16,color:colors.textSecondary,marginTop:5},hero:{height:152,borderRadius:22,backgroundColor:colors.softGreen,alignItems:'center',justifyContent:'center',marginTop:23},section:{fontFamily:'Roboto',fontSize:20,fontWeight:'700',color:colors.text,marginTop:28,marginBottom:8},step:{flexDirection:'row',alignItems:'center',marginTop:11},stepNumber:{fontFamily:'Roboto',width:26,height:26,borderRadius:13,overflow:'hidden',textAlign:'center',paddingTop:4,backgroundColor:colors.deepTeal,color:'#fff',fontWeight:'700'},stepText:{fontFamily:'Roboto',fontSize:14,color:colors.text,marginLeft:11},primary:{height:56,borderRadius:17,backgroundColor:colors.deepTeal,marginTop:28,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:8},primaryText:{fontFamily:'Roboto',fontSize:15,fontWeight:'700',color:'#fff'},recordTouch:{alignSelf:'center',alignItems:'center',marginTop:24},recordTouchPressed:{opacity:0.85},micWrap:{alignItems:'center',padding:7,borderRadius:60,borderWidth:2,borderColor:'transparent'},micWrapOn:{borderColor:'#F3B4B4'},mic:{width:84,height:84,borderRadius:42,backgroundColor:colors.deepTeal,alignItems:'center',justifyContent:'center',shadowColor:'#0B3B36',shadowOpacity:0.2,shadowRadius:12,shadowOffset:{width:0,height:6},elevation:4},micOn:{backgroundColor:colors.red},micLabel:{fontFamily:'Roboto',fontSize:13,fontWeight:'700',color:colors.text,marginTop:12,textAlign:'center'},progressWrap:{alignSelf:'stretch',marginTop:14,alignItems:'center'},progressTrack:{width:'70%',height:6,borderRadius:3,backgroundColor:colors.border,overflow:'hidden'},progressFill:{height:6,borderRadius:3,backgroundColor:colors.green},progressText:{fontFamily:'Roboto',fontSize:11,color:colors.textSecondary,marginTop:8,textAlign:'center'},transcript:{minHeight:105,borderWidth:1,borderColor:colors.border,borderRadius:18,padding:17,backgroundColor:colors.surface,marginTop:23},transcriptLabel:{fontFamily:'Roboto',fontSize:9,fontWeight:'700',letterSpacing:1.1,color:colors.green},transcriptText:{fontFamily:'Roboto',fontSize:14,lineHeight:21,color:colors.text,marginTop:8},apiNote:{flexDirection:'row',gap:10,backgroundColor:colors.softBlue,borderRadius:16,padding:14,marginTop:14},apiCopy:{fontFamily:'Roboto',fontSize:12,lineHeight:18,color:colors.deepTeal,flex:1},secure:{flexDirection:'row',gap:12,backgroundColor:colors.softGreen,padding:16,borderRadius:18,marginTop:26},label:{fontFamily:'Roboto',fontSize:14,fontWeight:'700',color:colors.text,marginTop:24,marginBottom:8},textArea:{minHeight:128,borderWidth:1,borderColor:colors.border,borderRadius:17,padding:15,textAlignVertical:'top',fontFamily:'Roboto',fontSize:14,color:colors.text,backgroundColor:colors.surface},sent:{fontFamily:'Roboto',fontSize:12,color:colors.green,marginTop:10},visit:{flexDirection:'row',gap:13,backgroundColor:colors.softBlue,borderRadius:19,padding:17,marginTop:26},slot:{height:54,borderWidth:1,borderColor:colors.border,borderRadius:15,backgroundColor:colors.surface,flexDirection:'row',alignItems:'center',paddingHorizontal:16,gap:12,marginBottom:10},slotActive:{backgroundColor:colors.deepTeal,borderColor:colors.deepTeal},slotText:{fontFamily:'Roboto',fontSize:14,fontWeight:'700',color:colors.text},slotTextActive:{color:'#fff'},disabled:{backgroundColor:colors.muted}});
 

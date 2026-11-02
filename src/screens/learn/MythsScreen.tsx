@@ -1,12 +1,40 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ArrowLeft, ChevronRight, Search } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { searchMyths } from '../../lib/mythContent';
+import { loadMyths } from '../../lib/contentLibrary';
+import { Myth } from '../../lib/mythContent';
 
 export default function MythsScreen({ navigation }: any) {
   const [query, setQuery] = useState('');
-  const results = searchMyths(query);
+  const [items, setItems] = useState<Myth[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    loadMyths()
+      .then((loaded) => {
+        if (active) setItems(loaded);
+      })
+      .catch(() => {
+        if (active) setItems(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const results = useMemo(() => {
+    const source = items ?? searchMyths('');
+    const term = query.trim().toLowerCase();
+    if (!term) return source;
+    return source.filter(
+      (m) =>
+        m.claim.toLowerCase().includes(term) ||
+        m.short.toLowerCase().includes(term) ||
+        m.label.toLowerCase().includes(term)
+    );
+  }, [items, query]);
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">

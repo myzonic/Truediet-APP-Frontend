@@ -109,6 +109,15 @@ export async function enablePushNotifications(): Promise<PushResult> {
 
     const result = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = result.data;
+
+    // The backend has to accept the token before it can be called registered.
+    // Registering first and reporting failure later would leave the device
+    // believing it is subscribed while the server knows nothing about it.
+    await apiFetch('/api/push-tokens', {
+      method: 'POST',
+      body: { token, platform: Platform.OS },
+    });
+
     const stored: StoredPushToken = {
       token,
       platform: Platform.OS,
@@ -116,15 +125,6 @@ export async function enablePushNotifications(): Promise<PushResult> {
       savedAt: new Date().toISOString(),
     };
     await writeStoredPushToken(stored);
-
-    try {
-      await apiFetch('/api/push-tokens', {
-        method: 'POST',
-        body: { token, platform: Platform.OS },
-      });
-    } catch {
-      // Device registration is kept locally and syncs when the backend is connected.
-    }
 
     return { token };
   } catch (error: any) {
@@ -134,11 +134,10 @@ export async function enablePushNotifications(): Promise<PushResult> {
 
 export async function disablePushNotifications(): Promise<void> {
   const stored = await readStoredPushToken();
-  await writeStoredPushToken(null);
-  if (!stored?.token) return;
-  try {
-    await apiFetch(`/api/push-tokens/${encodeURIComponent(stored.token)}`, { method: 'DELETE' });
-  } catch {
-    // Removed locally; remote cleanup can retry later.
+  if (!stored?.token) {
+    await writeStoredPushToken(null);
+    return;
   }
+  await apiFetch(`/api/push-tokens/${encodeURIComponent(stored.token)}`, { method: 'DELETE' });
+  await writeStoredPushToken(null);
 }
