@@ -10,7 +10,7 @@ import { saveContent } from '../../lib/content';
 import { isSpeechSupported, prepareSpeech, startSpeechRecording, stopSpeechAndTranscribe, cancelSpeech } from '../../lib/speech';
 import { createCalBooking, getCalAvailableSlots, getCalConfig, type CalBookingResult, type CalConfig } from '../../lib/cal';
 import { createStreamCall, type StreamCallResponse } from '../../lib/stream';
-import { saveAppointment } from '../../lib/appointments';
+import { cancelAppointment, loadAppointment, saveAppointment } from '../../lib/appointments';
 
 
 function Shell({children,navigation}:{children:React.ReactNode;navigation:any}){return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"><Pressable style={s.back} onPress={()=>navigation.goBack()}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>}
@@ -218,7 +218,11 @@ const request=async()=>{
 
       // The appointment is stored in the database so it is available on any
       // device the member signs in from.
+      // Captured before saving: once the new row exists, loadAppointment would
+      // return it instead of the visit being replaced.
+      const previous=await loadAppointment().catch(()=>null);
       await saveAppointment(appointment);
+      if(previous?.id){await cancelAppointment(previous.id).catch(()=>undefined);}
       navigation.navigate('AppointmentDetail', appointment);
 
       if(bookingNotice){

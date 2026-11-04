@@ -50,6 +50,15 @@ export async function saveAppointment(input: AppointmentInput): Promise<StoredAp
   return appointment;
 }
 
+export async function cancelAppointment(id: string): Promise<void> {
+  // Marks the row cancelled in PostgreSQL; /api/appointments/current then
+  // stops returning it, so the app falls back to booking a new visit.
+  await apiFetch<{ appointment: any }>(`/api/appointments/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: { status: 'cancelled' },
+  });
+}
+
 export async function loadAppointment(): Promise<StoredAppointment | null> {
   try {
     const res = await apiFetch<{ appointment: any }>('/api/appointments/current', { method: 'GET' });

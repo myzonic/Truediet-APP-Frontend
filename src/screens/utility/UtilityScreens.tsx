@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Linking, Platform, Pressable, SafeAreaView, S
 import { ArrowLeft, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, CircleHelp, Clock3, CreditCard, LockKeyhole, MessageSquare, Phone, ShieldCheck, Sparkles, Star, Video } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { startCheckout } from '../../lib/subscription';
-import { loadAppointment } from '../../lib/appointments';
+import { cancelAppointment, clearAppointment, listAppointments, loadAppointment } from '../../lib/appointments';
 import { disablePushNotifications, enablePushNotifications, isPushSupported, readStoredPushToken } from '../../lib/notifications';
 
 const Shell=({navigation,children}:{navigation:any;children:React.ReactNode})=><SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}><Pressable style={s.back} onPress={()=>navigation.goBack()}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>;
@@ -86,7 +86,34 @@ export function WebinarConfirmationScreen({navigation,route}:any){
 export function AppointmentDetailScreen({navigation,route}:any){
   const params=route.params||{};
   const [stored,setStored]=useState<any>(null);
-  useEffect(()=>{let active=true;loadAppointment().then(a=>{if(active)setStored(a);}).catch(()=>undefined);return()=>{active=false;};},[]);
+  const [history,setHistory]=useState<any[]>([]);
+  const [busy,setBusy]=useState(false);
+  const refresh=async()=>{
+    try{
+      const [current,list]=await Promise.all([loadAppointment(),listAppointments()]);
+      setStored(current);
+      setHistory((list||[]).filter((a:any)=>a.id&&a.id!==current?.id));
+    }catch{}
+  };
+  useEffect(()=>{refresh();},[]);
+  const onCancel=()=>{
+    const id=stored?.id;
+    if(!id||busy)return;
+    Alert.alert('Cancel this visit','Your appointment will be cancelled. You can book another time from Telehealth.',[
+      {text:'Keep Visit',style:'cancel'},
+      {text:'Cancel Visit',style:'destructive',onPress:async()=>{
+        setBusy(true);
+        try{
+          await cancelAppointment(id);
+          await clearAppointment();
+          await refresh();
+          Alert.alert('Visit cancelled','Your appointment has been cancelled.');
+        }catch(e:any){
+          Alert.alert('Could not cancel',e?.message||'Please try again.');
+        }finally{setBusy(false);}
+      }},
+    ]);
+  };
   // Route params win, but any field they omit falls back to the appointment saved
   // at booking time — that is where the video room id lives, so joining from
   // "View appointment details" still lands in the same room.
@@ -207,6 +234,33 @@ export function AppointmentDetailScreen({navigation,route}:any){
       <Pressable style={s.link} onPress={()=>navigation.navigate('Telehealth')}>
         <Text style={s.linkText}>Reschedule or change visit →</Text>
       </Pressable>
+
+      {/* Cancel action - only when the visit is persisted server-side */}
+      {stored?.id?(
+        <Pressable style={s.link} onPress={onCancel} disabled={busy}>
+          <Text style={[s.linkText,{color:colors.red}]}>{busy?'Cancelling…':'Cancel this visit →'}</Text>
+        </Pressable>
+      ):null}
+
+      {/* Visit history - every other appointment row for this account */}
+      {history.length>0?(
+        <>
+          <Text style={s.sectionLabel}>Visit history</Text>
+          <View style={s.list}>
+            {history.map((h:any)=>(
+              <View key={h.id} style={s.infoRow}>
+                <View style={s.infoIcon}>
+                  <CalendarDays size={20} color={colors.deepTeal}/>
+                </View>
+                <View style={s.infoCopy}>
+                  <Text style={s.infoTitle}>{h.slot}</Text>
+                  <Text style={s.infoSub}>{h.visitType==='phone'?'Phone':'Video'} · {h.status}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      ):null}
     </Shell>
   );
 }
