@@ -132,6 +132,41 @@ export async function enablePushNotifications(): Promise<PushResult> {
   }
 }
 
+/**
+ * Called after every successful session load (app start + sign-in). Registers
+ * the device for push without blocking auth: prompts only the first time
+ * (permission still undetermined), stays silent when granted or denied, and
+ * never throws - a push failure must not affect being signed in.
+ */
+export async function ensurePushRegistered(): Promise<void> {
+  if (!isPushSupported() || !Device.isDevice) return;
+  const projectId = getProjectId();
+  if (!projectId) return;
+  try {
+    configureNotifications();
+    const current = await Notifications.getPermissionsAsync();
+    let status = current.status;
+    if (status === 'undetermined') {
+      status = (await Notifications.requestPermissionsAsync()).status;
+    }
+    if (status !== 'granted') return;
+    const result = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = result.data;
+    await apiFetch('/api/push-tokens', {
+      method: 'POST',
+      body: { token, platform: Platform.OS },
+    });
+    await writeStoredPushToken({
+      token,
+      platform: Platform.OS,
+      projectId,
+      savedAt: new Date().toISOString(),
+    });
+  } catch {
+    // token minting needs a dev build; Settings shows the manual path
+  }
+}
+
 export async function disablePushNotifications(): Promise<void> {
   const stored = await readStoredPushToken();
   if (!stored?.token) {

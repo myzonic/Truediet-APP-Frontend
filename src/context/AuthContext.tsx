@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authClient } from '../lib/auth-client';
+import { ensurePushRegistered } from '../lib/notifications';
 
 interface User {
   id: string;
@@ -42,6 +43,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res?.data) {
         setUser(res.data.user as User);
         setSession(res.data.session as Session);
+        // Fire-and-forget: registers this device for push on every signed-in
+        // launch so members receive dietitian replies without visiting
+        // Settings. Never blocks or fails the session itself.
+        ensurePushRegistered();
       } else {
         setUser(null);
         setSession(null);
