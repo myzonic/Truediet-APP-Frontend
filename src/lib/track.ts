@@ -24,6 +24,14 @@ export interface HungerCheckin {
   createdAt: string;
 }
 
+export interface WeightEntry {
+  id: string;
+  userId: string;
+  weight: string;
+  recordedAt: string;
+  createdAt: string;
+}
+
 export interface Progress {
   today: { date: string; meals: number; checkins: number };
   week: { meals: number; checkins: number; days: { date: string; count: number }[] };
@@ -45,6 +53,7 @@ export interface AddCheckinInput {
 
 const MEALS_KEY = 'truediet.meals.v1';
 const CHECKINS_KEY = 'truediet.checkins.v1';
+const WEIGHT_KEY = 'truediet.weights.v1';
 
 function isOfflineError(error: unknown): boolean {
   const message = String((error as any)?.message || '');
@@ -192,6 +201,47 @@ export async function addCheckin(input: AddCheckinInput): Promise<HungerCheckin 
     items.unshift(checkin);
     await writeLocal(CHECKINS_KEY, items);
     return checkin;
+  }
+}
+
+export async function loadWeights(): Promise<WeightEntry[]> {
+  try {
+    const res = await apiFetch<{ entries: WeightEntry[] }>('/api/weight', { method: 'GET' });
+    return res?.entries ?? [];
+  } catch (error) {
+    if (!isOfflineError(error)) throw error;
+    return readLocal<WeightEntry>(WEIGHT_KEY);
+  }
+}
+
+export async function addWeight(weight: string): Promise<WeightEntry | null> {
+  try {
+    const res = await apiFetch<{ entry: WeightEntry }>('/api/weight', { method: 'POST', body: { weight } });
+    return res?.entry ?? null;
+  } catch (error) {
+    if (!isOfflineError(error)) throw error;
+    const now = new Date().toISOString();
+    const entry: WeightEntry = {
+      id: localId(),
+      userId: 'local',
+      weight,
+      recordedAt: now,
+      createdAt: now,
+    };
+    const items = await readLocal<WeightEntry>(WEIGHT_KEY);
+    items.unshift(entry);
+    await writeLocal(WEIGHT_KEY, items);
+    return entry;
+  }
+}
+
+export async function removeWeight(id: string): Promise<void> {
+  try {
+    await apiFetch(`/api/weight/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  } catch (error) {
+    if (!isOfflineError(error)) throw error;
+    const items = await readLocal<WeightEntry>(WEIGHT_KEY);
+    await writeLocal(WEIGHT_KEY, items.filter((w) => w.id !== id));
   }
 }
 
