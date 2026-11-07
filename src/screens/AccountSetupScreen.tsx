@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -20,15 +19,72 @@ import { useAuth } from '../context/AuthContext';
 import { useOnboarding } from '../context/OnboardingContext';
 import { saveProfile } from '../lib/profile';
 
-export default function AccountSetupScreen({ navigation }: any) {
-  const [mode, setMode] = useState<'signup' | 'signin'>('signup');
+/** Better Auth messages are technical; members see this instead. */
+function friendlyAuthError(message?: string): string {
+  const m = (message || '').toLowerCase();
+  if (!m) return 'Something went wrong — please try again.';
+  if (m.includes('invalid email or password') || m.includes('invalid credentials'))
+    return 'Email or password is incorrect.';
+  if (m.includes('already exists') || m.includes('taken'))
+    return 'An account with this email already exists — switch to Sign In.';
+  if (m.includes('not verified'))
+    return 'Confirm your email first — you can resend the link below.';
+  if (m.includes('rate') || m.includes('too many') || m.includes('429'))
+    return 'Too many attempts — wait a minute and try again.';
+  if (m.includes('fetch') || m.includes('network') || m.includes('load failed'))
+    return 'Could not reach the server — check your connection and try again.';
+  if (m.includes('disabled')) return 'This sign-in option is not enabled on the server yet.';
+  return message as string;
+}
+
+export default function AccountSetupScreen({ navigation, route }: any) {
+  const [mode, setMode] = useState<'signup' | 'signin'>(
+    route?.params?.mode === 'signin' ? 'signin' : 'signup'
+  );
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  // Email-verification step shown after sign-up when the server sends the
+  // confirmation email (flagged by /health, never guessed locally).
+  const [pendingVerify, setPendingVerify] = useState<string | null>(null);
+  const [verifyMsg, setVerifyMsg] = useState('');
+  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [verifyCooldown, setVerifyCooldown] = useState(false);
+  // Forgot-password acknowledgement with a resend cooldown (the endpoint is
+  // rate limited to 3 requests per minute).
+  const [resetMsg, setResetMsg] = useState('');
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(false);
+  const [serverFlags, setServerFlags] = useState<{ emailVerification: boolean; google: boolean }>({
+    emailVerification: false,
+    google: false,
+  });
   const { refetchSession } = useAuth();
   const { data } = useOnboarding();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const base = process.env.EXPO_PUBLIC_AUTH_URL || 'http://localhost:3000';
+        const res = await fetch(`${base}/health`);
+        const j = await res.json();
+        if (active) {
+          setServerFlags({
+            emailVerification: !!j.emailVerificationEnabled,
+            google: !!j.googleSignInEnabled,
+          });
+        }
+      } catch {
+        // flags stay off - the flows behave exactly as before
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isSignUp = mode === 'signup';
   const ready =
@@ -36,8 +92,27 @@ export default function AccountSetupScreen({ navigation }: any) {
     password.length >= 8 &&
     (!isSignUp || name.trim().length > 1);
 
+  /** Shared tail of every successful sign-in path. */
+  const finishAccount = async () => {
+    await refetchSession();
+    try {
+      await saveProfile(data);
+    } catch (e: any) {
+      // The account exists but the nutrition profile did not reach the
+      // server. The user has to be told so they can retry rather than
+      // believe the assessment was stored.
+      setErrorMessage(
+        e?.message ||
+          'Your account was created, but your nutrition profile could not be saved. Please sign in and save it again.'
+      );
+      return false;
+    }
+    navigation.navigate('NutritionProfile');
+    return true;
+  };
+
   const handleSubmit = async () => {
-    if (!ready || loading) return;
+    if (!ready || loading || pendingVerify) return;
     setLoading(true);
     setErrorMessage('');
 
@@ -50,11 +125,17 @@ export default function AccountSetupScreen({ navigation }: any) {
         });
 
         if (result.error) {
-          setErrorMessage(result.error.message || 'Failed to create account.');
-          Alert.alert('Sign Up Error', result.error.message || 'Failed to create account.');
-          setLoading(false);
+          setErrorMessage(friendlyAuthError(result.error.message));
           return;
         }
+
+        // Server sends a confirmation email: pause on an explicit
+        // "check your inbox" step with resend, then continue on demand.
+        if (serverFlags.emailVerification) {
+          setPendingVerify(email.trim().toLowerCase());
+          return;
+        }
+        await finishAccount();
       } else {
         const result = await authClient.signIn.email({
           email: email.trim().toLowerCase(),
@@ -62,34 +143,99 @@ export default function AccountSetupScreen({ navigation }: any) {
         });
 
         if (result.error) {
-          setErrorMessage(result.error.message || 'Invalid email or password.');
-          Alert.alert('Sign In Error', result.error.message || 'Invalid credentials.');
-          setLoading(false);
+          setErrorMessage(friendlyAuthError(result.error.message));
           return;
         }
+        await finishAccount();
       }
-
-      await refetchSession();
-      try {
-        await saveProfile(data);
-      } catch (e: any) {
-        // The account exists but the nutrition profile did not reach the
-        // server. The user has to be told so they can retry rather than
-        // believe the assessment was stored.
-        setErrorMessage(
-          e?.message ||
-            'Your account was created, but your nutrition profile could not be saved. Please sign in and save it again.'
-        );
-        setLoading(false);
-        return;
-      }
-      navigation.navigate('NutritionProfile');
     } catch (err: any) {
-      const msg = err?.message || 'Something went wrong. Please check your backend connection.';
-      setErrorMessage(msg);
-      Alert.alert('Connection Error', msg);
+      setErrorMessage(friendlyAuthError(err?.message));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onForgotPassword = async () => {
+    const em = email.trim().toLowerCase();
+    if (!em.includes('@')) {
+      setErrorMessage('Enter your email address above first, then tap Forgot password.');
+      return;
+    }
+    if (resetBusy || resetCooldown) return;
+    setResetBusy(true);
+    setErrorMessage('');
+    setResetMsg('');
+    try {
+      const res = await authClient.requestPasswordReset({ email: em, redirectTo: '/reset' });
+      if (res.error) {
+        setErrorMessage(friendlyAuthError(res.error.message));
+      } else {
+        setResetMsg(
+          `If an account exists for ${em}, a reset link is on its way (valid 1 hour). Check your spam folder too.`
+        );
+        setResetCooldown(true);
+        setTimeout(() => setResetCooldown(false), 60000);
+      }
+    } catch {
+      setErrorMessage('Could not reach the server — try again.');
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    if (!pendingVerify || verifyBusy || verifyCooldown) return;
+    setVerifyBusy(true);
+    setVerifyMsg('');
+    try {
+      const res = await authClient.sendVerificationEmail({
+        email: pendingVerify,
+        callbackURL: '/verify-email',
+      });
+      if (res.error) {
+        setVerifyMsg(friendlyAuthError(res.error.message));
+      } else {
+        setVerifyMsg('Sent again — open the link in that email to verify your account.');
+        setVerifyCooldown(true);
+        setTimeout(() => setVerifyCooldown(false), 60000);
+      }
+    } catch {
+      setVerifyMsg('Could not reach the server — try again.');
+    } finally {
+      setVerifyBusy(false);
+    }
+  };
+
+  const continueAfterVerify = async () => {
+    setPendingVerify(null);
+    setLoading(true);
+    try {
+      await finishAccount();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onGoogleSignIn = async () => {
+    setErrorMessage('');
+    try {
+      const res: any = await authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+      if (res?.error) {
+        setErrorMessage(friendlyAuthError(res.error.message));
+        return;
+      }
+      const url = res?.data?.url;
+      if (url) {
+        const WebBrowser = await import('expo-web-browser');
+        await WebBrowser.openAuthSessionAsync(url, 'truediet://');
+        // Returning from the browser: pick up whatever session was created.
+        const after = await (authClient as any).getSession({});
+        if (after?.data?.session) {
+          await finishAccount();
+        }
+      }
+    } catch {
+      setErrorMessage('Google sign-in could not start — try again.');
     }
   };
 
@@ -161,6 +307,59 @@ export default function AccountSetupScreen({ navigation }: any) {
                 </View>
               ) : null}
 
+              {resetMsg ? (
+                <View style={s.successBox}>
+                  <Text style={s.successText}>{resetMsg}</Text>
+                </View>
+              ) : null}
+
+              {pendingVerify ? (
+                <View style={s.verifyBox}>
+                  <CheckCircle2 size={34} color={colors.green} />
+                  <Text style={s.verifyTitle}>Confirm your email</Text>
+                  <Text style={s.verifyText}>
+                    We sent a verification link to{' '}
+                    <Text style={s.verifyEmail}>{pendingVerify}</Text>. Open it to
+                    verify your account — check spam if you don't see it.
+                  </Text>
+                  {verifyMsg ? <Text style={s.verifyMsg}>{verifyMsg}</Text> : null}
+                  <Pressable
+                    style={[s.button, (verifyBusy || verifyCooldown) && s.disabled]}
+                    disabled={verifyBusy || verifyCooldown}
+                    onPress={resendVerification}
+                  >
+                    <Text style={s.buttonText}>
+                      {verifyBusy
+                        ? 'Sending…'
+                        : verifyCooldown
+                          ? 'Link sent — try again in a minute'
+                          : 'Resend email'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[s.button, s.continueButton]}
+                    disabled={loading}
+                    onPress={continueAfterVerify}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={s.buttonText}>Continue</Text>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setPendingVerify(null);
+                      setVerifyMsg('');
+                      setErrorMessage('');
+                    }}
+                    hitSlop={10}
+                  >
+                    <Text style={s.skip}>Back to form</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
               {isSignUp && (
                 <>
                   <Text style={s.label}>Full name</Text>
@@ -196,6 +395,18 @@ export default function AccountSetupScreen({ navigation }: any) {
                 autoCapitalize="none"
                 style={s.input}
               />
+
+              {!isSignUp ? (
+                <Pressable onPress={onForgotPassword} disabled={resetBusy} hitSlop={8} style={s.forgotRow}>
+                  <Text style={[s.forgotText, resetCooldown && s.forgotSent]}>
+                    {resetBusy
+                      ? 'Sending reset link…'
+                      : resetCooldown
+                        ? 'Reset link sent ✓'
+                        : 'Forgot password?'}
+                  </Text>
+                </Pressable>
+              ) : null}
 
               <View style={s.trust}>
                 <LockKeyhole size={18} color={colors.deepTeal} />
@@ -233,9 +444,24 @@ export default function AccountSetupScreen({ navigation }: any) {
                 )}
               </Pressable>
 
+              {!isSignUp && serverFlags.google ? (
+                <>
+                  <View style={s.divider}>
+                    <View style={s.dividerLine} />
+                    <Text style={s.dividerText}>or</Text>
+                    <View style={s.dividerLine} />
+                  </View>
+                  <Pressable onPress={onGoogleSignIn} style={[s.button, s.googleButton]}>
+                    <Text style={s.googleText}>Continue with Google</Text>
+                  </Pressable>
+                </>
+              ) : null}
+
               <Pressable onPress={() => navigation.navigate('NutritionProfile')} hitSlop={10}>
                 <Text style={s.skip}>Skip for now</Text>
               </Pressable>
+                </>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -347,6 +573,101 @@ const s = StyleSheet.create({
     color: '#B91C1C',
     fontSize: 13,
     fontFamily: 'Roboto',
+  },
+  successBox: {
+    backgroundColor: '#E7F6EE',
+    borderWidth: 1,
+    borderColor: '#BFE6CE',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 14,
+  },
+  successText: {
+    color: '#136C43',
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: 'Roboto',
+  },
+  verifyBox: {
+    alignItems: 'center',
+    backgroundColor: colors.softBlue,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+  },
+  verifyTitle: {
+    fontFamily: 'Roboto',
+    fontSize: 19,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 12,
+  },
+  verifyText: {
+    fontFamily: 'Roboto',
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  verifyEmail: {
+    fontWeight: '700',
+    color: colors.text,
+  },
+  verifyMsg: {
+    fontFamily: 'Roboto',
+    fontSize: 12,
+    color: '#136C43',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  continueButton: {
+    marginTop: 10,
+    backgroundColor: colors.green,
+  },
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    paddingVertical: 2,
+  },
+  forgotText: {
+    fontFamily: 'Roboto',
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.deepTeal,
+  },
+  forgotSent: {
+    color: '#136C43',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    fontFamily: 'Roboto',
+    fontSize: 12,
+    color: colors.muted,
+  },
+  googleButton: {
+    marginTop: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  googleText: {
+    fontFamily: 'Roboto',
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
   },
   label: {
     fontFamily: 'Roboto',
