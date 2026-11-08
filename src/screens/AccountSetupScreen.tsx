@@ -217,25 +217,33 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   };
 
   const onGoogleSignIn = async () => {
+    if (loading) return;
     setErrorMessage('');
+    setLoading(true);
     try {
-      const res: any = await authClient.signIn.social({ provider: 'google', callbackURL: '/' });
+      // The @better-auth/expo client intercepts this call: it opens the
+      // browser itself through the backend's expo-authorization-proxy and
+      // stores the returned session cookie in SecureStore. Opening a browser
+      // here as well would launch a second, proxy-less flow.
+      const res: any = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/',
+      });
       if (res?.error) {
         setErrorMessage(friendlyAuthError(res.error.message));
         return;
       }
-      const url = res?.data?.url;
-      if (url) {
-        const WebBrowser = await import('expo-web-browser');
-        await WebBrowser.openAuthSessionAsync(url, 'truediet://');
-        // Returning from the browser: pick up whatever session was created.
-        const after = await (authClient as any).getSession({});
-        if (after?.data?.session) {
-          await finishAccount();
-        }
+      // The browser flow has finished by the time the call resolves; pick up
+      // whatever session it created. A closed browser simply lands here with
+      // no session and no error.
+      const after = await (authClient as any).getSession({});
+      if (after?.data?.session) {
+        await finishAccount();
       }
     } catch {
       setErrorMessage('Google sign-in could not start — try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -451,8 +459,14 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                     <Text style={s.dividerText}>or</Text>
                     <View style={s.dividerLine} />
                   </View>
-                  <Pressable onPress={onGoogleSignIn} style={[s.button, s.googleButton]}>
-                    <Text style={s.googleText}>Continue with Google</Text>
+                  <Pressable
+                    onPress={onGoogleSignIn}
+                    disabled={loading}
+                    style={[s.button, s.googleButton, loading && s.disabled]}
+                  >
+                    <Text style={s.googleText}>
+                      {loading ? 'Opening Google…' : 'Continue with Google'}
+                    </Text>
                   </Pressable>
                 </>
               ) : null}
