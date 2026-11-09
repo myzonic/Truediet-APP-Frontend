@@ -17,7 +17,6 @@ import { DietitianScreen, RecipeDetailScreen, RecipesScreen, TelehealthScreen, V
 import { ExtendedScreen } from '../screens/extended/ExtendedScreens';
 import { BlogScreen, PodcastDetailScreen, PodcastScreen, RecordedClassesScreen, ResourceDetailScreen, ResourcesHubScreen, WebinarDetailScreen, WebinarsScreen } from '../screens/resources/ResourceScreens';
 import { AppointmentDetailScreen, CheckoutScreen, FreePremiumScreen, LegalScreen, NotificationsScreen, SupportScreen, WebinarConfirmationScreen } from '../screens/utility/UtilityScreens';
-import VideoCallScreen from '../screens/telehealth/VideoCallScreen';
 import { MaureenProfileScreen, NutritionProfileSettingsScreen, PackageDetailScreen, PackagesScreen, PrivacyScreen, ProfileHubScreen, SavedContentScreen, SettingsScreen, SubscriptionScreen } from '../screens/profile/ProfileScreens';
 
 const Stack=createNativeStackNavigator<MainStackParamList>();
@@ -68,7 +67,6 @@ export default function MainNavigator(){
       <Stack.Screen name="Subscription" component={SubscriptionScreen}/>
       <Stack.Screen name="Checkout" component={CheckoutScreen}/>
       <Stack.Screen name="AppointmentDetail" component={AppointmentDetailScreen}/>
-      <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ animation: 'fade' }}/>
       <Stack.Screen name="WebinarConfirmation" component={WebinarConfirmationScreen}/>
       <Stack.Screen name="Legal" component={LegalScreen}/>
     </Stack.Navigator>

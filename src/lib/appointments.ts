@@ -9,8 +9,6 @@ export interface StoredAppointment {
   visitType: 'video' | 'phone';
   bookingId?: string | number;
   meetingUrl?: string;
-  /** Video room id, needed to rejoin the video room in-app. */
-  callId?: string;
   isoStart?: string;
   status?: string;
   savedAt: string;
@@ -21,7 +19,6 @@ export interface AppointmentInput {
   visitType: 'video' | 'phone';
   bookingId?: string | number;
   meetingUrl?: string;
-  callId?: string;
   isoStart?: string;
 }
 
@@ -40,8 +37,7 @@ export async function saveAppointment(input: AppointmentInput): Promise<StoredAp
     visitType: input.visitType,
     bookingId: input.bookingId ?? saved?.bookingId,
     meetingUrl: input.meetingUrl ?? saved?.meetingUrl,
-    callId: input.callId ?? saved?.callId,
-    isoStart: input.isoStart ?? saved?.isoStart,
+      isoStart: input.isoStart ?? saved?.isoStart,
     status: saved?.status,
     savedAt: new Date().toISOString(),
   };
@@ -69,8 +65,7 @@ export async function loadAppointment(): Promise<StoredAppointment | null> {
         visitType: res.appointment.visitType === 'phone' ? 'phone' : 'video',
         bookingId: res.appointment.bookingId ?? undefined,
         meetingUrl: res.appointment.meetingUrl ?? undefined,
-        callId: res.appointment.callId ?? undefined,
-        isoStart: res.appointment.isoStart ?? undefined,
+              isoStart: res.appointment.isoStart ?? undefined,
         status: res.appointment.status,
         savedAt: new Date().toISOString(),
       };
@@ -99,8 +94,7 @@ export async function listAppointments(): Promise<StoredAppointment[]> {
     visitType: row.visitType === 'phone' ? 'phone' : 'video',
     bookingId: row.bookingId ?? undefined,
     meetingUrl: row.meetingUrl ?? undefined,
-    callId: row.callId ?? undefined,
-    isoStart: row.isoStart ?? undefined,
+      isoStart: row.isoStart ?? undefined,
     status: row.status,
     savedAt: row.createdAt,
   }));

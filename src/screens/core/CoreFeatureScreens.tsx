@@ -9,7 +9,6 @@ import { loadRecipes } from '../../lib/contentLibrary';
 import { saveContent } from '../../lib/content';
 import { isSpeechSupported, prepareSpeech, startSpeechRecording, stopSpeechAndTranscribe, cancelSpeech } from '../../lib/speech';
 import { createCalBooking, getCalAvailableSlots, getCalConfig, type CalBookingResult, type CalConfig } from '../../lib/cal';
-import { createStreamCall, type StreamCallResponse } from '../../lib/stream';
 import { cancelAppointment, loadAppointment, saveAppointment } from '../../lib/appointments';
 
 
@@ -197,23 +196,12 @@ const request=async()=>{
         }
       }
 
-      // 2. Create the video room. Reusing the booking id keeps one stable room
-      //    per appointment, so the visit can be rejoined later.
-      const fallbackCallId=calBooking?.id?`visit-${calBooking.id}`:undefined;
-      let streamData:StreamCallResponse|null=null;
-      try{
-        streamData=await createStreamCall({callId:fallbackCallId,callMode:visitType,callType:'default'});
-      }catch{
-        // The appointment still stands; the call screen can retry on join.
-      }
-
       const appointment={
-        slot:selected?`${selected.label} Â· ${new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:choice,
+        slot:selected?`${selected.label} A� ${new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:choice,
         visitType,
         isoStart:start,
         bookingId:calBooking?.id,
         meetingUrl:calBooking?.meetingUrl,
-        callId:streamData?.callId||fallbackCallId,
       };
 
       // The appointment is stored in the database so it is available on any

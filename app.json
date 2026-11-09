@@ -50,14 +50,6 @@
           "color": "#0B3B36"
         }
       ],
-      "@stream-io/video-react-native-sdk",
-      [
-        "@config-plugins/react-native-webrtc",
-        {
-          "cameraPermission": "True Diet uses your camera so you can join video nutrition consultations.",
-          "microphonePermission": "True Diet uses your microphone for video consultations and voice meal notes."
-        }
-      ],
       [
         "expo-build-properties",
         {

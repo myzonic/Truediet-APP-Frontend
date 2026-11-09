@@ -41,8 +41,7 @@ export type MainStackParamList = {
   Support: undefined;
   Subscription: undefined;
   Checkout: { plan?: any } | undefined;
-  AppointmentDetail: { slot?: string; bookingId?: string | number; meetingUrl?: string; date?: string; visitType?: 'video' | 'phone'; callId?: string } | undefined;
-  VideoCall: { callId?: string; slot?: string; meetingUrl?: string } | undefined;
+  AppointmentDetail: { slot?: string; bookingId?: string | number; meetingUrl?: string; date?: string; visitType?: 'video' | 'phone' } | undefined;
   WebinarConfirmation: { title?: string } | undefined;
   Legal: undefined;
 };

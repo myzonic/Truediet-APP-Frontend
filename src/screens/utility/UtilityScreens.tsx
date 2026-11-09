@@ -122,7 +122,6 @@ export function AppointmentDetailScreen({navigation,route}:any){
   const slot=pick('slot')||'Tue · 10:00 AM';
   const meetingUrl=pick('meetingUrl');
   const bookingId=pick('bookingId');
-  const callId=pick('callId');
   const visitType=pick('visitType')||'video';
   const isConfirmed=Boolean(bookingId);
 
@@ -134,9 +133,12 @@ export function AppointmentDetailScreen({navigation,route}:any){
       );
       return;
     }
-    // Opens the secure Stream room in-app; the screen creates the room if the
-    // booking has not provisioned one yet.
-    navigation.navigate('VideoCall',{callId,slot,meetingUrl});
+    // Video visits open the Cal.com meeting link in the device browser.
+    if(meetingUrl){
+      Linking.openURL(meetingUrl).catch(()=>Alert.alert('Unable to Open Link','Could not launch the meeting link on your device.'));
+    }else{
+      Alert.alert('No meeting link','This visit does not have a meeting link yet. Please contact True Diet.');
+    }
   };
 
   return (
