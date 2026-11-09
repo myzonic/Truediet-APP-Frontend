@@ -11,13 +11,7 @@ export type { LearnArticle, LearnTopic, Myth, Recipe };
  * works without a connection - it is never presented as live data.
  */
 
-export interface ContentDetail extends ContentSummary {
-  body?: string;
-  mediaUrl?: string;
-  listenUrl?: string;
-  episodeNumber?: number;
-  startsAt?: string;
-}
+export interface ContentDetail extends ContentSummary {}
 
 let cached: { items: ContentDetail[]; fetchedAt: number } | null = null;
 const CACHE_MS = 5 * 60 * 1000;
@@ -27,8 +21,11 @@ async function fetchAll(): Promise<ContentDetail[]> {
     return cached.items;
   }
   const items = await loadContent(undefined, undefined);
+  // Non-premium items already carry their body from the list; only premium
+  // items still need the (subscription-gated) detail call.
   const detailed = await Promise.all(
     items.map(async (item) => {
+      if (!item.isPremium || item.body) return item as ContentDetail;
       try {
         const res = await fetch(
           `${process.env.EXPO_PUBLIC_AUTH_URL || 'http://localhost:3000'}/api/content/${encodeURIComponent(item.slug)}`

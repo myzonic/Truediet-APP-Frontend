@@ -13,6 +13,13 @@ export interface ContentSummary {
   publishedAt: string;
   route: string;
   savedAt?: string;
+  // Non-premium content ships its body with the list (single fetch); premium
+  // bodies are only returned by the gated detail endpoint.
+  body?: string;
+  mediaUrl?: string;
+  listenUrl?: string;
+  episodeNumber?: number;
+  startsAt?: string;
 }
 
 export interface SaveMeta {
