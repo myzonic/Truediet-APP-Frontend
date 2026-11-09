@@ -105,8 +105,11 @@ export function TelehealthScreen({navigation}:any){
   const [calConfig, setCalConfig] = useState<CalConfig|null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState('');
-  const [slotOptions, setSlotOptions] = useState<{key:string;label:string;iso:string}[]>([]);
+const [slotOptions, setSlotOptions] = useState<{key:string;label:string;iso:string}[]>([]);
   const [choice, setChoice] = useState('');
+  // The booker's IANA time zone (detected from the device). Sent with the
+  // booking so Cal.com stores and emails times in the member's own zone.
+  const deviceTz=Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [booking, setBooking] = useState(false);
 
   // Resolve the configuration once.
@@ -189,6 +192,7 @@ const request=async()=>{
           calBooking=await createCalBooking({
             eventTypeId:consultation?.eventTypeId||calConfig.eventTypeId,
             start,
+            timeZone:deviceTz,
             notes:`${visitType==='phone'?'Phone consultation':'HD Video consultation'} via True Diet Telehealth.`,
           });
         }catch(e:any){
@@ -313,7 +317,7 @@ const request=async()=>{
 
       {slotOptions.length>0?(
         <Text style={[s.desc,{marginTop:12}]}>
-          {slotOptions.length} time{slotOptions.length===1?'':'s'} available over the next 14 days Â· times shown in your device time zone.
+          {slotOptions.length} time{slotOptions.length===1?'':'s'} available over the next 14 days Â· times shown in your device time zone ({deviceTz}).
         </Text>
       ):null}
 
