@@ -145,6 +145,12 @@ export async function startSpeechRecording(): Promise<void> {
     audioContext = new Ctx();
   }
   captureRate = audioContext.sampleRate || 16000;
+  // Chrome can create the context suspended when the tap's gesture task has
+  // already ended (getUserMedia above is awaited). Without resume() the audio
+  // callback never fires: the UI says "recording" but no samples arrive.
+  if (audioContext.state === 'suspended' && typeof audioContext.resume === 'function') {
+    await audioContext.resume();
+  }
   sourceNode = audioContext.createMediaStreamSource(mediaStream);
   processor = audioContext.createScriptProcessor(4096, 1, 1);
   sink = audioContext.createGain();
