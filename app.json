@@ -57,6 +57,14 @@
           "cameraPermission": "True Diet uses your camera so you can join video nutrition consultations.",
           "microphonePermission": "True Diet uses your microphone for video consultations and voice meal notes."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
       ]
     ],
     "extra": {
