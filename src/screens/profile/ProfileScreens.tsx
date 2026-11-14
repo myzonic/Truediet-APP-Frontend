@@ -196,7 +196,7 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
   );
 }
 
-const DEFAULT_NOTIF: Record<string, boolean> = { push: true, messages: true, appointments: true, webinars: true, content: false };
+const DEFAULT_NOTIF: Record<string, boolean> = { push: true, messages: true, appointments: true, webinars: true, content: false, tracking: false, media: false, security: true };
 const DEFAULT_ACCESS: Record<string, boolean> = { largerText: false, reduceMotion: false };
 
 export function SettingsScreen({ navigation }: any) {
@@ -293,6 +293,22 @@ export function SettingsScreen({ navigation }: any) {
         <Toggle label="Appointments" subtitle="Visit reminders and confirmations" value={!!notif.appointments} onChange={setN('appointments')} />
         <Toggle label="Webinars & classes" subtitle="Live sessions you register for" value={!!notif.webinars} onChange={setN('webinars')} />
         <Toggle label="New content" subtitle="Fresh articles and resources" value={!!notif.content} onChange={setN('content')} />
+        <Toggle label="Recipes & podcast" subtitle="New recipes and episodes" value={!!notif.media} onChange={setN('media')} />
+        <Toggle label="Tracking reminders" subtitle="Optional nudges to log meals" value={!!notif.tracking} onChange={setN('tracking')} />
+        <Toggle
+          label="Account & security"
+          subtitle="Always on for account protection"
+          value
+          onChange={() => undefined}
+        />
+      </View>
+
+      <View style={s.list}>
+        <Row
+          title="Device notifications"
+          subtitle="Permission and registered devices"
+          onPress={() => navigation.navigate('Notifications')}
+        />
       </View>
 
       <Text style={s.section}>Accessibility</Text>

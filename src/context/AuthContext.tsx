@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { authClient } from '../lib/auth-client';
 import { setUnauthorizedHandler } from '../lib/api-client';
 import { navigationRef } from '../navigation/ref';
-import { ensurePushRegistered } from '../lib/notifications';
+import { ensurePushRegistered, unregisterDevice } from '../lib/notifications';
 
 interface User {
   id: string;
@@ -143,6 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOutUser = async () => {
     try {
+      // Removing the device needs the session, so it happens before sign-out.
+      // Otherwise the member would keep receiving pushes on a device they
+      // signed out of (relevant on a shared phone).
+      await unregisterDevice().catch(() => undefined);
       await (authClient as any).signOut({});
     } catch {
       // Even if the server cannot be reached, the local session is cleared

@@ -6,7 +6,8 @@ import { ArrowLeft, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Ci
 import { colors } from '../../theme/colors';
 import { startCheckout } from '../../lib/subscription';
 import { cancelAppointment, clearAppointment, listAppointments, loadAppointment } from '../../lib/appointments';
-import { disablePushNotifications, enablePushNotifications, isPushSupported, readStoredPushToken } from '../../lib/notifications';
+import { disablePushNotifications, getPermissionState, isPushSupported, readStoredPushToken, requestPushPermissionAndRegister } from '../../lib/notifications';
+import { apiFetch } from '../../lib/api-client';
 
 const Shell=({navigation,children}:{navigation:any;children:React.ReactNode})=><SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>;
 
@@ -35,25 +36,66 @@ export function NotificationsScreen({navigation}:any){
   const [token,setToken]=useState<string|undefined>();
   const [error,setError]=useState('');
   const [needsProject,setNeedsProject]=useState(false);
-  useEffect(()=>{let active=true;readStoredPushToken().then(t=>{if(active)setToken(t?.token);}).catch(()=>undefined);return()=>{active=false;};},[]);
-  const enable=async()=>{if(busy)return;setBusy(true);setError('');setNeedsProject(false);const r=await enablePushNotifications();setBusy(false);if(r.token)setToken(r.token);else{setError(r.error||'Could not enable notifications.');setNeedsProject(!!r.needsProjectId);}};
-  const disable=async()=>{if(busy)return;setBusy(true);await disablePushNotifications();setToken(undefined);setError('');setBusy(false);};
+  const [permission,setPermission]=useState<'granted'|'denied'|'undetermined'>('undetermined');
+  const [devices,setDevices]=useState(0);
+  const [history,setHistory]=useState<Array<{id:string;title:string;body:string;category:string;createdAt:string}>>([]);
+
+  useEffect(()=>{
+    let active=true;
+    (async()=>{
+      try{
+        const [stored,state] = await Promise.all([readStoredPushToken(),getPermissionState()]);
+        if(!active)return;
+        setToken(stored?.token);
+        setPermission(state);
+        if(stored?.token){
+          const res = await apiFetch<{tokens:Array<{isActive?:boolean}>}>('/api/push-tokens',{method:'GET'});
+          if(active)setDevices((res?.tokens||[]).filter(t=>t.isActive!==false).length);
+        }
+        const h = await apiFetch<{notifications:any[]}>('/api/push-tokens/history',{method:'GET'});
+        if(active)setHistory((h?.notifications||[]).slice(0,10));
+      }catch{/* offline: keep what we have */}
+    })();
+    return ()=>{active=false;};
+  },[]);
+
+  const enable=async()=>{
+    if(busy)return;
+    setBusy(true);setError('');setNeedsProject(false);
+    const r=await requestPushPermissionAndRegister();
+    setBusy(false);
+    if(r.token){
+      setToken(r.token);
+      setPermission('granted');
+      setDevices(d=>Math.max(d,1));
+    }else{
+      setError(r.error||'Could not enable notifications.');
+      setNeedsProject(!!r.needsProjectId);
+      if(r.permissionDenied)setPermission('denied');
+    }
+  };
+  const disable=async()=>{if(busy)return;setBusy(true);await disablePushNotifications();setToken(undefined);setDevices(0);setError('');setBusy(false);};
   const copy=async()=>{if(!token)return;try{if(Platform.OS==='web'){await (globalThis as any).navigator?.clipboard?.writeText(token);Alert.alert('Push token','Copied to your clipboard.');}else{await Share.share({message:token});}}catch{Alert.alert('Push token',token);}};
   return <Shell navigation={navigation}>
     <Text style={s.eyebrow}>NOTIFICATIONS</Text>
     <Text style={s.title}>Stay in the loop.</Text>
-    <Text style={s.copy}>Enable reminders for messages, appointments, webinars, and new education.</Text>
+    <Text style={s.copy}>Reminders for dietitian messages, appointments, and new education. You choose each category in Settings.</Text>
     <View style={s.pushCard}>
-      <Text style={s.pushTitle}>{token?'Push notifications enabled':'Enable push notifications'}</Text>
-      <Text style={s.pushCopy}>{token?'This device is registered. Paste the token below into Expo’s push notifications tool to send a test.':'Allow True Diet to send reminders to this device.'}</Text>
-      {token?<Text selectable style={s.token}>{token}</Text>:null}
+      <Text style={s.pushTitle}>{token?'Notifications are on':'Turn on notifications'}</Text>
+      <Text style={s.pushCopy}>
+        {token
+          ? `This device is registered${devices>1?` along with ${devices-1} other device${devices-1===1?'':'s'}`:''}. Reminders arrive even when the app is closed.`
+          : 'We will ask your device for permission. We only send reminders you asked for - never marketing, never health details.'}
+      </Text>
       {error?<Text style={s.pushError}>{error}</Text>:null}
-      {needsProject?<Text style={s.pushHint}>Run “npx eas init” once, then rebuild the development build.</Text>:null}
-      {!isPushSupported()?<Text style={s.pushHint}>Push registration requires the iOS or Android build. This web preview cannot register.</Text>:null}
-      {token?<View style={s.pushBtns}><Pressable style={s.secondary} onPress={copy}><Text style={s.secondaryText}>Copy token</Text></Pressable><Pressable style={s.secondary} onPress={disable} disabled={busy}><Text style={[s.secondaryText,{color:colors.red}]}>{busy?'Removing…':'Disable'}</Text></Pressable></View>:<Pressable style={[s.cta,!isPushSupported()&&s.ctaOff]} disabled={busy||!isPushSupported()} onPress={enable}>{busy?<ActivityIndicator color="#fff"/>:<><Bell size={18} color="#fff"/><Text style={s.ctaText}>Enable Push Notifications</Text></>}</Pressable>}
+      {permission==='denied'&&!token?<Text style={s.pushHint}>Notifications are off for True Diet in your device settings. Open Settings to allow them, then come back.</Text>:null}
+      {needsProject?<Text style={s.pushHint}>This build has no push project id configured.</Text>:null}
+      {!isPushSupported()?<Text style={s.pushHint}>Push registration requires the iOS or Android build.</Text>:null}
+      {token?<View style={s.pushBtns}><Pressable style={s.secondary} onPress={copy}><Text style={s.secondaryText}>Copy token</Text></Pressable><Pressable style={s.secondary} onPress={disable} disabled={busy}><Text style={[s.secondaryText,{color:colors.red}]}>{busy?'Removing…':'Disable on this device'}</Text></Pressable></View>:<Pressable style={[s.cta,!isPushSupported()&&s.ctaOff]} disabled={busy||!isPushSupported()} onPress={enable}>{busy?<ActivityIndicator color="#fff"/>:<><Bell size={18} color="#fff"/><Text style={s.ctaText}>Turn on notifications</Text></>}</Pressable>}
     </View>
     <Text style={s.sectionLabel}>What you’ll get</Text>
     <View style={s.list}>{[['Secure messages','Replies from your dietitian'],['Appointments','Reminders and changes'],['Webinars','Upcoming live sessions'],['New content','Fresh articles and resources']].map(([title,sub])=><View key={title} style={s.infoRow}><View style={s.infoIcon}><Bell size={20} color={colors.deepTeal}/></View><View style={s.infoCopy}><Text style={s.infoTitle}>{title}</Text><Text style={s.infoSub}>{sub}</Text></View></View>)}</View>
+    {history.length?<><Text style={s.sectionLabel}>Recent</Text><View style={s.list}>{history.map(h=><View key={h.id} style={s.infoRow}><View style={s.infoIcon}><Bell size={18} color={colors.muted}/></View><View style={s.infoCopy}><Text style={s.infoTitle}>{h.title}</Text><Text style={s.infoSub}>{h.body}</Text></View></View>)}</View></>:null}
   </Shell>;
 }
 
