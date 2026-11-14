@@ -19,9 +19,10 @@ const root = process.cwd();
 const outDir = path.join(os.tmpdir(), `truediet-bundle-check-${Date.now()}`);
 
 console.log('Exporting the production Android bundle (no dev server involved)...');
+// A single command string keeps Windows happy without the deprecated
+// args-with-shell combination.
 const expo = spawnSync(
-  process.platform === 'win32' ? 'npx.cmd' : 'npx',
-  ['expo', 'export', '-p', 'android', '--output-dir', outDir, '--max-workers', '1'],
+  `npx expo export -p android --output-dir "${outDir}" --max-workers 1`,
   { cwd: root, shell: true, encoding: 'utf8' }
 );
 

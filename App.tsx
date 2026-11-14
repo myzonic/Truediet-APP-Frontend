@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 import { OnboardingProvider } from './src/context/OnboardingContext';
 import { AuthProvider } from './src/context/AuthContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import { navigationRef } from './src/navigation/ref';
 import { configureNotifications } from './src/lib/notifications';
 import { installWebAlert } from './src/lib/feedback';
 
@@ -23,7 +24,7 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <OnboardingProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <RootNavigator />
           </NavigationContainer>
         </OnboardingProvider>

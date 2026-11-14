@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { AppState, AppStateStatus } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { authClient } from '../lib/auth-client';
+import { setUnauthorizedHandler } from '../lib/api-client';
+import { navigationRef } from '../navigation/ref';
 import { ensurePushRegistered } from '../lib/notifications';
 
 interface User {
@@ -122,6 +124,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const sub = AppState.addEventListener('change', onChange);
     return () => sub.remove();
   }, [fetchSession]);
+
+  // Any API call that comes back 401 means the session is no longer valid.
+  // Clear it and return to the welcome screen rather than leaving the member
+  // on screens that cannot load anything.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      everSignedIn.current = false;
+      setUser(null);
+      setSession(null);
+      SecureStore.deleteItemAsync(CACHED_USER_KEY).catch(() => undefined);
+      if (navigationRef.isReady()) {
+        navigationRef.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+      }
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   const signOutUser = async () => {
     try {

@@ -8,6 +8,19 @@ export const API_BASE_URL =
 
 const baseURL = API_BASE_URL;
 
+/**
+ * Called when the server rejects a request with 401.
+ *
+ * AuthContext registers a handler that clears the session and returns to the
+ * welcome screen, so an expired session does not leave the member staring at
+ * screens that can no longer load anything.
+ */
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
+
 type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -36,6 +49,14 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
   const data = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // The session is gone (expired or revoked elsewhere).
+      try {
+        unauthorizedHandler?.();
+      } catch {
+        // never let navigation errors mask the API error below
+      }
+    }
     const message =
       (data && (data.error || data.message)) || `Request failed with status ${response.status}`;
     throw new Error(message);

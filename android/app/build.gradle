@@ -118,7 +118,8 @@ android {
         }
         if (hasReleaseKeystore) {
             release {
-                storeFile file(keystoreProperties['storeFile'])
+                // rootProject is android/, so storeFile is relative to it.
+                storeFile rootProject.file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
