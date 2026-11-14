@@ -43,9 +43,10 @@ deliberate decision with a known downside.
 | Launcher + store icons | Done | Generated from brand logo into `mipmap-*` |
 | Permissions trimmed | Done | No overlay / external storage / Bluetooth |
 | Release keystore | Done | `android/keystore/truediet-upload.jks` (gitignored) |
-| Signed release APK | Pending | See `ANDROID-BUILD.md` |
-| Signed release AAB | Pending | See `ANDROID-BUILD.md` |
-| Install + auth on a real device | Pending | No device attached to this environment |
+| Signed release APK | Done | `android/app/build/outputs/apk/release/app-release.apk`, 151.1 MB, signed `CN=True Diet` |
+| Signed release AAB | Done | `app-release.aab`, 75.9 MB, `jarsigner -verify` → `jar verified`, signed `CN=True Diet` |
+| Release bundle has no dev URL / secret | Done | Extracted `index.android.bundle` from the APK: 0 hits for `localhost:3000`, `10.0.2.2`, `192.168.`; 1 hit for `https://api.true-diet.com` |
+| Install + auth on a real device | Pending | No device attached to this environment (`adb devices` empty) |
 | Play Console listing, data safety, screenshots | Pending | Requires the Play account |
 
 ## D. iOS

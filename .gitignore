@@ -28,6 +28,9 @@ android/keystore.properties
 *.keystore
 !android/app/debug.keystore
 
+# Release artefacts (built locally, distributed by hand or to the store)
+deliverables/
+
 # The backend is its own repository (myzonic/Truediet-APP-Backend).
 # It must never be embedded in the frontend repo.
 server/

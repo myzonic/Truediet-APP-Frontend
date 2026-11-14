@@ -84,4 +84,54 @@ before the next submission.
 
 ## 7. Build result
 
-Filled in after the first successful run — see the result section below.
+```
+BUILD SUCCESSFUL in 1h 53s
+1231 actionable tasks: 1231 executed
+```
+
+| Artefact | Path | Size |
+|---|---|---|
+| Release APK | `android/app/build/outputs/apk/release/app-release.apk` | 151.1 MB |
+| SHA-256 | `58CB9B50ED56A8836351E96BFFB4EA5E25BE276BABA69A1CC983683F3AD1E93B` | — |
+| Release AAB | `android/app/build/outputs/bundle/release/app-release.aab` | 75.9 MB |
+| AAB signature | `jarsigner -verify` → `jar verified`, signed `CN=True Diet` | — |
+
+Published copies (gitignored, ready to hand to the store):
+
+```
+deliverables/TrueDiet-1.0.0-release.apk     151.1 MB  sha256 58cb9b50…d1e93b
+deliverables/TrueDiet-1.0.0-release.aab      75.9 MB  sha256 dcabed92…95aa0
+deliverables/SHA256SUMS.txt
+```
+
+`bundleRelease` completed in 3m 53s (incremental after the APK build).
+
+Verified with `aapt2 dump badging` and `apksigner verify --print-certs`:
+
+| Property | Value |
+|---|---|
+| package | `com.truediet.truedietwelcome` |
+| versionCode / versionName | `1` / `1.0.0` |
+| compileSdk / targetSdk / minSdk | 35 / 35 / 24 |
+| application-label | `True Diet` |
+| Signer | `CN=True Diet, OU=Mobile, O=True Diet, L=New York, ST=NY, C=US` |
+| Certificate SHA-256 | `0c2e06cc9462b60be2cda93a278d4cdcb986a8234f3a2158c8571a3f8f0ab6e3` |
+
+The APK is 151 MB because it contains every ABI plus the on-device speech
+model support libraries. The AAB is what Play serves; Play splits it per
+device, so an actual install downloads far less.
+
+Permissions in the built APK:
+
+- Declared by this app: `INTERNET`, `ACCESS_NETWORK_STATE`, `RECORD_AUDIO`,
+  `CAMERA`, `MODIFY_AUDIO_SETTINGS`, `POST_NOTIFICATIONS`, `WAKE_LOCK`,
+  `VIBRATE`
+- Added by libraries: notification badge permissions (Samsung/HTC/Sony/Huawei/
+  Oppo launchers), `RECEIVE_BOOT_COMPLETED`, `ACCESS_WIFI_STATE`,
+  `C2DM_RECEIVE` (FCM), `USE_BIOMETRIC`/`USE_FINGERPRINT` (SecureStore)
+- Confirmed **absent**: `SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE`,
+  `WRITE_EXTERNAL_STORAGE`, Bluetooth set
+
+The overlay permission removal worked — it does not appear in the built
+manifest even though a dependency declares it.
+
