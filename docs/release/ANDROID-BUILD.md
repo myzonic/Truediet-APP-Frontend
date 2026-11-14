@@ -1,4 +1,4 @@
-# Android release build (native Gradle)
+﻿# Android release build (native Gradle)
 
 No Android Studio and no EAS build are used. Everything below runs from a
 Windows shell.
@@ -64,7 +64,7 @@ android/app/build/outputs/bundle/release/app-release.aab
 |---|---|---|
 | applicationId | `com.truediet.truedietwelcome` | `app.json` → `android.package` |
 | versionName | `1.0.0` | `app.json` → `expo.version` |
-| versionCode | `1` | `app.json` → `android.versionCode` |
+| versionCode | `3` | `app.json` → `android.versionCode` |
 | compileSdk / targetSdk | 35 / 35 | `expo-build-properties` → `gradle.properties` |
 | minSdk | 24 | RN 0.76 default |
 
@@ -92,26 +92,24 @@ BUILD SUCCESSFUL in 1h 53s
 | Artefact | Path | Size |
 |---|---|---|
 | Release APK | `android/app/build/outputs/apk/release/app-release.apk` | 151.1 MB |
-| SHA-256 | `58CB9B50ED56A8836351E96BFFB4EA5E25BE276BABA69A1CC983683F3AD1E93B` | — |
 | Release AAB | `android/app/build/outputs/bundle/release/app-release.aab` | 75.9 MB |
-| AAB signature | `jarsigner -verify` → `jar verified`, signed `CN=True Diet` | — |
 
-Published copies (gitignored, ready to hand to the store):
+Rebuilt after a versionCode bump (the phone had an older EAS build at
+versionCode 2, so `adb install` rejected versionCode 1 as a downgrade):
 
-```
-deliverables/TrueDiet-1.0.0-release.apk     151.1 MB  sha256 58cb9b50…d1e93b
-deliverables/TrueDiet-1.0.0-release.aab      75.9 MB  sha256 dcabed92…95aa0
-deliverables/SHA256SUMS.txt
-```
+| Artefact | SHA-256 |
+|---|---|
+| `TrueDiet-1.0.0-vc3-release.apk` | `46083c4b052a62f22feaa2fb306c9ceea6372f87ce7eb9c5c12d85895368f21f` |
+| `TrueDiet-1.0.0-vc3-release.aab` | `f17a71ca8bb2845155689715e7ec6f6781cc1c13b0ce4ff35986df36084630ca` |
 
-`bundleRelease` completed in 3m 53s (incremental after the APK build).
+`bundleRelease` also ran `lintVitalRelease` with no fatal issues.
 
 Verified with `aapt2 dump badging` and `apksigner verify --print-certs`:
 
 | Property | Value |
 |---|---|
 | package | `com.truediet.truedietwelcome` |
-| versionCode / versionName | `1` / `1.0.0` |
+| versionCode / versionName | `3` / `1.0.0` |
 | compileSdk / targetSdk / minSdk | 35 / 35 / 24 |
 | application-label | `True Diet` |
 | Signer | `CN=True Diet, OU=Mobile, O=True Diet, L=New York, ST=NY, C=US` |
@@ -134,4 +132,5 @@ Permissions in the built APK:
 
 The overlay permission removal worked — it does not appear in the built
 manifest even though a dependency declares it.
+
 
