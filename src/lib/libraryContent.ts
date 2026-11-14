@@ -48,6 +48,14 @@ export const podcastEpisodes: PodcastEpisode[] = [
   { title: 'Episode 10: Protein, plainly', meta: '24 min · Evidence-based', id: 'ep-10' },
 ];
 
+/**
+ * Shown above the library lists whenever the app is displaying its built-in
+ * sample items instead of published content, so a preview is never mistaken
+ * for a real session, episode, or recording.
+ */
+export const SAMPLE_PREVIEW_NOTICE =
+  'Sample preview - these items are examples shown until published content is available.';
+
 export function slugify(value: string): string {
   return value
     .toLowerCase()

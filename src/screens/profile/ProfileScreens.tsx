@@ -9,6 +9,7 @@ import { loadSavedContent, unsaveContent } from '../../lib/content';
 import { loadPlans, loadSubscription, Plan } from '../../lib/subscription';
 import { loadPreferences, savePreferences } from '../../lib/preferences';
 import { deleteAccount, exportAccountData } from '../../lib/account';
+import { authClient } from '../../lib/auth-client';
 import { useAuth } from '../../context/AuthContext';
 import { useOnboarding } from '../../context/OnboardingContext';
 
@@ -203,6 +204,51 @@ export function SettingsScreen({ navigation }: any) {
   const [notif, setNotif] = useState<Record<string, boolean>>(DEFAULT_NOTIF);
   const [access, setAccess] = useState<Record<string, boolean>>(DEFAULT_ACCESS);
   const [note, setNote] = useState('');
+  // Password change (email/password accounts only; Google-only members have
+  // no password, and the server rejects the change with a clear message).
+  const [pwOpen, setPwOpen] = useState(false);
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState('');
+  const [pwError, setPwError] = useState('');
+
+  const changePassword = async () => {
+    if (pwBusy) return;
+    setPwError('');
+    setPwMsg('');
+    if (newPw.length < 8) {
+      setPwError('Choose a new password with at least 8 characters.');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setPwError('The new passwords do not match.');
+      return;
+    }
+    setPwBusy(true);
+    try {
+      const res: any = await (authClient as any).changePassword({
+        currentPassword: currentPw,
+        newPassword: newPw,
+        // Changing a password should end sessions that may be compromised.
+        revokeOtherSessions: true,
+      });
+      if (res?.error) {
+        setPwError(res.error.message || 'Could not change your password.');
+        return;
+      }
+      setPwMsg('Password updated. Other devices have been signed out.');
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+      setPwOpen(false);
+    } catch (e: any) {
+      setPwError(e?.message || 'Could not reach the server. Please try again.');
+    } finally {
+      setPwBusy(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -259,6 +305,59 @@ export function SettingsScreen({ navigation }: any) {
       <Text style={s.section}>Account</Text>
       <View style={s.list}>
         {user?.email ? <Row title={user.name || 'Your account'} subtitle={user.email} /> : <Row title="Not signed in" subtitle="You can browse as a guest" />}
+        {user?.email ? (
+          <Pressable style={s.item} onPress={() => { setPwOpen((v) => !v); setPwError(''); setPwMsg(''); }}>
+            <LockKeyhole size={19} color={colors.deepTeal} />
+            <View style={[s.itemCopy, { marginLeft: 12 }]}>
+              <Text style={s.itemTitle}>Change password</Text>
+              <Text style={s.itemSub}>Update the password for this account</Text>
+            </View>
+            <ChevronRight size={18} color={colors.muted} />
+          </Pressable>
+        ) : null}
+        {pwOpen ? (
+          <View style={s.pwPanel}>
+            <Text style={s.label}>Current password</Text>
+            <TextInput
+              value={currentPw}
+              onChangeText={setCurrentPw}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="Current password"
+              placeholderTextColor={colors.muted}
+              style={s.input}
+            />
+            <Text style={s.label}>New password (minimum 8 characters)</Text>
+            <TextInput
+              value={newPw}
+              onChangeText={setNewPw}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="New password"
+              placeholderTextColor={colors.muted}
+              style={s.input}
+            />
+            <Text style={s.label}>Confirm new password</Text>
+            <TextInput
+              value={confirmPw}
+              onChangeText={setConfirmPw}
+              secureTextEntry
+              autoCapitalize="none"
+              placeholder="Repeat new password"
+              placeholderTextColor={colors.muted}
+              style={s.input}
+            />
+            {pwError ? <Text style={s.error}>{pwError}</Text> : null}
+            <Pressable
+              style={[s.cta, (pwBusy || !currentPw || !newPw) && { opacity: 0.55 }]}
+              disabled={pwBusy || !currentPw || !newPw}
+              onPress={changePassword}
+            >
+              <Text style={s.ctaText}>{pwBusy ? 'Updating…' : 'Update password'}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {pwMsg ? <Text style={s.saved}>{pwMsg}</Text> : null}
         <Row title="Help & Support" subtitle="Contact True Diet" onPress={() => navigation.navigate('Support')} />
         <Row title="Legal" subtitle="Terms, Privacy Policy, and Disclaimers" onPress={() => navigation.navigate('Legal')} />
         <Pressable style={[s.item, s.signOut]} onPress={signOut}>
@@ -271,7 +370,6 @@ export function SettingsScreen({ navigation }: any) {
 }
 
 const DEFAULT_CONSENT: Record<string, boolean> = { personalization: true, analytics: false };
-
 export function PrivacyScreen({ navigation }: any) {
   const { signOutUser } = useAuth();
   const [consent, setConsent] = useState<Record<string, boolean>>(DEFAULT_CONSENT);
@@ -417,7 +515,7 @@ export function PackagesScreen({ navigation }: any) {
           </Pressable>
         ))}
       </View>
-      {offline ? <Text style={s.hint}>Showing standard packages. Live pricing will appear once payments are connected.</Text> : null}
+      {offline ? <Text style={s.hint}>Showing the standard packages. Pricing is confirmed with your dietitian before enrolment.</Text> : null}
     </Page>
   );
 }
@@ -481,8 +579,8 @@ export function SubscriptionScreen({ navigation }: any) {
         ))}
       </View>
 
-      {offline ? <Text style={s.hint}>Live membership status will appear once the account backend is connected.</Text> : null}
-      {state && state.paymentsConfigured === false ? <View style={s.notice}><ShieldCheck size={18} color={colors.deepTeal} /><Text style={s.noticeText}>Secure checkout opens as soon as payment processing is connected.</Text></View> : null}
+      {offline ? <Text style={s.hint}>Your membership status could not be loaded just now. Please try again shortly.</Text> : null}
+      {state && state.paymentsConfigured === false ? <View style={s.notice}><ShieldCheck size={18} color={colors.deepTeal} /><Text style={s.noticeText}>Membership changes are arranged with your dietitian while online checkout is unavailable.</Text></View> : null}
       <Pressable style={s.cta} onPress={() => navigation.navigate(active ? 'Packages' : 'FreePremium')}><Text style={s.ctaText}>{active ? 'Compare Packages' : 'Upgrade Membership'}</Text></Pressable>
     </Page>
   );
@@ -679,6 +777,7 @@ const s = StyleSheet.create({
   notice: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 22 },
   noticeText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
   saved: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.green, marginTop: 14, textAlign: 'center' },
+  pwPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, marginTop: 10, gap: 6 },
   cta: { height: 56, borderRadius: 17, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
   ctaDisabled: { opacity: 0.6 },
   ctaText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },

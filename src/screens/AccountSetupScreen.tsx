@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
-import { ArrowLeft, CheckCircle2, LockKeyhole } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, LockKeyhole } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { authClient } from '../lib/auth-client';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +35,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   // Email-verification step shown after sign-up when the server sends the
@@ -86,6 +87,21 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   /** Shared tail of every successful sign-in path. */
   const finishAccount = async () => {
     await refetchSession();
+    // Only write the assessment when this session actually collected one.
+    // Re-posting an empty assessment on a normal sign-in would overwrite a
+    // returning member's stored answers.
+    const hasAssessment =
+      Boolean(data.goal) ||
+      Boolean(data.age) ||
+      Boolean(data.sex) ||
+      Boolean(data.height) ||
+      Boolean(data.weight) ||
+      (data.allergies?.length ?? 0) > 0 ||
+      (data.dietaryPreferences?.length ?? 0) > 0;
+    if (!hasAssessment) {
+      navigation.navigate('NutritionProfile');
+      return true;
+    }
     try {
       await saveProfile(data);
     } catch (e: any) {
@@ -306,6 +322,20 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                 </View>
               ) : null}
 
+              {errorMessage.toLowerCase().includes('already exists') ? (
+                <Pressable
+                  onPress={() => {
+                    setMode('signin');
+                    setErrorMessage('');
+                    setPassword('');
+                  }}
+                  hitSlop={8}
+                  style={s.forgotRow}
+                >
+                  <Text style={s.forgotText}>Sign in to that account instead</Text>
+                </Pressable>
+              ) : null}
+
               {resetMsg ? (
                 <View style={s.successBox}>
                   <Text style={s.successText}>{resetMsg}</Text>
@@ -385,15 +415,32 @@ export default function AccountSetupScreen({ navigation, route }: any) {
               />
 
               <Text style={s.label}>Password (minimum 8 characters)</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter password"
-                placeholderTextColor={colors.muted}
-                secureTextEntry
-                autoCapitalize="none"
-                style={s.input}
-              />
+              <View style={s.passwordRow}>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter password"
+                  placeholderTextColor={colors.muted}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoComplete="password"
+                  textContentType="password"
+                  style={s.passwordInput}
+                />
+                <Pressable
+                  onPress={() => setShowPassword((v) => !v)}
+                  style={s.eyeButton}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff size={19} color={colors.muted} />
+                  ) : (
+                    <Eye size={19} color={colors.muted} />
+                  )}
+                </Pressable>
+              </View>
 
               {!isSignUp ? (
                 <Pressable onPress={onForgotPassword} disabled={resetBusy} hitSlop={8} style={s.forgotRow}>
@@ -443,7 +490,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                 )}
               </Pressable>
 
-              {!isSignUp && serverFlags.google ? (
+              {serverFlags.google ? (
                 <>
                   <View style={s.divider}>
                     <View style={s.dividerLine} />
@@ -456,7 +503,11 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                     style={[s.button, s.googleButton, loading && s.disabled]}
                   >
                     <Text style={s.googleText}>
-                      {loading ? 'Opening Google…' : 'Continue with Google'}
+                      {loading
+                        ? 'Opening Google…'
+                        : isSignUp
+                          ? 'Sign up with Google'
+                          : 'Continue with Google'}
                     </Text>
                   </Pressable>
                 </>
@@ -692,6 +743,30 @@ const s = StyleSheet.create({
     fontFamily: 'Roboto',
     fontSize: 14,
     color: colors.text,
+  },
+  passwordRow: {
+    height: 52,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    paddingLeft: 15,
+    paddingRight: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    fontFamily: 'Roboto',
+    fontSize: 14,
+    color: colors.text,
+  },
+  eyeButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   trust: {
     flexDirection: 'row',

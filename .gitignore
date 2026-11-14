@@ -14,6 +14,20 @@ server_deploy.tar.gz
 # Local embedded Postgres data (server/.pgdata)
 server/.pgdata/
 
+# Android native build outputs
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/.cxx/
+*.hprof
+
+# Android signing secrets - never commit a keystore or its passwords
+android/keystore.properties
+*.jks
+*.keystore
+!android/app/debug.keystore
+
 # The backend is its own repository (myzonic/Truediet-APP-Backend).
 # It must never be embedded in the frontend repo.
 server/

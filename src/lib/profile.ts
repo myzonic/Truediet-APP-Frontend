@@ -50,7 +50,10 @@ export async function saveProfile(data: OnboardingData): Promise<ProfileRecord |
       weight: data.weight || undefined,
       allergies: data.allergies,
       dietaryPreferences: data.dietaryPreferences,
-      isAssessmentComplete: Boolean(data.goal),
+      // Omitted entirely when there is no assessment in this session, so a
+      // returning member's completed assessment is never reset to false by a
+      // plain sign-in. The server keeps the stored value for undefined.
+      isAssessmentComplete: data.goal ? true : undefined,
     },
   });
 
