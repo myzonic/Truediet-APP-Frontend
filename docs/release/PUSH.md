@@ -111,21 +111,16 @@ Stored in `preferences.notifications` (jsonb): `push`, `messages`,
 | Channels | `messages` (MAX), `appointments` (HIGH), `content`, `tracking`, `security`, `default` — created at app start |
 | Sound / vibration / light | Default sound, vibration pattern, `#64A826` light |
 | Icons | Launcher icon used; no separate small icon asset |
-| `google-services.json` | **MISSING** |
-| Google Services Gradle plugin | **NOT APPLIED** |
+| `google-services.json` | **Present** — `android/app/google-services.json`, Firebase project `true-diet-35418`, package `com.truediet.truedietwelcome` |
+| Google Services Gradle plugin | **Applied** — `com.google.gms:google-services:4.4.4` (project-level classpath + app-level plugin) |
 
-Because the local Gradle build has no Firebase config, Android **cannot**
-obtain an FCM push token yet. `getExpoPushTokenAsync` fails and the app reports
-it in the Notifications screen instead of pretending success.
+No Firebase SDK, BoM or analytics dependency was added; only the plugin that
+turns `google-services.json` into Android resources.
 
-To fix, one of:
-
-1. Firebase console → add Android app `com.truediet.truedietwelcome` → download
-   `google-services.json` → place at `android/app/google-services.json`.
-2. `npx eas credentials` → Android → download the FCM credentials that the
-   earlier EAS build used.
-
-Then rebuild. No code change is needed.
+Delivery still needs the FCM v1 service-account JSON uploaded to the Expo
+project (Project settings → Push notifications → Android). That is the
+credential Expo uses server-side to reach FCM; without it Expo returns
+"ticket ok" and the receipt reports a credential error.
 
 ## 8. iOS configuration
 
@@ -140,7 +135,8 @@ Then rebuild. No code change is needed.
 | Credential | Needed for | State |
 |---|---|---|
 | EAS project id `36b5446e-…` | token minting | present in `app.json` |
-| `google-services.json` (FCM) | Android delivery | **missing** |
+| `google-services.json` (FCM) | Android token minting | **present** |
+| FCM v1 service account (Expo) | Android delivery | **pending upload** |
 | APNs key (EAS) | iOS delivery | unverified |
 | `EXPO_ACCESS_TOKEN` | only if push security is enabled on the Expo project | not set; not required by default |
 
@@ -181,7 +177,8 @@ push. Marked untested.
 
 ## 12. Remaining work
 
-1. Add `google-services.json` and rebuild (Android delivery).
+1. Upload the FCM v1 service-account JSON to the Expo project (required for
+   Android delivery).
 2. Upload the APNs key to EAS (iOS delivery).
 3. Optional: store a member timezone if daily tracking reminders are wanted.
 4. Optional: add these triggers once their sources exist — webinar sessions,

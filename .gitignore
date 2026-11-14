@@ -28,8 +28,23 @@ android/keystore.properties
 *.keystore
 !android/app/debug.keystore
 
+# Firebase / Google credentials.
+# The service-account private key is a SECRET and lives outside this repo
+# (F:\secrets\true-diet). google-services.json is a client config, not a
+# secret, but it is kept local so no credential file is ever tracked.
+google-services.json
+*firebase-adminsdk*.json
+*service-account*.json
+*service_account*.json
+*.pem
+*.p12
+*.pfx
+
 # Release artefacts (built locally, distributed by hand or to the store)
 deliverables/
+
+# Local QA screenshots
+artifacts/
 
 # The backend is its own repository (myzonic/Truediet-APP-Backend).
 # It must never be embedded in the frontend repo.

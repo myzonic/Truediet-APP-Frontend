@@ -18,6 +18,9 @@ buildscript {
         classpath('com.android.tools.build:gradle')
         classpath('com.facebook.react:react-native-gradle-plugin')
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        // Reads android/app/google-services.json so expo-notifications can
+        // obtain an FCM token. No Firebase SDK or analytics is added.
+        classpath('com.google.gms:google-services:4.4.4')
     }
 }
 
