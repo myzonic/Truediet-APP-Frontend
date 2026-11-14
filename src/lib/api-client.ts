@@ -1,6 +1,12 @@
 import { authClient } from './auth-client';
 
-const baseURL = process.env.EXPO_PUBLIC_AUTH_URL || 'http://localhost:3000';
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_AUTH_URL ||
+  // A release build must never fall back to a developer machine. `.env` is
+  // gitignored, so the localhost fallback is only safe in development.
+  (__DEV__ ? 'http://localhost:3000' : 'https://api.true-diet.com');
+
+const baseURL = API_BASE_URL;
 
 type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

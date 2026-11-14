@@ -62,6 +62,7 @@ export default function MainNavigator(){
       <Stack.Screen name="CreateAccount" component={ExtendedScreen}/>
       <Stack.Screen name="ForgotPassword" component={ExtendedScreen}/>
       <Stack.Screen name="ResetConfirmation" component={ExtendedScreen}/>
+      <Stack.Screen name="MessageDetail" component={ExtendedScreen}/>
       <Stack.Screen name="SearchScreen" component={SearchScreen}/>
       <Stack.Screen name="Support" component={SupportScreen}/>
       <Stack.Screen name="Subscription" component={SubscriptionScreen}/>

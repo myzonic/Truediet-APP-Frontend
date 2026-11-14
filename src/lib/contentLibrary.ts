@@ -1,4 +1,5 @@
 import { loadContent, ContentSummary } from './content';
+import { API_BASE_URL } from './api-client';
 import { learnTopics, LearnArticle, LearnTopic } from './learnContent';
 import { myths, Myth } from './mythContent';
 import { recipes, Recipe } from './recipeContent';
@@ -28,7 +29,7 @@ async function fetchAll(): Promise<ContentDetail[]> {
       if (!item.isPremium || item.body) return item as ContentDetail;
       try {
         const res = await fetch(
-          `${process.env.EXPO_PUBLIC_AUTH_URL || 'http://localhost:3000'}/api/content/${encodeURIComponent(item.slug)}`
+          `${API_BASE_URL}/api/content/${encodeURIComponent(item.slug)}`
         );
         if (!res.ok) return item as ContentDetail;
         const data = await res.json();

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { Apple, BookOpen, Brain, ChevronRight, FlaskConical, Scale, Search, Tag } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { loadTopics } from '../../lib/contentLibrary';
@@ -72,7 +74,7 @@ export default function LearnScreen({ navigation }: any) {
 }
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.softBlue, alignItems: 'center' },
-  content: { width: '100%', maxWidth: 412, padding: 24, paddingTop: 18, paddingBottom: 36, backgroundColor: colors.background },
+  content: { width: '100%', maxWidth:CONTENT_MAX_WIDTH, padding: 24, paddingTop: 18, paddingBottom: 36, backgroundColor: colors.background },
   eyebrow: { fontFamily: 'Roboto', fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 30, fontWeight: '700', color: colors.text, marginTop: 8 },
   copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 9 },

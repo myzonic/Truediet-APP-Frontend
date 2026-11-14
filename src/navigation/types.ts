@@ -44,6 +44,7 @@ export type MainStackParamList = {
   AppointmentDetail: { slot?: string; bookingId?: string | number; meetingUrl?: string; date?: string; visitType?: 'video' | 'phone' } | undefined;
   WebinarConfirmation: { title?: string } | undefined;
   Legal: undefined;
+  MessageDetail: { threadId?: string } | undefined;
 };
 
 export type MainTabParamList = {

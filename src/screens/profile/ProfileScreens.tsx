@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, ChevronRight, Download, FileText, GraduationCap, HeartHandshake, LogOut, LockKeyhole, Plus, ShieldCheck, Sparkles, Trash2, X } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { loadProfile, saveProfile } from '../../lib/profile';
@@ -645,7 +647,7 @@ export function ProfileHubScreen({ navigation }: any) {
 
 const s = StyleSheet.create({
   error: { fontFamily: 'Roboto', fontSize: 12, color: colors.red, marginTop: 12 },
-  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },  content: { width: '100%', maxWidth: 412, padding: 24, paddingBottom: 48, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },  content: { width: '100%', maxWidth:CONTENT_MAX_WIDTH, padding: 24, paddingBottom: 48, backgroundColor: colors.background },
   back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 25 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 30, lineHeight: 38, fontWeight: '700', color: colors.text, marginTop: 8 },

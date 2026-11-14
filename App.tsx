@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { OnboardingProvider } from './src/context/OnboardingContext';
 import { AuthProvider } from './src/context/AuthContext';
@@ -19,12 +20,14 @@ export default function App() {
   }, []);
   if (!loaded) return null;
   return (
-    <AuthProvider>
-      <OnboardingProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </OnboardingProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <OnboardingProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </OnboardingProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

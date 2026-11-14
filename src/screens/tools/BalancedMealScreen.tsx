@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { addMeal, MealType } from '../../lib/track';
@@ -143,7 +145,7 @@ export default function BalancedMealScreen({ navigation }: any) {
 }
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: 412, paddingHorizontal: 24, paddingBottom: 45 },
+  content: { width: '100%', maxWidth:CONTENT_MAX_WIDTH, paddingHorizontal: 24, paddingBottom: 45 },
   back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 25 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, letterSpacing: 1.4, fontWeight: '700', color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 30, fontWeight: '700', color: colors.text, marginTop: 8 },

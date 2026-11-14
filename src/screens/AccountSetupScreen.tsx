@@ -1,23 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import { ArrowLeft, CheckCircle2, LockKeyhole } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { authClient } from '../lib/auth-client';
 import { useAuth } from '../context/AuthContext';
 import { useOnboarding } from '../context/OnboardingContext';
 import { saveProfile } from '../lib/profile';
+import { API_BASE_URL } from '../lib/api-client';
 
 /** Better Auth messages are technical; members see this instead. */
 function friendlyAuthError(message?: string): string {
@@ -68,7 +59,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     let active = true;
     (async () => {
       try {
-        const base = process.env.EXPO_PUBLIC_AUTH_URL || 'http://localhost:3000';
+        const base = API_BASE_URL;
         const res = await fetch(`${base}/health`);
         const j = await res.json();
         if (active) {
@@ -498,7 +489,7 @@ const s = StyleSheet.create({
   phone: {
     flex: 1,
     width: '100%',
-    maxWidth: 412,
+    maxWidth:CONTENT_MAX_WIDTH,
     backgroundColor: colors.background,
     minHeight: '100%',
   },
@@ -508,7 +499,7 @@ const s = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 14,
   },
-  content: {
+  content: {maxWidth:CONTENT_MAX_WIDTH,alignSelf:'center',
     flex: 1,
     padding: 24,
     paddingTop: 16,
