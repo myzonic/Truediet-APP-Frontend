@@ -8,6 +8,7 @@ marked verified from inspection alone.
 | Document | Covers |
 |---|---|
 | `AUTH.md` | Authentication architecture, changes, live test results, security review |
+| `PUSH.md` | Push notification system, API results, Android/iOS credential status |
 | `QA-SCREENS.md` | Screen-by-screen and functional verification |
 | `RESPONSIVE.md` | Device classes, safe areas, tablet layout |
 | `ANDROID-BUILD.md` | Native Gradle build, signing, artefacts |
