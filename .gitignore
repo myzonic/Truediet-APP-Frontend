@@ -33,6 +33,7 @@ android/keystore.properties
 # (F:\secrets\true-diet). google-services.json is a client config, not a
 # secret, but it is kept local so no credential file is ever tracked.
 google-services.json
+!android/app/google-services.json
 *firebase-adminsdk*.json
 *service-account*.json
 *service_account*.json
