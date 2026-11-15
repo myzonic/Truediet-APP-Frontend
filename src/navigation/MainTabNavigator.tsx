@@ -1,18 +1,19 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BookOpen, ChartNoAxesColumn, CircleUser, House, Library } from 'lucide-react-native';
+import { Activity, BookOpen, ChartNoAxesColumn, Heart, TrendingUp, User } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from './types';
 import HomeScreen from '../screens/home/HomeScreen';
 import LearnScreen from '../screens/learn/LearnScreen';
-import { ResourcesHubScreen } from '../screens/resources/ResourceScreens';
-import { ProfileHubScreen } from '../screens/profile/ProfileScreens';
 import TrackScreen from '../screens/track/TrackScreen';
+import ToolsScreen from '../screens/tools/ToolsScreen';
+import { ProfileHubScreen } from '../screens/profile/ProfileScreens';
+import { ResourcesHubScreen } from '../screens/resources/ResourceScreens';
 import { colors } from '../theme/colors';
 import { TAB_BAR_MAX_WIDTH } from '../theme/layout';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
-const icons = { Home: House, Learn: BookOpen, Track: ChartNoAxesColumn, Resources: Library, Profile: CircleUser };
+const icons = { Home: Activity, Track: TrendingUp, Tools: ChartNoAxesColumn, Learn: BookOpen, Resources: Heart, Profile: User };
 
 export default function MainTabNavigator() {
   // The tab bar must grow by the device's bottom inset (home indicator on
@@ -46,8 +47,9 @@ export default function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Learn" component={LearnScreen} />
       <Tab.Screen name="Track" component={TrackScreen} />
+      <Tab.Screen name="Tools" component={ToolsScreen} />
+      <Tab.Screen name="Learn" component={LearnScreen} />
       <Tab.Screen name="Resources" component={ResourcesHubScreen} />
       <Tab.Screen name="Profile" component={ProfileHubScreen} />
     </Tab.Navigator>

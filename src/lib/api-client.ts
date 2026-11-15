@@ -1,4 +1,4 @@
-import { authClient } from './auth-client';
+import * as SecureStore from 'expo-secure-store';
 
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_AUTH_URL ||
@@ -7,6 +7,19 @@ export const API_BASE_URL =
   (__DEV__ ? 'http://localhost:3000' : 'https://api.true-diet.com');
 
 const baseURL = API_BASE_URL;
+
+// The opaque session token issued by POST /api/auth/login (and returned by
+// /api/auth/session) lives in Expo SecureStore. The custom backend validates it
+// through the bearer JWT on authenticated routes.
+const SESSION_TOKEN_KEY = 'truediet.auth.cookie';
+
+const getStoredSessionToken = async (): Promise<string> => {
+  try {
+    return (await SecureStore.getItemAsync(SESSION_TOKEN_KEY)) || '';
+  } catch {
+    return '';
+  }
+};
 
 /**
  * Called when the server rejects a request with 401.
@@ -28,12 +41,7 @@ type ApiOptions = {
 };
 
 export async function apiFetch<T = any>(path: string, options: ApiOptions = {}): Promise<T> {
-  let cookie = '';
-  try {
-    cookie = (await (authClient as any).getCookie?.()) || '';
-  } catch {
-    cookie = '';
-  }
+  const cookie = await getStoredSessionToken();
 
   const response = await fetch(`${baseURL}${path}`, {
     method: options.method || 'GET',

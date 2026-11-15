@@ -9,7 +9,7 @@ import { loadSavedContent, unsaveContent } from '../../lib/content';
 import { loadPlans, loadSubscription, Plan } from '../../lib/subscription';
 import { loadPreferences, savePreferences } from '../../lib/preferences';
 import { deleteAccount, exportAccountData } from '../../lib/account';
-import { authClient } from '../../lib/auth-client';
+import { apiFetch } from '../../lib/api-client';
 import { useAuth } from '../../context/AuthContext';
 import { useOnboarding } from '../../context/OnboardingContext';
 
@@ -200,7 +200,7 @@ const DEFAULT_NOTIF: Record<string, boolean> = { push: true, messages: true, app
 const DEFAULT_ACCESS: Record<string, boolean> = { largerText: false, reduceMotion: false };
 
 export function SettingsScreen({ navigation }: any) {
-  const { user, signOutUser } = useAuth();
+  const { user, signOutUser, refetchSession } = useAuth();
   const [notif, setNotif] = useState<Record<string, boolean>>(DEFAULT_NOTIF);
   const [access, setAccess] = useState<Record<string, boolean>>(DEFAULT_ACCESS);
   const [note, setNote] = useState('');
@@ -228,14 +228,14 @@ export function SettingsScreen({ navigation }: any) {
     }
     setPwBusy(true);
     try {
-      const res: any = await (authClient as any).changePassword({
-        currentPassword: currentPw,
-        newPassword: newPw,
-        // Changing a password should end sessions that may be compromised.
-        revokeOtherSessions: true,
+      // Changing a password should end sessions that may be compromised, so
+      // the backend revokes all sessions and the member signs in again.
+      const res: any = await apiFetch<{ success: boolean }>('/api/auth/change-password', {
+        method: 'POST',
+        body: { currentPassword: currentPw, newPassword: newPw },
       });
-      if (res?.error) {
-        setPwError(res.error.message || 'Could not change your password.');
+      if (!res?.success) {
+        setPwError('Could not change your password. Please try again.');
         return;
       }
       setPwMsg('Password updated. Other devices have been signed out.');
@@ -243,6 +243,7 @@ export function SettingsScreen({ navigation }: any) {
       setNewPw('');
       setConfirmPw('');
       setPwOpen(false);
+      await refetchSession();
     } catch (e: any) {
       setPwError(e?.message || 'Could not reach the server. Please try again.');
     } finally {
@@ -764,7 +765,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },  content: { width: '100%', maxWidth:CONTENT_MAX_WIDTH, padding: 24, paddingBottom: 48, backgroundColor: colors.background },
   back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 25 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
-  title: { fontFamily: 'Roboto', fontSize: 30, lineHeight: 38, fontWeight: '700', color: colors.text, marginTop: 8 },
+  title: { fontFamily: 'Roboto', fontSize: 24, lineHeight: 34, fontWeight: '700', color: colors.text, marginTop: 6 },
   copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 9 },
   section: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 26, marginBottom: 12 },
   hint: { fontFamily: 'Roboto', fontSize: 13, color: colors.muted, marginTop: 14 },
@@ -780,10 +781,10 @@ const s = StyleSheet.create({
   chipActive: { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
   chipText: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   chipTextActive: { color: '#fff' },
-  fieldRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  field: { flex: 1 },
-  label: { fontFamily: 'Roboto', fontSize: 11, fontWeight: '700', color: colors.muted, marginBottom: 6 },
-  input: { height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
+  fieldRow: { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
+  field: { flex: 1, minWidth: 120 },
+  label: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', color: colors.muted, marginBottom: 4 },
+  input: { height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.surface, paddingHorizontal: 10, fontFamily: 'Roboto', fontSize: 13, color: colors.text },
   addRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   addInput: { flex: 1 },
   addBtn: { width: 48, height: 48, borderRadius: 12, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },

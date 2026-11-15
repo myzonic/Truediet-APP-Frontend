@@ -90,7 +90,7 @@ export function VoiceFoodLogScreen({navigation}:any){
       setError(e?.message||'Could not save your meal note. Please try again.');
     }finally{setSaving(false);}
   };
-  const micLabel=status==='recording'?'Tap to finish':status==='transcribing'?'Transcribing…':'Tap to start recording';
+  const micLabel=status==='recording'?'Tap to finish':status==='transcribing'?'Transcribing…':isSpeechSupported()?'Tap to start recording':'Tap to type note';
   const pct=progress&&progress.total?Math.min(100,Math.round(progress.loaded/progress.total*100)):null;
   return <Shell navigation={navigation}>
     <Text style={s.eyebrow}>VOICE FOOD LOG</Text>
@@ -112,7 +112,7 @@ export function VoiceFoodLogScreen({navigation}:any){
     </View>
     <View style={s.apiNote}>
       <ShieldCheck size={19} color={colors.deepTeal}/>
-      <Text style={s.apiCopy}>{supported?'Voice notes are transcribed on your device with sherpa-onnx (Whisper base.en). Audio never leaves your device. First use downloads the model once.':'Voice capture runs in the web app and in the native store build. You can type your meal note here in the meantime.'}</Text>
+      <Text style={s.apiCopy}>{supported?'Voice notes are transcribed on your device with sherpa-onnx (Whisper base.en). Audio never leaves your device. First use downloads the model once.':'Voice capture requires a native build (expo prebuild + Android/iOS). Tap above to type your meal note instead.'}</Text>
     </View>
     {error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}
     <Pressable style={[s.primary,(!transcript.trim()||saving)&&s.disabled]} disabled={!transcript.trim()||saving} onPress={save}>

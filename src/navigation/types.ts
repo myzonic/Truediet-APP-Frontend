@@ -10,17 +10,22 @@ export type MainStackParamList = {
   Tools: undefined;
   BalancedMeal: undefined;
   LabelReading: undefined;
-  Recipes: undefined;
+  NutritionAssessment: undefined;
+  HealthConditions: undefined;
+  RecipeFinder: undefined;
   RecipeDetail: { recipeId?: string; title?: string; meta?: string; description?: string };
+  Recipes: undefined;
   VoiceFoodLog: undefined;
   Dietitian: undefined;
   Telehealth: undefined;
   MaureenProfile: undefined;
   Resources: undefined;
-  ResourceDetail: { title?: string } | undefined;
+  ResourceSearch: undefined;
+  ResourceCategory: { category: string };
+  ResourceDetail: { title?: string; slug?: string } | undefined;
   Blog: undefined;
   Webinars: undefined;
-  WebinarDetail: { title?: string; meta?: string; live?: boolean } | undefined;
+  WebinarDetail: { title?: string; meta?: boolean; live?: boolean } | undefined;
   RecordedClasses: undefined;
   Podcast: undefined;
   PodcastDetail: { id?: string; title?: string; meta?: string } | undefined;
@@ -45,12 +50,20 @@ export type MainStackParamList = {
   WebinarConfirmation: { title?: string } | undefined;
   Legal: undefined;
   MessageDetail: { threadId?: string } | undefined;
+  Library: undefined;
+  LibraryCategory: { category: string };
+  LibraryArticle: { articleId: string };
+  LibraryGuide: { guideId: string };
+  LibraryVideo: { videoId: string };
+  LibraryPodcast: { podcastId: string };
+  LibraryCollection: { collectionId: string };
 };
 
 export type MainTabParamList = {
   Home: undefined;
-  Learn: undefined;
   Track: undefined;
+  Tools: undefined;
+  Learn: undefined;
   Resources: undefined;
   Profile: undefined;
 };

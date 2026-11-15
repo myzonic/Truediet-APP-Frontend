@@ -15,7 +15,7 @@ import BalancedMealScreen from '../screens/tools/BalancedMealScreen';
 import LabelReadingScreen from '../screens/tools/LabelReadingScreen';
 import { DietitianScreen, RecipeDetailScreen, RecipesScreen, TelehealthScreen, VoiceFoodLogScreen } from '../screens/core/CoreFeatureScreens';
 import { ExtendedScreen } from '../screens/extended/ExtendedScreens';
-import { BlogScreen, PodcastDetailScreen, PodcastScreen, RecordedClassesScreen, ResourceDetailScreen, ResourcesHubScreen, WebinarDetailScreen, WebinarsScreen } from '../screens/resources/ResourceScreens';
+import { BlogScreen, PodcastDetailScreen, PodcastScreen, RecordedClassesScreen, ResourceCategoryScreen, ResourceDetailScreen, ResourceSearchScreen, ResourcesHubScreen, WebinarDetailScreen, WebinarsScreen } from '../screens/resources/ResourceScreens';
 import { AppointmentDetailScreen, CheckoutScreen, FreePremiumScreen, LegalScreen, NotificationsScreen, SupportScreen, WebinarConfirmationScreen } from '../screens/utility/UtilityScreens';
 import { MaureenProfileScreen, NutritionProfileSettingsScreen, PackageDetailScreen, PackagesScreen, PrivacyScreen, ProfileHubScreen, SavedContentScreen, SettingsScreen, SubscriptionScreen } from '../screens/profile/ProfileScreens';
 
@@ -42,6 +42,8 @@ export default function MainNavigator(){
       <Stack.Screen name="LabelReading" component={LabelReadingScreen}/>
       <Stack.Screen name="MaureenProfile" component={MaureenProfileScreen}/>
       <Stack.Screen name="Resources" component={ResourcesHubScreen}/>
+      <Stack.Screen name="ResourceSearch" component={ResourceSearchScreen}/>
+      <Stack.Screen name="ResourceCategory" component={ResourceCategoryScreen}/>
       <Stack.Screen name="ResourceDetail" component={ResourceDetailScreen}/>
       <Stack.Screen name="Blog" component={BlogScreen}/>
       <Stack.Screen name="Webinars" component={WebinarsScreen}/>

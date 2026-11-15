@@ -238,3 +238,102 @@ export async function loadLibrary(type: string): Promise<LibraryItem[]> {
     return [];
   }
 }
+
+// ---------------------------------------------------------------- resource hub helpers
+
+export interface ResourceCategory {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+export async function loadResourceCategories(): Promise<ResourceCategory[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/resource/categories`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as { items?: ResourceCategory[] };
+    return Array.isArray(data.items) ? data.items : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function loadResourceBySlug(slug: string): Promise<LibraryItem & { body?: string } | null> {
+  const res = await fetch(`${API_BASE_URL}/api/content/${encodeURIComponent(slug)}`);
+  const data = (await res.json()) as { item?: any };
+  const item = data?.item;
+  if (!item) return null;
+  return {
+    id: item.slug,
+    slug: item.slug,
+    title: item.title,
+    subtitle: item.subtitle,
+    category: item.category,
+    durationMinutes: item.durationMinutes,
+    isPremium: item.isPremium,
+    body: item.body,
+  };
+}
+
+export async function loadResourceFeatured(limit = 6): Promise<LibraryItem[]> {
+  const res = await fetch(`${API_BASE_URL}/api/resource/featured?limit=${limit}`);
+  const data = (await res.json()) as { items?: any[] };
+  return (Array.isArray(data.items) ? data.items : []).map((item: any) => ({
+    id: item.slug,
+    slug: item.slug,
+    title: item.title,
+    subtitle: item.subtitle,
+    category: item.category,
+    durationMinutes: item.durationMinutes,
+    isPremium: item.isPremium,
+  }));
+}
+
+export async function loadResourceRecentlyAdded(limit = 6): Promise<LibraryItem[]> {
+  const res = await fetch(`${API_BASE_URL}/api/resource/recently-added?limit=${limit}`);
+  const data = (await res.json()) as { items?: any[] };
+  return (Array.isArray(data.items) ? data.items : []).map((item: any) => ({
+    id: item.slug,
+    slug: item.slug,
+    title: item.title,
+    subtitle: item.subtitle,
+    category: item.category,
+    durationMinutes: item.durationMinutes,
+    isPremium: item.isPremium,
+  }));
+}
+
+export async function loadResourceRecommended(limit = 6): Promise<LibraryItem[]> {
+  const res = await fetch(`${API_BASE_URL}/api/resource/recommended?limit=${limit}`);
+  const data = (await res.json()) as { items?: any[] };
+  return (Array.isArray(data.items) ? data.items : []).map((item: any) => ({
+    id: item.slug,
+    slug: item.slug,
+    title: item.title,
+    subtitle: item.subtitle,
+    category: item.category,
+    durationMinutes: item.durationMinutes,
+    isPremium: item.isPremium,
+  }));
+}
+
+export async function searchResources(q?: string, type?: string, category?: string): Promise<LibraryItem[]> {
+  const items = await loadLibrary(type || 'resource');
+  const needle = (q || '').trim().toLowerCase();
+  const filtered = needle
+    ? items.filter(
+        (item) =>
+          item.title.toLowerCase().includes(needle) ||
+          item.subtitle.toLowerCase().includes(needle) ||
+          (item.category || '').toLowerCase().includes(needle)
+      )
+    : items;
+  const catFiltered = category
+    ? filtered.filter(
+        (item) => Boolean(item.category) && item.category!.toLowerCase() === category!.toLowerCase()
+      )
+    : filtered;
+  return catFiltered.map((item) => ({ ...item }));
+}

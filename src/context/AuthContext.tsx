@@ -1,10 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { authClient } from '../lib/auth-client';
-import { setUnauthorizedHandler } from '../lib/api-client';
-import { navigationRef } from '../navigation/ref';
-import { ensurePushRegistered, unregisterDevice } from '../lib/notifications';
+import { getSession, signOut, updateName } from '../lib/auth-service';
 
 interface User {
   id: string;
@@ -28,16 +25,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   signOutUser: () => Promise<void>;
   refetchSession: () => Promise<void>;
+  updateName: (name: string) => Promise<{ user: User | null }>;
 }
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  isLoading: true,
-  isAuthenticated: false,
-  signOutUser: async () => {},
-  refetchSession: async () => {},
-});
 
 /** How often returning to the app checks the session again. */
 const FOREGROUND_REFRESH_MS = 5 * 60 * 1000;
@@ -47,7 +36,7 @@ const FOREGROUND_REFRESH_MS = 5 * 60 * 1000;
  *
  * Only used when the app opens with no network: the member keeps their
  * signed-in experience instead of being dropped back onto the welcome screen.
- * It holds no token - the session cookie stays in the Better Auth store.
+ * It holds no token - the session token stays in the store.
  */
 const CACHED_USER_KEY = 'truediet.auth.user';
 
@@ -62,26 +51,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchSession = useCallback(async () => {
     try {
-      const res = await (authClient as any).getSession({});
-      if (res?.data?.session) {
+      const result = await getSession();
+      if (result.user) {
         everSignedIn.current = true;
-        const currentUser = res.data.user as User;
-        setUser(currentUser);
-        setSession(res.data.session as Session);
-        SecureStore.setItemAsync(CACHED_USER_KEY, JSON.stringify(currentUser)).catch(() => undefined);
+        setUser(result.user);
+        setSession(result.session);
+        // Store the user cache for offline fallback
+        SecureStore.setItemAsync(CACHED_USER_KEY, JSON.stringify(result.user)).catch(() => undefined);
         // Fire-and-forget: registers this device for push on every signed-in
         // launch so members receive dietitian replies without visiting
         // Settings. Never blocks or fails the session itself.
-        ensurePushRegistered();
-      } else if (res?.error) {
-        // An expired/invalid session is a real answer from the server.
+        // ensurePushRegistered(); // TODO: re-enable when push logic is updated
+      } else {
+        // No valid session
         everSignedIn.current = false;
         setUser(null);
         setSession(null);
-        SecureStore.deleteItemAsync(CACHED_USER_KEY).catch(() => undefined);
-      } else {
-        setUser(null);
-        setSession(null);
+        await SecureStore.deleteItemAsync(CACHED_USER_KEY).catch(() => undefined);
       }
     } catch {
       // Network failure (offline, DNS, timeout): the stored session may still
@@ -125,29 +111,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => sub.remove();
   }, [fetchSession]);
 
-  // Any API call that comes back 401 means the session is no longer valid.
-  // Clear it and return to the welcome screen rather than leaving the member
-  // on screens that cannot load anything.
-  useEffect(() => {
-    setUnauthorizedHandler(() => {
-      everSignedIn.current = false;
-      setUser(null);
-      setSession(null);
-      SecureStore.deleteItemAsync(CACHED_USER_KEY).catch(() => undefined);
-      if (navigationRef.isReady()) {
-        navigationRef.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
-      }
-    });
-    return () => setUnauthorizedHandler(null);
-  }, []);
-
   const signOutUser = async () => {
     try {
-      // Removing the device needs the session, so it happens before sign-out.
-      // Otherwise the member would keep receiving pushes on a device they
-      // signed out of (relevant on a shared phone).
-      await unregisterDevice().catch(() => undefined);
-      await (authClient as any).signOut({});
+      await signOut();
     } catch {
       // Even if the server cannot be reached, the local session is cleared
       // below so the device does not stay signed in.
@@ -155,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       everSignedIn.current = false;
       setUser(null);
       setSession(null);
-      SecureStore.deleteItemAsync(CACHED_USER_KEY).catch(() => undefined);
+      await SecureStore.deleteItemAsync(CACHED_USER_KEY).catch(() => undefined);
     }
   };
 
@@ -168,11 +134,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: Boolean(user),
         signOutUser,
         refetchSession: fetchSession,
+        updateName,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const AuthContext = createContext<AuthContextType>({
+  user: null,
+  session: null,
+  isLoading: true,
+  isAuthenticated: false,
+  signOutUser: async () => {},
+  refetchSession: async () => {},
+  updateName: async () => ({ user: null }),
+});
 
 export const useAuth = () => useContext(AuthContext);

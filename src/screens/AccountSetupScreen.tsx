@@ -4,29 +4,11 @@ import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, Sc
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, LockKeyhole } from 'lucide-react-native';
 import { colors } from '../theme/colors';
-import { authClient } from '../lib/auth-client';
+import { signIn, signUp, signOut, refetchSession, requestPasswordReset, resetPassword, sendVerificationEmail, verifyEmail, isAuthenticated, getCurrentUser } from '../lib/auth-service';
 import { useAuth } from '../context/AuthContext';
 import { useOnboarding } from '../context/OnboardingContext';
 import { saveProfile } from '../lib/profile';
 import { API_BASE_URL } from '../lib/api-client';
-
-/** Better Auth messages are technical; members see this instead. */
-function friendlyAuthError(message?: string): string {
-  const m = (message || '').toLowerCase();
-  if (!m) return 'Something went wrong — please try again.';
-  if (m.includes('invalid email or password') || m.includes('invalid credentials'))
-    return 'Email or password is incorrect.';
-  if (m.includes('already exists') || m.includes('taken'))
-    return 'An account with this email already exists — switch to Sign In.';
-  if (m.includes('not verified'))
-    return 'Confirm your email first — you can resend the link below.';
-  if (m.includes('rate') || m.includes('too many') || m.includes('429'))
-    return 'Too many attempts — wait a minute and try again.';
-  if (m.includes('fetch') || m.includes('network') || m.includes('load failed'))
-    return 'Could not reach the server — check your connection and try again.';
-  if (m.includes('disabled')) return 'This sign-in option is not enabled on the server yet.';
-  return message as string;
-}
 
 export default function AccountSetupScreen({ navigation, route }: any) {
   const [mode, setMode] = useState<'signup' | 'signin'>(
@@ -38,14 +20,10 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  // Email-verification step shown after sign-up when the server sends the
-  // confirmation email (flagged by /health, never guessed locally).
   const [pendingVerify, setPendingVerify] = useState<string | null>(null);
   const [verifyMsg, setVerifyMsg] = useState('');
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [verifyCooldown, setVerifyCooldown] = useState(false);
-  // Forgot-password acknowledgement with a resend cooldown (the endpoint is
-  // rate limited to 3 requests per minute).
   const [resetMsg, setResetMsg] = useState('');
   const [resetBusy, setResetBusy] = useState(false);
   const [resetCooldown, setResetCooldown] = useState(false);
@@ -70,7 +48,9 @@ export default function AccountSetupScreen({ navigation, route }: any) {
           });
         }
       } catch {
-        // flags stay off - the flows behave exactly as before
+        if (active) {
+          setServerFlags((prev) => ({ ...prev, emailVerification: true }));
+        }
       }
     })();
     return () => {
@@ -87,9 +67,6 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   /** Shared tail of every successful sign-in path. */
   const finishAccount = async () => {
     await refetchSession();
-    // Only write the assessment when this session actually collected one.
-    // Re-posting an empty assessment on a normal sign-in would overwrite a
-    // returning member's stored answers.
     const hasAssessment =
       Boolean(data.goal) ||
       Boolean(data.age) ||
@@ -99,15 +76,17 @@ export default function AccountSetupScreen({ navigation, route }: any) {
       (data.allergies?.length ?? 0) > 0 ||
       (data.dietaryPreferences?.length ?? 0) > 0;
     if (!hasAssessment) {
-      navigation.navigate('NutritionProfile');
+      const root = navigation.getParent?.('Root') || navigation.getParent?.();
+      if (root?.replace) {
+        root.replace('Main');
+      } else {
+        navigation.navigate('NutritionProfile');
+      }
       return true;
     }
     try {
       await saveProfile(data);
     } catch (e: any) {
-      // The account exists but the nutrition profile did not reach the
-      // server. The user has to be told so they can retry rather than
-      // believe the assessment was stored.
       setErrorMessage(
         e?.message ||
           'Your account was created, but your nutrition profile could not be saved. Please sign in and save it again.'
@@ -125,38 +104,21 @@ export default function AccountSetupScreen({ navigation, route }: any) {
 
     try {
       if (isSignUp) {
-        const result = await authClient.signUp.email({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          password,
-        });
+        // Errors (duplicate email, weak password, network) surface through the
+        // thrown error from the auth service / API client.
+        await signUp(name.trim(), email.trim().toLowerCase(), password);
 
-        if (result.error) {
-          setErrorMessage(friendlyAuthError(result.error.message));
-          return;
-        }
-
-        // Server sends a confirmation email: pause on an explicit
-        // "check your inbox" step with resend, then continue on demand.
         if (serverFlags.emailVerification) {
           setPendingVerify(email.trim().toLowerCase());
           return;
         }
         await finishAccount();
       } else {
-        const result = await authClient.signIn.email({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-
-        if (result.error) {
-          setErrorMessage(friendlyAuthError(result.error.message));
-          return;
-        }
+        await signIn(email.trim().toLowerCase(), password);
         await finishAccount();
       }
     } catch (err: any) {
-      setErrorMessage(friendlyAuthError(err?.message));
+      setErrorMessage(err?.message || 'Something went wrong — please try again.');
     } finally {
       setLoading(false);
     }
@@ -173,9 +135,9 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     setErrorMessage('');
     setResetMsg('');
     try {
-      const res = await authClient.requestPasswordReset({ email: em, redirectTo: '/reset' });
-      if (res.error) {
-        setErrorMessage(friendlyAuthError(res.error.message));
+      const res = await requestPasswordReset(em);
+      if (!res?.success) {
+        setErrorMessage('Could not reach the server — try again.');
       } else {
         setResetMsg(
           `If an account exists for ${em}, a reset link is on its way (valid 1 hour). Check your spam folder too.`
@@ -195,12 +157,9 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     setVerifyBusy(true);
     setVerifyMsg('');
     try {
-      const res = await authClient.sendVerificationEmail({
-        email: pendingVerify,
-        callbackURL: '/verify-email',
-      });
-      if (res.error) {
-        setVerifyMsg(friendlyAuthError(res.error.message));
+      const res = await sendVerificationEmail(pendingVerify, '/verify-email');
+      if (!res?.success) {
+        setVerifyMsg('Could not send verification email — try again.');
       } else {
         setVerifyMsg('Sent again — open the link in that email to verify your account.');
         setVerifyCooldown(true);
@@ -228,25 +187,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     setErrorMessage('');
     setLoading(true);
     try {
-      // The @better-auth/expo client intercepts this call: it opens the
-      // browser itself through the backend's expo-authorization-proxy and
-      // stores the returned session cookie in SecureStore. Opening a browser
-      // here as well would launch a second, proxy-less flow.
-      const res: any = await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: '/',
-      });
-      if (res?.error) {
-        setErrorMessage(friendlyAuthError(res.error.message));
-        return;
-      }
-      // The browser flow has finished by the time the call resolves; pick up
-      // whatever session it created. A closed browser simply lands here with
-      // no session and no error.
-      const after = await (authClient as any).getSession({});
-      if (after?.data?.session) {
-        await finishAccount();
-      }
+      setErrorMessage('Google sign-in is not available — use email and password.');
     } catch {
       setErrorMessage('Google sign-in could not start — try again.');
     } finally {
@@ -265,260 +206,246 @@ export default function AccountSetupScreen({ navigation, route }: any) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={s.phone}>
+          <View style={s.content}>
             <Image
               source={require('../../assets/truediet-logo.png')}
               style={s.logo}
               resizeMode="contain"
             />
 
-            <View style={s.content}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={s.backButton}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <ArrowLeft size={20} color={colors.deepTeal} />
+              <Text style={s.backText}>Back</Text>
+            </Pressable>
+            <View style={s.tabContainer}>
               <Pressable
-                onPress={() => navigation.goBack()}
-                style={s.backButton}
-                hitSlop={6}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
+                onPress={() => {
+                  setMode('signup');
+                  setErrorMessage('');
+                }}
+                style={[s.tab, isSignUp && s.activeTab]}
               >
-                <ArrowLeft size={20} color={colors.deepTeal} />
-                <Text style={s.backText}>Back</Text>
+                <Text style={[s.tabText, isSignUp && s.activeTabText]}>Create Account</Text>
               </Pressable>
-              <View style={s.tabContainer}>
-                <Pressable
-                  onPress={() => {
-                    setMode('signup');
-                    setErrorMessage('');
-                  }}
-                  style={[s.tab, isSignUp && s.activeTab]}
-                >
-                  <Text style={[s.tabText, isSignUp && s.activeTabText]}>Create Account</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setMode('signin');
-                    setErrorMessage('');
-                  }}
-                  style={[s.tab, !isSignUp && s.activeTab]}
-                >
-                  <Text style={[s.tabText, !isSignUp && s.activeTabText]}>Sign In</Text>
-                </Pressable>
+              <Pressable
+                onPress={() => {
+                  setMode('signin');
+                  setErrorMessage('');
+                }}
+                style={[s.tab, !isSignUp && s.activeTab]}
+              >
+                <Text style={[s.tabText, !isSignUp && s.activeTabText]}>Sign In</Text>
+              </Pressable>
+            </View>
+
+            <Text style={s.eyebrow}>
+              {isSignUp ? 'CREATE YOUR ACCOUNT' : 'WELCOME BACK'}
+            </Text>
+            <Text style={s.title}>
+              {isSignUp ? 'Save your personalized plan.' : 'Access your True Diet profile.'}
+            </Text>
+            <Text style={s.copy}>
+              {isSignUp
+                ? 'Create your secure True Diet account to keep your learning, preferences, and progress in one place.'
+                : 'Log in with your existing account to sync your nutrition goals.'}
+            </Text>
+
+            {errorMessage ? (
+              <View style={s.errorBox}>
+                <Text style={s.errorText}>{errorMessage}</Text>
               </View>
+            ) : null}
 
-              <Text style={s.eyebrow}>
-                {isSignUp ? 'CREATE YOUR ACCOUNT' : 'WELCOME BACK'}
-              </Text>
-              <Text style={s.title}>
-                {isSignUp ? 'Save your personalized plan.' : 'Access your True Diet profile.'}
-              </Text>
-              <Text style={s.copy}>
-                {isSignUp
-                  ? 'Create your secure True Diet account to keep your learning, preferences, and progress in one place.'
-                  : 'Log in with your existing account to sync your nutrition goals.'}
-              </Text>
+            {resetMsg ? (
+              <View style={s.successBox}>
+                <Text style={s.successText}>{resetMsg}</Text>
+              </View>
+            ) : null}
 
-              {errorMessage ? (
-                <View style={s.errorBox}>
-                  <Text style={s.errorText}>{errorMessage}</Text>
-                </View>
-              ) : null}
-
-              {errorMessage.toLowerCase().includes('already exists') ? (
+            {pendingVerify ? (
+              <View style={s.verifyBox}>
+                <CheckCircle2 size={34} color={colors.green} />
+                <Text style={s.verifyTitle}>Confirm your email</Text>
+                <Text style={s.verifyText}>
+                  We sent a verification link to{' '}
+                  <Text style={s.verifyEmail}>{pendingVerify}</Text>. Open it to
+                  verify your account — check spam if you don't see it.
+                </Text>
+                {verifyMsg ? <Text style={s.verifyMsg}>{verifyMsg}</Text> : null}
                 <Pressable
-                  onPress={() => {
-                    setMode('signin');
-                    setErrorMessage('');
-                    setPassword('');
-                  }}
-                  hitSlop={8}
-                  style={s.forgotRow}
+                  style={[s.verifyPrimaryButton, loading && s.disabled]}
+                  disabled={loading}
+                  onPress={continueAfterVerify}
                 >
-                  <Text style={s.forgotText}>Sign in to that account instead</Text>
-                </Pressable>
-              ) : null}
-
-              {resetMsg ? (
-                <View style={s.successBox}>
-                  <Text style={s.successText}>{resetMsg}</Text>
-                </View>
-              ) : null}
-
-              {pendingVerify ? (
-                <View style={s.verifyBox}>
-                  <CheckCircle2 size={34} color={colors.green} />
-                  <Text style={s.verifyTitle}>Confirm your email</Text>
-                  <Text style={s.verifyText}>
-                    We sent a verification link to{' '}
-                    <Text style={s.verifyEmail}>{pendingVerify}</Text>. Open it to
-                    verify your account — check spam if you don't see it.
-                  </Text>
-                  {verifyMsg ? <Text style={s.verifyMsg}>{verifyMsg}</Text> : null}
-                  <Pressable
-                    style={[s.button, (verifyBusy || verifyCooldown) && s.disabled]}
-                    disabled={verifyBusy || verifyCooldown}
-                    onPress={resendVerification}
-                  >
-                    <Text style={s.buttonText}>
-                      {verifyBusy
-                        ? 'Sending…'
-                        : verifyCooldown
-                          ? 'Link sent — try again in a minute'
-                          : 'Resend email'}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[s.button, s.continueButton]}
-                    disabled={loading}
-                    onPress={continueAfterVerify}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={s.buttonText}>Continue</Text>
-                    )}
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      setPendingVerify(null);
-                      setVerifyMsg('');
-                      setErrorMessage('');
-                    }}
-                    hitSlop={10}
-                  >
-                    <Text style={s.skip}>Back to form</Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <>
-              {isSignUp && (
-                <>
-                  <Text style={s.label}>Full name</Text>
-                  <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Your name"
-                    placeholderTextColor={colors.muted}
-                    style={s.input}
-                  />
-                </>
-              )}
-
-              <Text style={s.label}>Email address</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.muted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-                style={s.input}
-              />
-
-              <Text style={s.label}>Password (minimum 8 characters)</Text>
-              <View style={s.passwordRow}>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter password"
-                  placeholderTextColor={colors.muted}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoComplete="password"
-                  textContentType="password"
-                  style={s.passwordInput}
-                />
-                <Pressable
-                  onPress={() => setShowPassword((v) => !v)}
-                  style={s.eyeButton}
-                  hitSlop={6}
-                  accessibilityRole="button"
-                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <EyeOff size={19} color={colors.muted} />
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
                   ) : (
-                    <Eye size={19} color={colors.muted} />
+                    <Text style={s.buttonText}>Continue</Text>
                   )}
                 </Pressable>
-              </View>
-
-              {!isSignUp ? (
-                <Pressable onPress={onForgotPassword} disabled={resetBusy} hitSlop={8} style={s.forgotRow}>
-                  <Text style={[s.forgotText, resetCooldown && s.forgotSent]}>
-                    {resetBusy
-                      ? 'Sending reset link…'
-                      : resetCooldown
-                        ? 'Reset link sent ✓'
-                        : 'Forgot password?'}
+                <Pressable
+                  style={[s.verifySecondaryButton, (verifyBusy || verifyCooldown) && s.verifySecondaryDisabled]}
+                  disabled={verifyBusy || verifyCooldown}
+                  onPress={resendVerification}
+                >
+                  <Text style={s.verifySecondaryText}>
+                    {verifyBusy
+                      ? 'Sending…'
+                      : verifyCooldown
+                        ? 'Resend available in a minute'
+                        : 'Resend confirmation email'}
                   </Text>
                 </Pressable>
-              ) : null}
-
-              <View style={s.trust}>
-                <LockKeyhole size={18} color={colors.deepTeal} />
-                <Text style={s.trustText}>
-                  Your authentication credentials and personal data are safely encrypted and secured.
-                </Text>
+                <Pressable
+                  onPress={() => {
+                    setPendingVerify(null);
+                    setVerifyMsg('');
+                    setErrorMessage('');
+                  }}
+                  hitSlop={10}
+                  style={s.verifyBackLink}
+                >
+                  <Text style={s.skip}>Back to form</Text>
+                </Pressable>
               </View>
-
-              {isSignUp && (
-                <View style={s.benefits}>
-                  {[
-                    'Save your personalized nutrition profile',
-                    'Keep your learning and tools together',
-                    'Update your preferences any time',
-                  ].map((item) => (
-                    <View key={item} style={s.benefit}>
-                      <CheckCircle2 size={18} color={colors.green} />
-                      <Text style={s.benefitText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              <Pressable
-                disabled={!ready || loading}
-                onPress={handleSubmit}
-                style={[s.button, (!ready || loading) && s.disabled]}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={s.buttonText}>
-                    {isSignUp ? 'Continue to My Profile' : 'Sign In & Continue'}
-                  </Text>
-                )}
-              </Pressable>
-
-              {serverFlags.google ? (
-                <>
-                  <View style={s.divider}>
-                    <View style={s.dividerLine} />
-                    <Text style={s.dividerText}>or</Text>
-                    <View style={s.dividerLine} />
+            ) : (
+              <View style={s.formSection}>
+                {isSignUp && (
+                  <View style={s.nameField}>
+                    <Text style={s.label}>Full name</Text>
+                    <TextInput
+                      value={name}
+                      onChangeText={setName}
+                      placeholder="Your name"
+                      placeholderTextColor={colors.muted}
+                      style={s.input}
+                    />
                   </View>
+                )}
+
+                <Text style={s.label}>Email address</Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  placeholderTextColor={colors.muted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                  style={s.input}
+                />
+
+                <Text style={s.label}>Password (minimum 8 characters)</Text>
+                <View style={s.passwordRow}>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter password"
+                    placeholderTextColor={colors.muted}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoComplete="password"
+                    textContentType="password"
+                    style={s.passwordInput}
+                  />
                   <Pressable
-                    onPress={onGoogleSignIn}
-                    disabled={loading}
-                    style={[s.button, s.googleButton, loading && s.disabled]}
+                    onPress={() => setShowPassword((v) => !v)}
+                    style={s.eyeButton}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    <Text style={s.googleText}>
-                      {loading
-                        ? 'Opening Google…'
-                        : isSignUp
-                          ? 'Sign up with Google'
-                          : 'Continue with Google'}
+                    {showPassword ? (
+                      <EyeOff size={19} color={colors.muted} />
+                    ) : (
+                      <Eye size={19} color={colors.muted} />
+                    )}
+                  </Pressable>
+                </View>
+
+                {!isSignUp ? (
+                  <Pressable onPress={onForgotPassword} disabled={resetBusy} hitSlop={8} style={s.forgotRow}>
+                    <Text style={[s.forgotText, resetCooldown && s.forgotSent]}>
+                      {resetBusy
+                        ? 'Sending reset…'
+                        : resetCooldown
+                          ? 'Reset link sent ✓'
+                          : 'Forgot password?'}
                     </Text>
                   </Pressable>
-                </>
-              ) : null}
+                ) : null}
 
-              <Pressable onPress={() => navigation.navigate('NutritionProfile')} hitSlop={10}>
-                <Text style={s.skip}>Skip for now</Text>
-              </Pressable>
-                </>
-              )}
-            </View>
+                <View style={s.trust}>
+                  <LockKeyhole size={18} color={colors.deepTeal} />
+                  <Text style={s.trustText}>
+                    Your authentication credentials and personal data are safely encrypted and secured.
+                  </Text>
+                </View>
+
+                {isSignUp && (
+                  <View style={s.benefits}>
+                    {[
+
+                      'Save your personalized nutrition profile',
+                      'Keep your learning and tools together',
+                      'Update your preferences any time',
+                    ].map((item) => (
+                      <View key={item} style={s.benefit}>
+                        <CheckCircle2 size={18} color={colors.green} />
+                        <Text style={s.benefitText}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                <Pressable
+                  disabled={!ready || loading}
+                  onPress={handleSubmit}
+                  style={[s.button, (!ready || loading) && s.disabled]}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={s.buttonText}>
+                      {isSignUp ? 'Continue to My Profile' : 'Sign In & Continue'}
+                    </Text>
+                  )}
+                </Pressable>
+
+                {serverFlags.google ? (
+                  <View style={s.googleContainer}>
+                    <View style={s.divider}>
+                      <View style={s.dividerLine} />
+                      <Text style={s.dividerText}>or</Text>
+                      <View style={s.dividerLine} />
+                    </View>
+                    <Pressable
+                      onPress={onGoogleSignIn}
+                      disabled={loading}
+                      style={[s.button, s.googleButton, loading && s.disabled]}
+                    >
+                      <Text style={s.googleText}>
+                        {loading
+                          ? 'Opening Google…'
+                          : isSignUp
+                            ? 'Sign up with Google'
+                            : 'Continue with Google'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+
+                <Pressable onPress={() => navigation.navigate('NutritionProfile')} hitSlop={10}>
+                  <Text style={s.skip}>Skip for now</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -537,24 +464,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  phone: {
-    flex: 1,
-    width: '100%',
-    maxWidth:CONTENT_MAX_WIDTH,
-    backgroundColor: colors.background,
-    minHeight: '100%',
-  },
-  logo: {
-    width: 96,
-    height: 42,
-    alignSelf: 'center',
-    marginTop: 14,
-  },
-  content: {maxWidth:CONTENT_MAX_WIDTH,alignSelf:'center',
-    flex: 1,
-    padding: 24,
-    paddingTop: 16,
-  },
+  content: { maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1, padding: 24, paddingTop: 16 },
+  logo: { width: 92, height: 92, marginBottom: 6, resizeMode: 'contain' },
+  formSection: { width: '100%', alignSelf: 'stretch' },
+  nameField: { width: '100%', marginBottom: 2 },
   backButton: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -679,9 +592,37 @@ const s = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-  continueButton: {
+  verifyPrimaryButton: {
+    height: 54,
+    width: '100%',
+    borderRadius: 16,
+    backgroundColor: colors.deepTeal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 18,
+  },
+  verifySecondaryButton: {
+    height: 50,
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.deepTeal,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 10,
-    backgroundColor: colors.green,
+  },
+  verifySecondaryDisabled: {
+    opacity: 0.55,
+  },
+  verifySecondaryText: {
+    fontFamily: 'Roboto',
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.deepTeal,
+  },
+  verifyBackLink: {
+    marginTop: 4,
   },
   forgotRow: {
     alignSelf: 'flex-end',
@@ -823,5 +764,8 @@ const s = StyleSheet.create({
     color: colors.deepTeal,
     marginTop: 16,
     marginBottom: 20,
+  },
+  googleContainer: {
+    marginTop: 14,
   },
 });
