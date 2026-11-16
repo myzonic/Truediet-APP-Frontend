@@ -8,18 +8,30 @@ export const API_BASE_URL =
 
 const baseURL = API_BASE_URL;
 
-// The opaque session token issued by POST /api/auth/login (and returned by
-// /api/auth/session) lives in Expo SecureStore. The custom backend validates it
-// through the bearer JWT on authenticated routes.
-const SESSION_TOKEN_KEY = 'truediet.auth.cookie';
+// The backend authenticates protected routes with the bearer JWT returned by
+// POST /api/auth/login|register (`token`) and refreshed by GET /api/auth/session
+// (`session.token`). The opaque session row token (`session.token` from login)
+// is kept separately so sign-out can delete the server-side session.
+export const ACCESS_TOKEN_KEY = 'truediet.auth.token';
+const SESSION_TOKEN_KEY = 'truediet.auth.session';
 
-const getStoredSessionToken = async (): Promise<string> => {
+const getStoredAccessToken = async (): Promise<string> => {
+  try {
+    return (await SecureStore.getItemAsync(ACCESS_TOKEN_KEY)) || '';
+  } catch {
+    return '';
+  }
+};
+
+export const getStoredSessionToken = async (): Promise<string> => {
   try {
     return (await SecureStore.getItemAsync(SESSION_TOKEN_KEY)) || '';
   } catch {
     return '';
   }
 };
+
+export const SESSION_TOKEN_KEY_NAME = SESSION_TOKEN_KEY;
 
 /**
  * Called when the server rejects a request with 401.
@@ -41,13 +53,13 @@ type ApiOptions = {
 };
 
 export async function apiFetch<T = any>(path: string, options: ApiOptions = {}): Promise<T> {
-  const cookie = await getStoredSessionToken();
+  const accessToken = await getStoredAccessToken();
 
   const response = await fetch(`${baseURL}${path}`, {
     method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',
-      ...(cookie ? { Cookie: cookie } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(options.headers || {}),
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,

@@ -109,7 +109,7 @@ android {
         applicationId 'com.truediet.truedietwelcome'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
+        versionCode 10
         versionName "1.0.0"
     }
     signingConfigs {
@@ -118,6 +118,14 @@ android {
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
+            // Keep the legacy v1 (JAR) signature alongside v2/v3. minSdk 24 lets
+            // AGP skip v1 by default, but a v2-only APK installs as
+            // "package appears to be invalid" on some OEM package installers
+            // and whenever a messenger/cloud app recompresses the file during
+            // transfer. v1 survives recompression and gives clear errors.
+            enableV1Signing.set(true)
+            enableV2Signing.set(true)
+            enableV3Signing.set(true)
         }
         if (hasReleaseKeystore) {
             release {
@@ -126,6 +134,9 @@ android {
                 storePassword keystoreProperties['storePassword']
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
+                enableV1Signing.set(true)
+                enableV2Signing.set(true)
+                enableV3Signing.set(true)
             }
         }
     }
@@ -138,6 +149,8 @@ android {
             // present (it is gitignored); otherwise fall back to debug signing
             // so local builds still work.
             signingConfig hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
+            // (All three signature schemes are enabled on the signingConfigs
+            // above; see the v1v2Signing notes there.)
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"

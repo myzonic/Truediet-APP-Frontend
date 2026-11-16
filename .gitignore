@@ -51,3 +51,6 @@ artifacts/
 # It must never be embedded in the frontend repo.
 server/
 
+
+# Local APK artifacts are never committed
+*.apk

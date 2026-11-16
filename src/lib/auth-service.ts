@@ -1,7 +1,7 @@
-import { apiFetch } from './api-client';
+import { apiFetch, ACCESS_TOKEN_KEY, SESSION_TOKEN_KEY_NAME, getStoredSessionToken } from './api-client';
 import * as SecureStore from 'expo-secure-store';
 
-const COOKIE_KEY = 'truediet.auth.cookie';
+const COOKIE_KEY = 'truediet.auth.cookie'; // legacy key, cleared on sign-in
 const USER_KEY = 'truediet.auth.user';
 
 // Types matching the existing AuthContext interface
@@ -20,19 +20,34 @@ interface Session {
 }
 
 /**
+ * Persists the credentials returned by the custom auth endpoints.
+ *
+ * Login/register return `{ token: <bearer JWT>, session.token: <opaque> }`;
+ * GET /api/auth/session returns the refreshed JWT as `session.token`. The JWT
+ * is what protected routes expect in `Authorization: Bearer`, so it goes under
+ * ACCESS_TOKEN_KEY. The opaque value only identifies the server-side session
+ * row for sign-out.
+ */
+async function persistTokens(result: { token?: string; session?: { token?: string } }) {
+  const jwt = result.token || result.session?.token;
+  if (jwt) await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, jwt);
+  if (result.token && result.session?.token) {
+    await SecureStore.setItemAsync(SESSION_TOKEN_KEY_NAME, result.session.token);
+  }
+  await SecureStore.deleteItemAsync(COOKIE_KEY);
+}
+
+/**
  * Logs in a user with email and password.
  * Calls the backend API and stores the session cookie and user data.
  */
 export async function signIn(email: string, password: string) {
-  const result = await apiFetch<{ user: User; session: Session }>('/api/auth/login', {
+  const result = await apiFetch<{ user: User; session: Session; token?: string }>('/api/auth/login', {
     method: 'POST',
     body: { email: email.trim().toLowerCase(), password },
   });
 
-  // Store the session cookie for subsequent API calls
-  if (result.session?.token) {
-    await SecureStore.setItemAsync(COOKIE_KEY, result.session.token);
-  }
+  await persistTokens(result);
 
   // Store the user data
   await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
@@ -45,15 +60,12 @@ export async function signIn(email: string, password: string) {
  * Calls the backend API and stores the session cookie and user data.
  */
 export async function signUp(name: string, email: string, password: string) {
-  const result = await apiFetch<{ user: User; session: Session }>('/api/auth/register', {
+  const result = await apiFetch<{ user: User; session: Session; token?: string }>('/api/auth/register', {
     method: 'POST',
     body: { name: name.trim(), email: email.trim().toLowerCase(), password },
   });
 
-  // Store the session cookie for subsequent API calls
-  if (result.session?.token) {
-    await SecureStore.setItemAsync(COOKIE_KEY, result.session.token);
-  }
+  await persistTokens(result);
 
   // Store the user data
   await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
@@ -63,9 +75,17 @@ export async function signUp(name: string, email: string, password: string) {
 
 /**
  * Logs out the current user.
- * Clears the session cookie and user data from secure storage.
+ * Deletes the server-side session row (best effort) and clears local tokens.
  */
 export async function signOut() {
+  const sessionToken = await getStoredSessionToken();
+  try {
+    await apiFetch('/api/auth/logout', { method: 'POST', body: { token: sessionToken } });
+  } catch {
+    // local cleanup must happen even if the network call fails
+  }
+  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+  await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY_NAME);
   await SecureStore.deleteItemAsync(COOKIE_KEY);
   await SecureStore.deleteItemAsync(USER_KEY);
 }
@@ -80,15 +100,15 @@ export async function refetchSession(): Promise<{ user: User | null; session: Se
       method: 'GET',
     });
 
-    // Store the updated cookie and user
-    if (result.session?.token) {
-      await SecureStore.setItemAsync(COOKIE_KEY, result.session.token);
-    }
+    // /api/auth/session returns a freshly minted bearer JWT as session.token.
+    await persistTokens({ session: result.session });
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
 
     return { user: result.user, session: result.session };
   } catch {
     // Session invalid - clear local storage
+    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY_NAME);
     await SecureStore.deleteItemAsync(COOKIE_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
     return { user: null, session: null };
@@ -144,16 +164,20 @@ export async function verifyEmail(token: string) {
  * Returns the user and session, or null if not authenticated.
  */
 export async function getSession(): Promise<{ user: User | null; session: Session | null }> {
-  // Try to get the stored cookie
+  // Try to get the stored bearer JWT (fall back to the legacy key so a session
+  // created by an older build can still be refreshed once).
   let token = '';
   try {
-    token = await SecureStore.getItemAsync(COOKIE_KEY);
+    token =
+      (await SecureStore.getItemAsync(ACCESS_TOKEN_KEY)) ||
+      (await SecureStore.getItemAsync(COOKIE_KEY)) ||
+      '';
   } catch {
     token = '';
   }
 
   if (!token) {
-    // No stored cookie - try to clear any stale user data
+    // No stored token - try to clear any stale user data
     await SecureStore.deleteItemAsync(USER_KEY);
     return { user: null, session: null };
   }

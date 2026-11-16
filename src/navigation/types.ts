@@ -23,6 +23,17 @@ export type MainStackParamList = {
   ResourceSearch: undefined;
   ResourceCategory: { category: string };
   ResourceDetail: { title?: string; slug?: string } | undefined;
+  MealPlans: undefined;
+  MealPlanDetail: { id: string };
+  GroceryLists: undefined;
+  GroceryListDetail: { id: string };
+  Worksheets: undefined;
+  WorksheetDetail: { slug: string };
+  Checklists: undefined;
+  ChecklistDetail: { slug: string };
+  ResourceTemplates: undefined;
+  NutritionReference: undefined;
+  MyResources: undefined;
   Blog: undefined;
   Webinars: undefined;
   WebinarDetail: { title?: string; meta?: boolean; live?: boolean } | undefined;
