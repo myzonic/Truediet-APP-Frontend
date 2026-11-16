@@ -185,6 +185,24 @@ android {
     }
 }
 
+// Force all APK signature schemes on at the variant level. EAS injects its
+// own release signing config into this file during cloud builds, which
+// overrides whatever the signingConfigs blocks say, and AGP defaults to
+// v2-only for minSdk >= 24. A v2-only APK installs as "package appears to be
+// invalid" whenever a messenger/cloud app recompresses the file during
+// transfer (v1 digests are computed over entry contents and survive that).
+// androidComponents callbacks run after every plugin, so this always wins.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        def sc = variant.signingConfig
+        if (sc != null) {
+            sc.enableV1Signing.set(true)
+            sc.enableV2Signing.set(true)
+            sc.enableV3Signing.set(true)
+        }
+    }
+}
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
