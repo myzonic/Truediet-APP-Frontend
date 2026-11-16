@@ -2,25 +2,74 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
-import { ArrowLeft, ChevronRight, Download, FileText, GraduationCap, HeartHandshake, LogOut, LockKeyhole, Plus, ShieldCheck, Sparkles, Trash2, X } from 'lucide-react-native';
+import {
+  Activity,
+  ArrowLeft,
+  Bell,
+  BookOpen,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  CircleHelp,
+  CreditCard,
+  Download,
+  Edit3,
+  FileText,
+  GraduationCap,
+  Heart,
+  HeartHandshake,
+  Info,
+  LockKeyhole,
+  LogOut,
+  MessageSquare,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  TrendingUp,
+  UserCheck,
+  Utensils,
+  Video,
+} from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { Pill, PillGroup } from '../../components/Pill';
 import { loadProfile, saveProfile } from '../../lib/profile';
 import { loadSavedContent, unsaveContent } from '../../lib/content';
 import { loadPlans, loadSubscription, Plan } from '../../lib/subscription';
 import { loadPreferences, savePreferences } from '../../lib/preferences';
 import { deleteAccount, exportAccountData } from '../../lib/account';
+import { updateName } from '../../lib/auth-service';
 import { apiFetch } from '../../lib/api-client';
 import { useAuth } from '../../context/AuthContext';
 import { useOnboarding } from '../../context/OnboardingContext';
 
-const GOALS = ['Lose weight', 'Maintain weight', 'Gain weight', 'Build muscle', 'Improve overall health', 'Manage a health condition', 'Understand nutrition better'];
+const GOALS = [
+  'Lose weight',
+  'Maintain weight',
+  'Gain weight',
+  'Build muscle',
+  'Improve overall health',
+  'Manage a health condition',
+  'Understand nutrition better',
+];
 const SEXES = ['Female', 'Male', 'Prefer not to say'];
 
 function Page({ navigation, children }: { navigation: any; children: React.ReactNode }) {
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} accessibilityLabel="Go back">
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Pressable
+          style={s.back}
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={8}
+        >
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>
         {children}
@@ -39,9 +88,26 @@ function Head({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: 
   );
 }
 
-function Row({ title, subtitle, onPress, danger }: { title: string; subtitle?: string; onPress?: () => void; danger?: boolean }) {
+function Row({
+  icon: Icon,
+  title,
+  subtitle,
+  onPress,
+  danger,
+}: {
+  icon?: any;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+  danger?: boolean;
+}) {
   const body = (
     <>
+      {Icon ? (
+        <View style={[s.itemIcon, danger && { backgroundColor: '#FEE2E2' }]}>
+          <Icon size={19} color={danger ? colors.red : colors.deepTeal} />
+        </View>
+      ) : null}
       <View style={s.itemCopy}>
         <Text style={[s.itemTitle, danger && { color: colors.red }]}>{title}</Text>
         {subtitle ? <Text style={s.itemSub}>{subtitle}</Text> : null}
@@ -57,44 +123,49 @@ function Row({ title, subtitle, onPress, danger }: { title: string; subtitle?: s
   );
 }
 
-function Toggle({ label, subtitle, value, onChange }: { label: string; subtitle?: string; value: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  label,
+  subtitle,
+  value,
+  onChange,
+}: {
+  label: string;
+  subtitle?: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <View style={s.toggleRow}>
       <View style={s.itemCopy}>
         <Text style={s.itemTitle}>{label}</Text>
         {subtitle ? <Text style={s.itemSub}>{subtitle}</Text> : null}
       </View>
-      <Switch value={value} onValueChange={onChange} trackColor={{ false: colors.border, true: colors.lime }} thumbColor={colors.surface} ios_backgroundColor={colors.border} />
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: colors.border, true: colors.lime }}
+        thumbColor={colors.surface}
+        ios_backgroundColor={colors.border}
+      />
     </View>
-  );
-}
-
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[s.chip, active && s.chipActive]} onPress={onPress}>
-      <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
-    </Pressable>
   );
 }
 
 function Tags({ items, onRemove }: { items: string[]; onRemove: (v: string) => void }) {
   if (!items.length) return <Text style={s.hint}>None added yet.</Text>;
   return (
-    <View style={s.tagRow}>
+    <PillGroup style={{ marginTop: 8 }}>
       {items.map((x) => (
-        <View key={x} style={s.tag}>
-          <Text style={s.tagText}>{x}</Text>
-          <Pressable onPress={() => onRemove(x)} hitSlop={8} accessibilityLabel={`Remove ${x}`}>
-            <X size={14} color={colors.deepTeal} />
-          </Pressable>
-        </View>
+        <Pill key={x} label={x} tone="green" onRemove={() => onRemove(x)} />
       ))}
-    </View>
+    </PillGroup>
   );
 }
 
 export function NutritionProfileSettingsScreen({ navigation }: any) {
+  const { user, refetchSession } = useAuth();
   const { data, updateData } = useOnboarding();
+  const [displayName, setDisplayName] = useState(user?.name || '');
   const [goal, setGoal] = useState(data.goal);
   const [sex, setSex] = useState(data.sex);
   const [age, setAge] = useState(data.age);
@@ -107,6 +178,7 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
+  const [errorStatus, setErrorStatus] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -115,6 +187,7 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
         const r = await loadProfile();
         const p = r?.profile;
         if (active && p) {
+          if (p.displayName) setDisplayName(p.displayName);
           setGoal(p.goal || '');
           setSex(p.sex || '');
           setAge(p.age || '');
@@ -123,18 +196,23 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
           setAllergies(Array.isArray(p.allergies) ? p.allergies : []);
           setPrefs(Array.isArray(p.dietaryPreferences) ? p.dietaryPreferences : []);
         }
-      } catch (e) {
+      } catch {
         /* offline: fall back to onboarding data already in state */
       } finally {
         if (active) setLoading(false);
       }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const add = (value: string, list: string[], setList: (x: string[]) => void, clear: () => void) => {
     const t = value.trim();
-    if (!t || list.includes(t)) { clear(); return; }
+    if (!t || list.includes(t)) {
+      clear();
+      return;
+    }
     setList([...list, t]);
     clear();
   };
@@ -143,15 +221,28 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
     if (saving) return;
     setSaving(true);
     setStatus('');
-    const payload = { goal, sex, age, height, weight, allergies, dietaryPreferences: prefs };
+    setErrorStatus('');
+    const payload = {
+      displayName: displayName.trim() || undefined,
+      goal,
+      sex,
+      age,
+      height,
+      weight,
+      allergies,
+      dietaryPreferences: prefs,
+      isAssessmentComplete: true,
+    };
     updateData(payload);
     try {
       await saveProfile(payload);
-      setStatus('Your profile has been updated.');
+      if (displayName.trim() && displayName.trim() !== user?.name) {
+        await updateName(displayName.trim()).catch(() => undefined);
+        await refetchSession();
+      }
+      setStatus('Your profile and nutrition preferences have been saved.');
     } catch (e: any) {
-      // The database is the source of truth. If the write failed the change
-      // is not saved, and the user has to be told.
-      setStatus(e?.message || 'Could not save your profile. Please try again.');
+      setErrorStatus(e?.message || 'Could not save your profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -159,36 +250,125 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
 
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="NUTRITION PROFILE" title="Personalization you control." copy="Update goals, dietary preferences, and allergy or intolerance considerations when your needs change." />
+      <Head
+        eyebrow="NUTRITION PROFILE & PERSONAL INFO"
+        title="Personalization you control."
+        copy="Update your personal details, nutrition goals, dietary preferences, and allergy considerations whenever your needs change."
+      />
       {loading ? <Text style={s.hint}>Loading your profile…</Text> : null}
 
-      <Text style={s.section}>Your focus</Text>
-      <View style={s.wrapRow}>{GOALS.map((g) => <Chip key={g} label={g} active={goal === g} onPress={() => setGoal(g)} />)}</View>
-
-      <Text style={s.section}>About you</Text>
-      <View style={s.wrapRow}>{SEXES.map((x) => <Chip key={x} label={x} active={sex === x} onPress={() => setSex(x)} />)}</View>
-      <View style={s.fieldRow}>
-        <View style={s.field}><Text style={s.label}>Age</Text><TextInput value={age} onChangeText={setAge} placeholder="e.g. 34" placeholderTextColor={colors.muted} keyboardType="number-pad" style={s.input} /></View>
-        <View style={s.field}><Text style={s.label}>Height</Text><TextInput value={height} onChangeText={setHeight} placeholder="e.g. 168 cm" placeholderTextColor={colors.muted} style={s.input} /></View>
-        <View style={s.field}><Text style={s.label}>Weight</Text><TextInput value={weight} onChangeText={setWeight} placeholder="e.g. 72 kg" placeholderTextColor={colors.muted} style={s.input} /></View>
+      <Text style={s.section}>Personal Information</Text>
+      <View style={s.fieldBlock}>
+        <Text style={s.label}>Full Name</Text>
+        <TextInput
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder="Your full name"
+          placeholderTextColor={colors.muted}
+          style={s.input}
+        />
       </View>
 
-      <Text style={s.section}>Allergies & intolerances</Text>
+      <Text style={s.section}>Your Nutrition Goals</Text>
+      <PillGroup>
+        {GOALS.map((g) => (
+          <Pill key={g} label={g} selected={goal === g} onPress={() => setGoal(g)} />
+        ))}
+      </PillGroup>
+
+      <Text style={s.section}>Biological Sex</Text>
+      <PillGroup>
+        {SEXES.map((x) => (
+          <Pill key={x} label={x} selected={sex === x} onPress={() => setSex(x)} />
+        ))}
+      </PillGroup>
+
+      <View style={s.fieldRow}>
+        <View style={s.fieldCol}>
+          <Text style={s.label}>Age</Text>
+          <TextInput
+            value={age}
+            onChangeText={setAge}
+            placeholder="e.g. 34"
+            placeholderTextColor={colors.muted}
+            keyboardType="number-pad"
+            style={s.input}
+          />
+        </View>
+        <View style={s.fieldCol}>
+          <Text style={s.label}>Height</Text>
+          <TextInput
+            value={height}
+            onChangeText={setHeight}
+            placeholder="e.g. 168 cm"
+            placeholderTextColor={colors.muted}
+            style={s.input}
+          />
+        </View>
+        <View style={s.fieldCol}>
+          <Text style={s.label}>Weight</Text>
+          <TextInput
+            value={weight}
+            onChangeText={setWeight}
+            placeholder="e.g. 72 kg"
+            placeholderTextColor={colors.muted}
+            style={s.input}
+          />
+        </View>
+      </View>
+
+      <Text style={s.section}>Allergies & Intolerances</Text>
       <Tags items={allergies} onRemove={(v) => setAllergies(allergies.filter((x) => x !== v))} />
       <View style={s.addRow}>
-        <TextInput value={newAllergy} onChangeText={setNewAllergy} placeholder="Add an allergy or intolerance" placeholderTextColor={colors.muted} style={[s.input, s.addInput]} onSubmitEditing={() => add(newAllergy, allergies, setAllergies, () => setNewAllergy(''))} />
-        <Pressable style={s.addBtn} onPress={() => add(newAllergy, allergies, setAllergies, () => setNewAllergy(''))} accessibilityLabel="Add allergy"><Plus size={20} color="#fff" /></Pressable>
+        <TextInput
+          value={newAllergy}
+          onChangeText={setNewAllergy}
+          placeholder="Add an allergy or intolerance"
+          placeholderTextColor={colors.muted}
+          style={[s.input, s.addInput]}
+          onSubmitEditing={() => add(newAllergy, allergies, setAllergies, () => setNewAllergy(''))}
+        />
+        <Pressable
+          style={s.addBtn}
+          onPress={() => add(newAllergy, allergies, setAllergies, () => setNewAllergy(''))}
+          accessibilityRole="button"
+          accessibilityLabel="Add allergy"
+        >
+          <Plus size={20} color="#fff" />
+        </Pressable>
       </View>
 
-      <Text style={s.section}>Dietary preferences</Text>
+      <Text style={s.section}>Dietary Preferences</Text>
       <Tags items={prefs} onRemove={(v) => setPrefs(prefs.filter((x) => x !== v))} />
       <View style={s.addRow}>
-        <TextInput value={newPref} onChangeText={setNewPref} placeholder="Add a dietary preference" placeholderTextColor={colors.muted} style={[s.input, s.addInput]} onSubmitEditing={() => add(newPref, prefs, setPrefs, () => setNewPref(''))} />
-        <Pressable style={s.addBtn} onPress={() => add(newPref, prefs, setPrefs, () => setNewPref(''))} accessibilityLabel="Add preference"><Plus size={20} color="#fff" /></Pressable>
+        <TextInput
+          value={newPref}
+          onChangeText={setNewPref}
+          placeholder="Add a dietary preference (e.g. Mediterranean)"
+          placeholderTextColor={colors.muted}
+          style={[s.input, s.addInput]}
+          onSubmitEditing={() => add(newPref, prefs, setPrefs, () => setNewPref(''))}
+        />
+        <Pressable
+          style={s.addBtn}
+          onPress={() => add(newPref, prefs, setPrefs, () => setNewPref(''))}
+          accessibilityRole="button"
+          accessibilityLabel="Add preference"
+        >
+          <Plus size={20} color="#fff" />
+        </Pressable>
       </View>
 
-      <View style={s.notice}><ShieldCheck size={18} color={colors.deepTeal} /><Text style={s.noticeText}>True Diet provides education, not diagnosis or medical nutrition therapy.</Text></View>
+      <View style={s.notice}>
+        <ShieldCheck size={18} color={colors.deepTeal} />
+        <Text style={s.noticeText}>
+          True Diet provides general nutrition education, not medical diagnosis or medical nutrition therapy.
+        </Text>
+      </View>
+
       {status ? <Text style={s.saved}>{status}</Text> : null}
+      {errorStatus ? <Text style={s.error}>{errorStatus}</Text> : null}
+
       <Pressable style={[s.cta, saving && s.ctaDisabled]} disabled={saving} onPress={save}>
         <Text style={s.ctaText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
       </Pressable>
@@ -196,23 +376,49 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
   );
 }
 
-const DEFAULT_NOTIF: Record<string, boolean> = { push: true, messages: true, appointments: true, webinars: true, content: false, tracking: false, media: false, security: true };
+const DEFAULT_NOTIF: Record<string, boolean> = {
+  push: true,
+  messages: true,
+  appointments: true,
+  webinars: true,
+  content: false,
+  tracking: false,
+  media: false,
+  security: true,
+};
 const DEFAULT_ACCESS: Record<string, boolean> = { largerText: false, reduceMotion: false };
 
-export function SettingsScreen({ navigation }: any) {
+export function SettingsScreen({ navigation, route }: any) {
   const { user, signOutUser, refetchSession } = useAuth();
   const [notif, setNotif] = useState<Record<string, boolean>>(DEFAULT_NOTIF);
   const [access, setAccess] = useState<Record<string, boolean>>(DEFAULT_ACCESS);
   const [note, setNote] = useState('');
-  // Password change (email/password accounts only; Google-only members have
-  // no password, and the server rejects the change with a clear message).
-  const [pwOpen, setPwOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(Boolean(route?.params?.openPassword));
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwBusy, setPwBusy] = useState(false);
   const [pwMsg, setPwMsg] = useState('');
   const [pwError, setPwError] = useState('');
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [newName, setNewName] = useState(user?.name || '');
+  const [nameBusy, setNameBusy] = useState(false);
+
+  const saveDisplayName = async () => {
+    const trimmed = newName.trim();
+    if (trimmed.length < 2 || nameBusy) return;
+    setNameBusy(true);
+    try {
+      await updateName(trimmed);
+      await refetchSession();
+      setEditNameOpen(false);
+      setNote('Account name updated.');
+    } catch (e: any) {
+      setNote(e?.message || 'Could not update name.');
+    } finally {
+      setNameBusy(false);
+    }
+  };
 
   const changePassword = async () => {
     if (pwBusy) return;
@@ -228,8 +434,6 @@ export function SettingsScreen({ navigation }: any) {
     }
     setPwBusy(true);
     try {
-      // Changing a password should end sessions that may be compromised, so
-      // the backend revokes all sessions and the member signs in again.
       const res: any = await apiFetch<{ success: boolean }>('/api/auth/change-password', {
         method: 'POST',
         body: { currentPassword: currentPw, newPassword: newPw },
@@ -259,9 +463,13 @@ export function SettingsScreen({ navigation }: any) {
         if (!active) return;
         setNotif({ ...DEFAULT_NOTIF, ...p.notifications });
         setAccess({ ...DEFAULT_ACCESS, ...p.accessibility });
-      } catch (e) { /* offline: keep defaults */ }
+      } catch {
+        /* offline: keep defaults */
+      }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const persist = async (nextNotif: Record<string, boolean>, nextAccess: Record<string, boolean>) => {
@@ -269,68 +477,88 @@ export function SettingsScreen({ navigation }: any) {
       await savePreferences({ notifications: nextNotif, accessibility: nextAccess });
       setNote('Preferences saved.');
     } catch (e: any) {
-      // The server is the source of truth, so a failed write has to be shown
-      // as a failure rather than reported as saved.
       setNote(e?.message || 'Could not save your preferences. Please try again.');
     }
   };
-  const setN = (k: string) => (v: boolean) => { const next = { ...notif, [k]: v }; setNotif(next); persist(next, access); };
-  const setA = (k: string) => (v: boolean) => { const next = { ...access, [k]: v }; setAccess(next); persist(notif, next); };
+  const setN = (k: string) => (v: boolean) => {
+    const next = { ...notif, [k]: v };
+    setNotif(next);
+    persist(next, access);
+  };
+  const setA = (k: string) => (v: boolean) => {
+    const next = { ...access, [k]: v };
+    setAccess(next);
+    persist(notif, next);
+  };
 
   const signOut = () => {
     Alert.alert('Sign out', 'Sign out of True Diet on this device?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: async () => { await signOutUser(); navigation.getParent('Root')?.replace('Onboarding'); } },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await signOutUser();
+          navigation.getParent('Root')?.replace('Onboarding');
+        },
+      },
     ]);
   };
+
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="SETTINGS" title="Make True Diet work for you." copy="Manage notification preferences, accessibility options, and account settings." />
-
-      <Text style={s.section}>Notifications</Text>
-      <View style={s.card}>
-        <Toggle label="Push notifications" subtitle="Allow True Diet to send alerts" value={!!notif.push} onChange={setN('push')} />
-        <Toggle label="Messages" subtitle="Replies from your dietitian" value={!!notif.messages} onChange={setN('messages')} />
-        <Toggle label="Appointments" subtitle="Visit reminders and confirmations" value={!!notif.appointments} onChange={setN('appointments')} />
-        <Toggle label="Webinars & classes" subtitle="Live sessions you register for" value={!!notif.webinars} onChange={setN('webinars')} />
-        <Toggle label="New content" subtitle="Fresh articles and resources" value={!!notif.content} onChange={setN('content')} />
-        <Toggle label="Recipes & podcast" subtitle="New recipes and episodes" value={!!notif.media} onChange={setN('media')} />
-        <Toggle label="Tracking reminders" subtitle="Optional nudges to log meals" value={!!notif.tracking} onChange={setN('tracking')} />
-        <Toggle
-          label="Account & security"
-          subtitle="Always on for account protection"
-          value
-          onChange={() => undefined}
-        />
-      </View>
-
-      <View style={s.list}>
-        <Row
-          title="Device notifications"
-          subtitle="Permission and registered devices"
-          onPress={() => navigation.navigate('Notifications')}
-        />
-      </View>
-
-      <Text style={s.section}>Accessibility</Text>
-      <View style={s.card}>
-        <Toggle label="Larger text" subtitle="Increase base text size" value={!!access.largerText} onChange={setA('largerText')} />
-        <Toggle label="Reduce motion" subtitle="Minimize animations" value={!!access.reduceMotion} onChange={setA('reduceMotion')} />
-      </View>
-      {note ? <Text style={s.saved}>{note}</Text> : null}
+      <Head
+        eyebrow="ACCOUNT SETTINGS"
+        title="Make True Diet work for you."
+        copy="Manage notification preferences, accessibility options, password, and account settings."
+      />
 
       <Text style={s.section}>Account</Text>
       <View style={s.list}>
-        {user?.email ? <Row title={user.name || 'Your account'} subtitle={user.email} /> : <Row title="Not signed in" subtitle="You can browse as a guest" />}
         {user?.email ? (
-          <Pressable style={s.item} onPress={() => { setPwOpen((v) => !v); setPwError(''); setPwMsg(''); }}>
-            <LockKeyhole size={19} color={colors.deepTeal} />
-            <View style={[s.itemCopy, { marginLeft: 12 }]}>
-              <Text style={s.itemTitle}>Change password</Text>
-              <Text style={s.itemSub}>Update the password for this account</Text>
-            </View>
-            <ChevronRight size={18} color={colors.muted} />
-          </Pressable>
+          <Row
+            icon={UserCheck}
+            title={user.name || 'Your account'}
+            subtitle={user.email}
+            onPress={() => {
+              setNewName(user.name || '');
+              setEditNameOpen((v) => !v);
+            }}
+          />
+        ) : (
+          <Row title="Not signed in" subtitle="Tap to sign in or create an account" onPress={() => navigation.navigate('Login')} />
+        )}
+        {editNameOpen && user ? (
+          <View style={s.pwPanel}>
+            <Text style={s.label}>Update full name</Text>
+            <TextInput
+              value={newName}
+              onChangeText={setNewName}
+              placeholder="Your full name"
+              placeholderTextColor={colors.muted}
+              style={s.input}
+            />
+            <Pressable
+              style={[s.cta, (nameBusy || newName.trim().length < 2) && s.ctaDisabled]}
+              disabled={nameBusy || newName.trim().length < 2}
+              onPress={saveDisplayName}
+            >
+              <Text style={s.ctaText}>{nameBusy ? 'Saving…' : 'Save Name'}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {user?.email ? (
+          <Row
+            icon={LockKeyhole}
+            title="Change Password"
+            subtitle="Update the password for this account"
+            onPress={() => {
+              setPwOpen((v) => !v);
+              setPwError('');
+              setPwMsg('');
+            }}
+          />
         ) : null}
         {pwOpen ? (
           <View style={s.pwPanel}>
@@ -366,21 +594,51 @@ export function SettingsScreen({ navigation }: any) {
             />
             {pwError ? <Text style={s.error}>{pwError}</Text> : null}
             <Pressable
-              style={[s.cta, (pwBusy || !currentPw || !newPw) && { opacity: 0.55 }]}
+              style={[s.cta, (pwBusy || !currentPw || !newPw) && s.ctaDisabled]}
               disabled={pwBusy || !currentPw || !newPw}
               onPress={changePassword}
             >
-              <Text style={s.ctaText}>{pwBusy ? 'Updating…' : 'Update password'}</Text>
+              <Text style={s.ctaText}>{pwBusy ? 'Updating…' : 'Update Password'}</Text>
             </Pressable>
           </View>
         ) : null}
         {pwMsg ? <Text style={s.saved}>{pwMsg}</Text> : null}
-        <Row title="Help & Support" subtitle="Contact True Diet" onPress={() => navigation.navigate('Support')} />
-        <Row title="Legal" subtitle="Terms, Privacy Policy, and Disclaimers" onPress={() => navigation.navigate('Legal')} />
-        <Pressable style={[s.item, s.signOut]} onPress={signOut}>
-          <LogOut size={19} color={colors.red} />
-          <View style={[s.itemCopy, { marginLeft: 12 }]}><Text style={[s.itemTitle, { color: colors.red }]}>Sign Out</Text></View>
-        </Pressable>
+      </View>
+
+      <Text style={s.section}>Notifications</Text>
+      <View style={s.card}>
+        <Toggle label="Push notifications" subtitle="Allow True Diet to send alerts" value={!!notif.push} onChange={setN('push')} />
+        <Toggle label="Messages" subtitle="Replies from your dietitian" value={!!notif.messages} onChange={setN('messages')} />
+        <Toggle label="Appointments" subtitle="Visit reminders and confirmations" value={!!notif.appointments} onChange={setN('appointments')} />
+        <Toggle label="Webinars & classes" subtitle="Live sessions you register for" value={!!notif.webinars} onChange={setN('webinars')} />
+        <Toggle label="New content" subtitle="Fresh articles and resources" value={!!notif.content} onChange={setN('content')} />
+        <Toggle label="Recipes & podcast" subtitle="New recipes and episodes" value={!!notif.media} onChange={setN('media')} />
+        <Toggle label="Tracking reminders" subtitle="Optional nudges to log meals" value={!!notif.tracking} onChange={setN('tracking')} />
+        <Toggle label="Account & security" subtitle="Always on for account protection" value onChange={() => undefined} />
+      </View>
+
+      <View style={s.list}>
+        <Row
+          icon={Bell}
+          title="Device notifications"
+          subtitle="Permission and registered devices"
+          onPress={() => navigation.navigate('Notifications')}
+        />
+      </View>
+
+      <Text style={s.section}>Accessibility</Text>
+      <View style={s.card}>
+        <Toggle label="Larger text" subtitle="Increase base text size" value={!!access.largerText} onChange={setA('largerText')} />
+        <Toggle label="Reduce motion" subtitle="Minimize animations" value={!!access.reduceMotion} onChange={setA('reduceMotion')} />
+      </View>
+      {note ? <Text style={s.saved}>{note}</Text> : null}
+
+      <Text style={s.section}>Privacy & Support</Text>
+      <View style={s.list}>
+        <Row icon={ShieldCheck} title="Privacy & Security" subtitle="Consent, data export, and account deletion" onPress={() => navigation.navigate('Privacy')} />
+        <Row icon={CircleHelp} title="Help & Support" subtitle="FAQs and contact True Diet" onPress={() => navigation.navigate('Support')} />
+        <Row icon={FileText} title="Terms & Privacy Policy" subtitle="Legal information and disclaimers" onPress={() => navigation.navigate('Legal')} />
+        {user ? <Row icon={LogOut} title="Sign Out" onPress={signOut} danger /> : null}
       </View>
     </Page>
   );
@@ -399,9 +657,13 @@ export function PrivacyScreen({ navigation }: any) {
       try {
         const p = await loadPreferences();
         if (active) setConsent({ ...DEFAULT_CONSENT, ...p.consents });
-      } catch (e) { /* offline: keep defaults */ }
+      } catch {
+        /* offline: keep defaults */
+      }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const persist = async (next: Record<string, boolean>) => {
@@ -412,7 +674,11 @@ export function PrivacyScreen({ navigation }: any) {
       setNote(e?.message || 'Could not save your consent preferences. Please try again.');
     }
   };
-  const setC = (k: string) => (v: boolean) => { const next = { ...consent, [k]: v }; setConsent(next); persist(next); };
+  const setC = (k: string) => (v: boolean) => {
+    const next = { ...consent, [k]: v };
+    setConsent(next);
+    persist(next);
+  };
 
   const exportData = async () => {
     if (busy) return;
@@ -444,47 +710,76 @@ export function PrivacyScreen({ navigation }: any) {
     }
   };
 
-  const deleteAccountConfirm = () => Alert.alert('Delete my account', 'This permanently removes your account and all personal data. This cannot be undone.', [
-    { text: 'Cancel', style: 'cancel' },
-    {
-      text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          await deleteAccount();
-          await signOutUser();
-          navigation.getParent('Root')?.replace('Onboarding');
-        } catch (e: any) {
-          Alert.alert('Could not delete', e?.message || 'Please try again.');
-        }
-      },
-    },
-  ]);
+  const deleteAccountConfirm = () =>
+    Alert.alert(
+      'Delete my account',
+      'This permanently removes your account and all personal data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              await signOutUser();
+              navigation.getParent('Root')?.replace('Onboarding');
+            } catch (e: any) {
+              Alert.alert('Could not delete', e?.message || 'Please try again.');
+            }
+          },
+        },
+      ]
+    );
 
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="PRIVACY & DATA" title="Your data, your control." copy="Review consent choices, request your data, and manage account deletion. Health-related data is only processed through approved secure services." />
+      <Head
+        eyebrow="PRIVACY & SECURITY"
+        title="Your data, your control."
+        copy="Review consent choices, export a copy of your account data, or permanently delete your account."
+      />
 
       <Text style={s.section}>Consent</Text>
       <View style={s.card}>
-        <Toggle label="Personalized recommendations" subtitle="Use my profile to tailor education" value={!!consent.personalization} onChange={setC('personalization')} />
-        <Toggle label="Anonymous analytics" subtitle="Help improve True Diet" value={!!consent.analytics} onChange={setC('analytics')} />
+        <Toggle
+          label="Personalized recommendations"
+          subtitle="Use my profile to tailor education"
+          value={!!consent.personalization}
+          onChange={setC('personalization')}
+        />
+        <Toggle
+          label="Anonymous analytics"
+          subtitle="Help improve True Diet"
+          value={!!consent.analytics}
+          onChange={setC('analytics')}
+        />
       </View>
       {note ? <Text style={s.saved}>{note}</Text> : null}
 
-      <Text style={s.section}>Your data</Text>
+      <Text style={s.section}>Your Data & Account</Text>
       <View style={s.list}>
-        <Pressable style={s.item} onPress={exportData} disabled={busy}>
-          <Download size={19} color={colors.deepTeal} />
-          <View style={[s.itemCopy, { marginLeft: 12 }]}><Text style={s.itemTitle}>{busy ? 'Preparing…' : 'Export my data'}</Text><Text style={s.itemSub}>Receive a copy of your account data</Text></View>
-          <ChevronRight size={19} color={colors.muted} />
-        </Pressable>
-        <Pressable style={s.item} onPress={deleteAccountConfirm}>
-          <Trash2 size={19} color={colors.red} />
-          <View style={[s.itemCopy, { marginLeft: 12 }]}><Text style={[s.itemTitle, { color: colors.red }]}>Delete my account</Text><Text style={s.itemSub}>Permanently remove your account and data</Text></View>
-          <ChevronRight size={19} color={colors.muted} />
-        </Pressable>
+        <Row
+          icon={Download}
+          title={busy ? 'Preparing export…' : 'Export my data'}
+          subtitle="Download a JSON copy of your profile, logs, and saved items"
+          onPress={exportData}
+        />
+        <Row
+          icon={Trash2}
+          title="Delete my account"
+          subtitle="Permanently remove your account and all associated data"
+          onPress={deleteAccountConfirm}
+          danger
+        />
       </View>
 
-      <View style={s.notice}><LockKeyhole size={18} color={colors.deepTeal} /><Text style={s.noticeText}>Your nutrition information is sensitive. It is access-controlled and never used for advertising.</Text></View>
+      <View style={s.notice}>
+        <LockKeyhole size={18} color={colors.deepTeal} />
+        <Text style={s.noticeText}>
+          Your nutrition information is sensitive. It is access-controlled and never sold or used for advertising.
+        </Text>
+      </View>
     </Page>
   );
 }
@@ -505,34 +800,75 @@ export function PackagesScreen({ navigation }: any) {
       try {
         const r = await loadPlans();
         if (active && r?.plans?.length) setPlans(r.plans);
-      } catch (e) { if (active) setOffline(true); }
-      finally { if (active) setLoading(false); }
+      } catch {
+        if (active) setOffline(true);
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
   const fallback: Plan[] = [
-    { id: 'foundations', code: 'foundations', name: 'Nutrition Foundations', interval: '', priceCents: null, currency: 'USD', features: ['Education package', 'Core learning hub', 'Selected resources'] },
-    { id: 'one-to-one', code: 'one-to-one', name: 'One-to-One Nutrition Support', interval: '', priceCents: null, currency: 'USD', features: ['Personalized RD guidance', 'Secure messaging', 'Video consultations'] },
-    { id: 'premium', code: 'premium', name: 'True Diet Premium', interval: 'month', priceCents: null, currency: 'USD', features: ['Expanded content', 'Live classes', 'Saved libraries'] },
+    {
+      id: 'foundations',
+      code: 'foundations',
+      name: 'Nutrition Foundations',
+      interval: '',
+      priceCents: null,
+      currency: 'USD',
+      features: ['Education package', 'Core learning hub', 'Selected resources'],
+    },
+    {
+      id: 'one-to-one',
+      code: 'one-to-one',
+      name: 'One-to-One Nutrition Support',
+      interval: '',
+      priceCents: null,
+      currency: 'USD',
+      features: ['Personalized RD guidance', 'Secure messaging', 'Video consultations'],
+    },
+    {
+      id: 'premium',
+      code: 'premium',
+      name: 'True Diet Premium',
+      interval: 'month',
+      priceCents: null,
+      currency: 'USD',
+      features: ['Expanded content', 'Live classes', 'Saved libraries'],
+    },
   ];
   const list = plans.length ? plans : fallback;
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="SERVICES" title="Support that meets you where you are." copy="Explore nutrition education, one-to-one support, and flexible ways to work with Maureen." />
+      <Head
+        eyebrow="SERVICES"
+        title="Support that meets you where you are."
+        copy="Explore nutrition education, one-to-one support, and flexible ways to work with Maureen."
+      />
       {loading ? <Text style={s.hint}>Loading packages…</Text> : null}
       <View style={s.list}>
         {list.map((plan) => (
           <Pressable key={plan.id} style={s.package} onPress={() => navigation.navigate('PackageDetail', { plan })}>
             <View style={s.packageTop}>
               <Text style={s.packageName}>{plan.name}</Text>
-              <Text style={s.packagePrice}>{money(plan)}</Text>
+              <Pill label={money(plan)} tone="teal" />
             </View>
-            {plan.features.slice(0, 3).map((f) => <Text key={f} style={s.packageFeature}>• {f}</Text>)}
+            {plan.features.slice(0, 3).map((f) => (
+              <Text key={f} style={s.packageFeature}>
+                • {f}
+              </Text>
+            ))}
             <Text style={s.packageLink}>View details →</Text>
           </Pressable>
         ))}
       </View>
-      {offline ? <Text style={s.hint}>Showing the standard packages. Pricing is confirmed with your dietitian before enrolment.</Text> : null}
+      {offline ? (
+        <Text style={s.hint}>
+          Showing the standard packages. Pricing is confirmed with your dietitian before enrolment.
+        </Text>
+      ) : null}
     </Page>
   );
 }
@@ -542,19 +878,37 @@ export function PackageDetailScreen({ navigation, route }: any) {
   const name = plan?.name || 'Nutrition support with context.';
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="SERVICE DETAIL" title={name} copy="Learn what is included, who this service is for, and how to take the next step." />
+      <Head
+        eyebrow="SERVICE DETAIL"
+        title={name}
+        copy="Learn what is included, who this service is for, and how to take the next step."
+      />
       {plan ? (
         <>
-          <View style={s.priceCard}><Text style={s.packagePrice}>{money(plan)}</Text></View>
+          <View style={s.priceCard}>
+            <Text style={s.packagePrice}>{money(plan)}</Text>
+          </View>
           <Text style={s.section}>What's included</Text>
-          <View style={s.list}>{plan.features.map((f) => <Row key={f} title={f} />)}</View>
+          <View style={s.list}>
+            {plan.features.map((f) => (
+              <Row key={f} icon={Check} title={f} />
+            ))}
+          </View>
         </>
       ) : (
         <Text style={s.hint}>Select a package to see what's included.</Text>
       )}
-      {plan ? <Pressable style={s.cta} onPress={() => navigation.navigate('Checkout', { plan })}><Text style={s.ctaText}>Continue with this plan</Text></Pressable> : null}
-      <Pressable style={s.ctaGhost} onPress={() => navigation.navigate('Telehealth')}><Text style={s.ctaGhostText}>Book a Consultation</Text></Pressable>
-      <Pressable style={s.ctaGhost} onPress={() => navigation.navigate('Subscription')}><Text style={s.ctaGhostText}>Manage Membership</Text></Pressable>
+      {plan ? (
+        <Pressable style={s.cta} onPress={() => navigation.navigate('Checkout', { plan })}>
+          <Text style={s.ctaText}>Continue with this plan</Text>
+        </Pressable>
+      ) : null}
+      <Pressable style={s.ctaGhost} onPress={() => navigation.navigate('Telehealth')}>
+        <Text style={s.ctaGhostText}>Book a Consultation</Text>
+      </Pressable>
+      <Pressable style={s.ctaGhost} onPress={() => navigation.navigate('Subscription')}>
+        <Text style={s.ctaGhostText}>Manage Membership</Text>
+      </Pressable>
     </Page>
   );
 }
@@ -569,64 +923,129 @@ export function SubscriptionScreen({ navigation }: any) {
       try {
         const r = await loadSubscription();
         if (active) setState(r);
-      } catch (e) { if (active) setOffline(true); }
-      finally { if (active) setLoading(false); }
+      } catch {
+        if (active) setOffline(true);
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
   const status = state?.subscription?.status || 'inactive';
   const active = status === 'active' || status === 'trialing';
-  const friendly = active ? 'Active' : status === 'canceled' ? 'Canceled' : 'Free';
+  const friendly = active ? 'Active' : status === 'canceled' ? 'Canceled' : 'Free Plan';
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="MEMBERSHIP" title="Manage your membership." copy="View your current access, renewal information, and available upgrade options." />
+      <Head
+        eyebrow="SUBSCRIPTION & BILLING"
+        title="Manage your membership."
+        copy="View your current access, renewal information, and available upgrade options."
+      />
       {loading ? <Text style={s.hint}>Loading membership…</Text> : null}
       <View style={s.card}>
         <View style={s.packageTop}>
           <Text style={s.itemTitle}>Current plan</Text>
-          <View style={[s.pill, active && s.pillActive]}><Text style={[s.pillText, active && s.pillTextActive]}>{friendly}</Text></View>
+          <Pill label={friendly} tone={active ? 'green' : 'teal'} />
         </View>
-        {state?.subscription?.currentPeriodEnd ? <Text style={s.itemSub}>Renews {new Date(state.subscription.currentPeriodEnd).toLocaleDateString()}</Text> : <Text style={s.itemSub}>{active ? 'Your membership is active.' : 'You are on the free experience.'}</Text>}
+        {state?.subscription?.currentPeriodEnd ? (
+          <Text style={s.itemSub}>
+            Renews {new Date(state.subscription.currentPeriodEnd).toLocaleDateString()}
+          </Text>
+        ) : (
+          <Text style={s.itemSub}>
+            {active ? 'Your membership is active.' : 'You are on the free True Diet experience.'}
+          </Text>
+        )}
       </View>
 
       <Text style={s.section}>What you have access to</Text>
       <View style={s.list}>
-        {(state?.entitlements?.length ? state.entitlements : ['learning_hub', 'selected_resources', 'basic_tracking']).map((e: string) => (
-          <Row key={e} title={e.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} />
+        {(state?.entitlements?.length
+          ? state.entitlements
+          : ['learning_hub', 'selected_resources', 'basic_tracking']
+        ).map((e: string) => (
+          <Row
+            key={e}
+            icon={Check}
+            title={e.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+          />
         ))}
       </View>
 
-      {offline ? <Text style={s.hint}>Your membership status could not be loaded just now. Please try again shortly.</Text> : null}
-      {state && state.paymentsConfigured === false ? <View style={s.notice}><ShieldCheck size={18} color={colors.deepTeal} /><Text style={s.noticeText}>Membership changes are arranged with your dietitian while online checkout is unavailable.</Text></View> : null}
-      <Pressable style={s.cta} onPress={() => navigation.navigate(active ? 'Packages' : 'FreePremium')}><Text style={s.ctaText}>{active ? 'Compare Packages' : 'Upgrade Membership'}</Text></Pressable>
+      {offline ? (
+        <Text style={s.hint}>Your membership status could not be loaded just now. Please try again shortly.</Text>
+      ) : null}
+      {state && state.paymentsConfigured === false ? (
+        <View style={s.notice}>
+          <ShieldCheck size={18} color={colors.deepTeal} />
+          <Text style={s.noticeText}>
+            Membership changes are arranged with your dietitian while online checkout is unavailable.
+          </Text>
+        </View>
+      ) : null}
+      <Pressable
+        style={s.cta}
+        onPress={() => navigation.navigate(active ? 'Packages' : 'FreePremium')}
+      >
+        <Text style={s.ctaText}>{active ? 'Compare Packages' : 'Upgrade Membership'}</Text>
+      </Pressable>
     </Page>
   );
 }
 
 export function MaureenProfileScreen({ navigation }: any) {
-  const credentials = ['Registered Dietitian (RD)', 'Medical Nutrition Therapy', '23+ years of clinical experience', 'Evidence-based, non-restrictive approach'];
+  const credentials = [
+    'Registered Dietitian (MS, RD)',
+    'Medical Nutrition Therapy Specialist',
+    '23+ years of clinical experience',
+    'Evidence-based, non-restrictive approach',
+  ];
   const philosophy = [
     'Food is information, not a moral test.',
-    'Context matters more than rules.',
+    'Context matters more than rigid food rules.',
     'Small, consistent changes beat perfect plans.',
     'Education builds confidence that lasts.',
   ];
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="YOUR DIETITIAN" title="Meet Maureen." copy="A Registered Dietitian with more than 23 years of experience helping people understand nutrition without fear, confusion, or unnecessary restriction." />
+      <Head
+        eyebrow="ABOUT TRUEDIET & YOUR DIETITIAN"
+        title="Meet Maureen."
+        copy="True Diet is founded on Registered Dietitian Maureen Ashbarry’s 23+ years of clinical experience helping people understand nutrition without fear, confusion, or unnecessary restriction."
+      />
 
       <View style={s.card}>
         <Sparkles size={22} color={colors.green} />
-        <Text style={[s.itemSub, { marginTop: 10 }]}>Maureen has guided thousands of people through real nutrition decisions — from everyday meals to complex health conditions — always grounded in evidence and respect for the person in front of her.</Text>
+        <Text style={[s.itemSub, { marginTop: 10 }]}>
+          Maureen has guided thousands of people through real nutrition decisions — from everyday meals to complex health conditions — always grounded in scientific evidence and respect for the person in front of her.
+        </Text>
       </View>
 
       <Text style={s.section}>Credentials & expertise</Text>
-      <View style={s.list}>{credentials.map((c) => <View key={c} style={s.checkRow}><GraduationCap size={18} color={colors.green} /><Text style={s.checkText}>{c}</Text></View>)}</View>
+      <View style={s.list}>
+        {credentials.map((c) => (
+          <View key={c} style={s.checkRow}>
+            <GraduationCap size={18} color={colors.green} />
+            <Text style={s.checkText}>{c}</Text>
+          </View>
+        ))}
+      </View>
 
-      <Text style={s.section}>My philosophy</Text>
-      <View style={s.list}>{philosophy.map((p) => <View key={p} style={s.checkRow}><HeartHandshake size={18} color={colors.deepTeal} /><Text style={s.checkText}>{p}</Text></View>)}</View>
+      <Text style={s.section}>True Diet Philosophy</Text>
+      <View style={s.list}>
+        {philosophy.map((p) => (
+          <View key={p} style={s.checkRow}>
+            <HeartHandshake size={18} color={colors.deepTeal} />
+            <Text style={s.checkText}>{p}</Text>
+          </View>
+        ))}
+      </View>
 
-      <Pressable style={s.cta} onPress={() => navigation.navigate('Dietitian')}><Text style={s.ctaText}>Ask the Dietitian</Text></Pressable>
+      <Pressable style={s.cta} onPress={() => navigation.navigate('Dietitian')}>
+        <Text style={s.ctaText}>Ask the Dietitian</Text>
+      </Pressable>
     </Page>
   );
 }
@@ -642,25 +1061,35 @@ export function SavedContentScreen({ navigation }: any) {
       try {
         const r = await loadSavedContent();
         if (active) setItems(r);
-      } catch (e) { if (active) setOffline(true); }
-      finally { if (active) setLoading(false); }
+      } catch {
+        if (active) setOffline(true);
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
   const paramsFor = (item: any) => {
     switch (item.route) {
-      case 'Article': return { articleId: item.id, title: item.title };
-      case 'MythDetail': return { mythId: String(item.id).replace(/^myth-/, ''), claim: item.title };
-      case 'RecipeDetail': return { recipeId: String(item.id).replace(/^recipe-/, ''), title: item.title };
-      case 'ResourceDetail': return { title: item.title };
-      case 'WebinarDetail': return { title: item.title };
-      case 'PodcastDetail': return { title: item.title };
-      default: return undefined;
+      case 'Article':
+        return { articleId: item.id, title: item.title };
+      case 'MythDetail':
+        return { mythId: String(item.id).replace(/^myth-/, ''), claim: item.title };
+      case 'RecipeDetail':
+        return { recipeId: String(item.id).replace(/^recipe-/, ''), title: item.title };
+      case 'ResourceDetail':
+        return { title: item.title, slug: item.slug || item.id };
+      case 'WebinarDetail':
+        return { title: item.title };
+      case 'PodcastDetail':
+        return { title: item.title };
+      default:
+        return undefined;
     }
   };
   const remove = async (id: string) => {
-    // Keep the row visible until the server confirms the removal, so a
-    // failed delete never silently drops the item.
     try {
       await unsaveContent(id);
       setItems((prev) => prev.filter((x) => x.id !== id));
@@ -670,32 +1099,52 @@ export function SavedContentScreen({ navigation }: any) {
   };
   return (
     <Page navigation={navigation}>
-      <Head eyebrow="SAVED CONTENT" title="Your library." copy="Keep recipes, articles, resources, classes, and episodes you want to revisit." />
+      <Head
+        eyebrow="SAVED RESOURCES"
+        title="Your saved library."
+        copy="Keep recipes, articles, resources, classes, and episodes you want to revisit."
+      />
       {loading ? <Text style={s.hint}>Loading your library…</Text> : null}
       {!loading && items.length === 0 ? (
-        <View style={s.empty}><FileText size={30} color={colors.muted} /><Text style={s.emptyTitle}>Nothing saved yet</Text><Text style={s.emptyCopy}>Tap the save action on any article, recipe, or resource and it will appear here.</Text></View>
+        <View style={s.empty}>
+          <FileText size={30} color={colors.muted} />
+          <Text style={s.emptyTitle}>Nothing saved yet</Text>
+          <Text style={s.emptyCopy}>
+            Tap the save action on any article, recipe, or resource and it will appear here.
+          </Text>
+        </View>
       ) : (
         <View style={s.list}>
           {items.map((item) => (
             <View key={item.id} style={s.item}>
-              <Pressable style={s.itemCopy} onPress={() => item.route && navigation.navigate(item.route, paramsFor(item))}>
+              <Pressable
+                style={s.itemCopy}
+                onPress={() => item.route && navigation.navigate(item.route, paramsFor(item))}
+              >
                 <Text style={s.itemTitle}>{item.title}</Text>
                 <Text style={s.itemSub}>{item.subtitle}</Text>
               </Pressable>
-              <Pressable onPress={() => remove(item.id)} hitSlop={8} accessibilityLabel={`Remove ${item.title}`}><Trash2 size={18} color={colors.red} /></Pressable>
+              <Pressable
+                onPress={() => remove(item.id)}
+                hitSlop={8}
+                accessibilityLabel={`Remove ${item.title}`}
+              >
+                <Trash2 size={18} color={colors.red} />
+              </Pressable>
             </View>
           ))}
         </View>
       )}
       {error ? <Text style={s.error}>{error}</Text> : null}
-      {offline ? <Text style={s.hint}>Connect your account to sync saved content across devices.</Text> : null}
+      {offline ? <Text style={s.hint}>Sign in to sync your saved content across devices.</Text> : null}
     </Page>
   );
 }
 
 export function ProfileHubScreen({ navigation }: any) {
   const { user, signOutUser } = useAuth();
-  const name = user?.name || 'Guest';
+  const [goal, setGoal] = useState<string>('');
+  const name = user?.name || 'Guest Member';
   const email = user?.email || 'Not signed in';
   const initials =
     (user?.name || '')
@@ -706,7 +1155,25 @@ export function ProfileHubScreen({ navigation }: any) {
       .slice(0, 2)
       .join('')
       .toUpperCase() || (user?.email?.[0]?.toUpperCase() ?? 'TD');
-  const go = (route: string) => navigation.navigate(route);
+
+  useEffect(() => {
+    let active = true;
+    loadProfile()
+      .then((r) => {
+        if (active && r?.profile?.goal) setGoal(r.profile.goal);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  const go = (route: string, params?: any) => {
+    const parent = navigation.getParent?.();
+    if (parent) parent.navigate(route, params);
+    else navigation.navigate(route, params);
+  };
+
   const signOut = () =>
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -719,110 +1186,455 @@ export function ProfileHubScreen({ navigation }: any) {
         },
       },
     ]);
+
+  const deleteAccountConfirm = () =>
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your True Diet account and all saved records. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              await signOutUser();
+              navigation.getParent('Root')?.replace('Onboarding');
+            } catch (e: any) {
+              Alert.alert('Could not delete account', e?.message || 'Please try again.');
+            }
+          },
+        },
+      ]
+    );
+
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile Header */}
         <View style={s.profileHeader}>
-          <View style={s.avatar}><Text style={s.avatarText}>{initials}</Text></View>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>{initials}</Text>
+          </View>
           <Text style={s.name}>{name}</Text>
           <Text style={s.email}>{email}</Text>
+          <PillGroup style={{ justifyContent: 'center', marginTop: 12 }}>
+            <Pill
+              label={user ? 'Active Member' : 'Guest Mode'}
+              tone={user ? 'green' : 'teal'}
+            />
+            {goal ? <Pill label={`Focus: ${goal}`} tone="teal" /> : null}
+            <Pill
+              label="Edit Profile"
+              icon={<Edit3 size={14} color={colors.deepTeal} />}
+              onPress={() => go('NutritionProfileSettings')}
+            />
+          </PillGroup>
         </View>
+
         {!user ? (
-          <>
-            <Pressable style={s.cta} onPress={() => go('Login')}><Text style={s.ctaText}>Sign In</Text></Pressable>
-            <Pressable style={s.ctaGhost} onPress={() => go('CreateAccount')}><Text style={s.ctaGhostText}>Create Account</Text></Pressable>
-          </>
+          <View style={s.authActions}>
+            <Pressable style={[s.cta, { flex: 1, marginTop: 0 }]} onPress={() => go('Login')}>
+              <Text style={s.ctaText}>Sign In</Text>
+            </Pressable>
+            <Pressable style={[s.ctaGhost, { flex: 1, marginTop: 0 }]} onPress={() => go('CreateAccount')}>
+              <Text style={s.ctaGhostText}>Create Account</Text>
+            </Pressable>
+          </View>
         ) : null}
-        <Text style={s.section}>Your account</Text>
-        <View style={s.list}>
-          <Row title="Nutrition Profile" subtitle="Goals, preferences, and allergy considerations" onPress={() => go('NutritionProfileSettings')} />
-          <Row title="Saved Content" subtitle="Your saved education and tools" onPress={() => go('SavedContent')} />
-          <Row title="Membership" subtitle="Manage your plan, access, and renewals" onPress={() => go('Subscription')} />
+
+        {/* Quick Stats / Shortcuts */}
+        <View style={s.quickGrid}>
+          <Pressable style={s.quickCard} onPress={() => go('ProgressPatterns')}>
+            <TrendingUp size={20} color={colors.deepTeal} />
+            <Text style={s.quickCardTitle}>My Progress</Text>
+            <Text style={s.quickCardSub}>Weekly patterns & weight</Text>
+          </Pressable>
+          <Pressable style={s.quickCard} onPress={() => go('SavedContent')}>
+            <Heart size={20} color={colors.green} />
+            <Text style={s.quickCardTitle}>Saved Library</Text>
+            <Text style={s.quickCardSub}>Articles, recipes & guides</Text>
+          </Pressable>
+          <Pressable style={s.quickCard} onPress={() => go('MealPlans')}>
+            <CalendarDays size={20} color={colors.deepTeal} />
+            <Text style={s.quickCardTitle}>My Meal Plans</Text>
+            <Text style={s.quickCardSub}>Weekly plans & groceries</Text>
+          </Pressable>
+          <Pressable style={s.quickCard} onPress={() => go('MealLog')}>
+            <Utensils size={20} color={colors.orange} />
+            <Text style={s.quickCardTitle}>My Food Diary</Text>
+            <Text style={s.quickCardSub}>Log meals & check-ins</Text>
+          </Pressable>
         </View>
-        <Text style={s.section}>Support & learning</Text>
+
+        <Text style={s.section}>Personal & Nutrition Profile</Text>
         <View style={s.list}>
-          <Row title="Meet Maureen" subtitle="Credentials, expertise, and philosophy" onPress={() => go('MaureenProfile')} />
-          <Row title="Packages & Services" subtitle="Explore memberships and nutrition support" onPress={() => go('Packages')} />
-          <Row title="Help & Support" subtitle="Contact True Diet" onPress={() => go('Support')} />
+          <Row
+            icon={UserCheck}
+            title="Personal Information & Edit Profile"
+            subtitle="Full name, age, height, weight, and profile settings"
+            onPress={() => go('NutritionProfileSettings')}
+          />
+          <Row
+            icon={Sparkles}
+            title="My Nutrition Goals"
+            subtitle={goal || 'Set or update your primary nutrition focus'}
+            onPress={() => go('NutritionProfileSettings')}
+          />
+          <Row
+            icon={ShieldCheck}
+            title="Health Conditions"
+            subtitle="Evidence-based nutrition notes for specific conditions"
+            onPress={() => go('HealthConditions')}
+          />
+          <Row
+            icon={Heart}
+            title="Allergies & Food Preferences"
+            subtitle="Manage food allergies, intolerances, and dietary patterns"
+            onPress={() => go('NutritionProfileSettings')}
+          />
+          <Row
+            icon={Activity}
+            title="Nutrition Assessment"
+            subtitle="Complete or update your comprehensive evaluation"
+            onPress={() => go('NutritionAssessment')}
+          />
         </View>
-        <Text style={s.section}>Privacy & settings</Text>
+
+        <Text style={s.section}>Tracking, Plans & Resources</Text>
         <View style={s.list}>
-          <Row title="Settings" subtitle="Notifications, accessibility, and account" onPress={() => go('Settings')} />
-          <Row title="Privacy & Data Controls" subtitle="Consent and personal data options" onPress={() => go('Privacy')} />
-          <Row title="Legal" subtitle="Terms, Privacy Policy, and Disclaimers" onPress={() => go('Legal')} />
+          <Row
+            icon={TrendingUp}
+            title="My Progress"
+            subtitle="Weekly check-in patterns, meal consistency, and weight log"
+            onPress={() => go('ProgressPatterns')}
+          />
+          <Row
+            icon={BookOpen}
+            title="Saved Resources & Library"
+            subtitle="Saved articles, recipes, guides, and ResourceHub"
+            onPress={() => go('SavedContent')}
+          />
+          <Row
+            icon={CalendarDays}
+            title="My Meal Plans & Grocery Lists"
+            subtitle="Build 7-day meal plans and shopping lists"
+            onPress={() => go('MealPlans')}
+          />
+          <Row
+            icon={Utensils}
+            title="My Food Diary"
+            subtitle="Log a meal or use Voice Food Log"
+            onPress={() => go('MealLog')}
+          />
         </View>
-        {user ? (
-          <Pressable style={s.signOutBtn} onPress={signOut}><LogOut size={18} color={colors.red} /><Text style={s.signOutText}>Sign Out</Text></Pressable>
-        ) : null}
-        <Text style={s.version}>True Diet · Education, not medical advice</Text>
+
+        <Text style={s.section}>Dietitian Support & Care</Text>
+        <View style={s.list}>
+          <Row
+            icon={MessageSquare}
+            title="Ask Dietitian"
+            subtitle="Secure messaging with Maureen Ashbarry, MS, RD"
+            onPress={() => go('Dietitian')}
+          />
+          <Row
+            icon={Video}
+            title="Telehealth Consultations"
+            subtitle="Schedule a 1-on-1 video or phone visit"
+            onPress={() => go('Telehealth')}
+          />
+          <Row
+            icon={GraduationCap}
+            title="About TrueDiet & Meet Maureen"
+            subtitle="Credentials, clinical philosophy, and approach"
+            onPress={() => go('MaureenProfile')}
+          />
+        </View>
+
+        <Text style={s.section}>Account, Billing & Settings</Text>
+        <View style={s.list}>
+          <Row
+            icon={Bell}
+            title="Notifications"
+            subtitle="Push permissions and reminder categories"
+            onPress={() => go('Notifications')}
+          />
+          <Row
+            icon={CreditCard}
+            title="Subscription & Billing"
+            subtitle="Manage your plan, access, and service packages"
+            onPress={() => go('Subscription')}
+          />
+          <Row
+            icon={LockKeyhole}
+            title="Privacy & Security"
+            subtitle="Consent controls, data export, and account security"
+            onPress={() => go('Privacy')}
+          />
+          <Row
+            icon={Edit3}
+            title="Account Settings & Change Password"
+            subtitle="Accessibility, notifications, and password management"
+            onPress={() => go('Settings')}
+          />
+          <Row
+            icon={CircleHelp}
+            title="Help & Support"
+            subtitle="Frequently asked questions and support contact"
+            onPress={() => go('Support')}
+          />
+          <Row
+            icon={Info}
+            title="Terms & Privacy Policy"
+            subtitle="Terms of Use, Privacy Policy, and educational disclaimer"
+            onPress={() => go('Legal')}
+          />
+          {user ? (
+            <>
+              <Row icon={LogOut} title="Sign Out" subtitle="Sign out on this device" onPress={signOut} danger />
+              <Row
+                icon={Trash2}
+                title="Delete Account"
+                subtitle="Permanently delete your account and personal data"
+                onPress={deleteAccountConfirm}
+                danger
+              />
+            </>
+          ) : null}
+        </View>
+
+        <Text style={s.version}>True Diet · Real Nutrition. Real Science. Real Results.</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  error: { fontFamily: 'Roboto', fontSize: 12, color: colors.red, marginTop: 12 },
-  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },  content: { width: '100%', maxWidth:CONTENT_MAX_WIDTH, padding: 24, paddingBottom: 48, backgroundColor: colors.background },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 25 },
+  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: 12 },
+  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
+  scroll: { width: '100%' },
+  content: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 56,
+    backgroundColor: colors.background,
+  },
+  back: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    marginBottom: 20,
+  },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
-  title: { fontFamily: 'Roboto', fontSize: 24, lineHeight: 34, fontWeight: '700', color: colors.text, marginTop: 6 },
-  copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 9 },
-  section: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 26, marginBottom: 12 },
-  hint: { fontFamily: 'Roboto', fontSize: 13, color: colors.muted, marginTop: 14 },
-  list: { marginTop: 4, gap: 11 },
-  item: { minHeight: 78, borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 14, flexDirection: 'row', alignItems: 'center' },
-  itemCopy: { flex: 1 },
-  itemTitle: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
-  itemSub: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 4 },
-  card: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 16, marginTop: 6, gap: 4 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  wrapRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  chipActive: { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
-  chipText: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  chipTextActive: { color: '#fff' },
-  fieldRow: { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
-  field: { flex: 1, minWidth: 120 },
-  label: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', color: colors.muted, marginBottom: 4 },
-  input: { height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.surface, paddingHorizontal: 10, fontFamily: 'Roboto', fontSize: 13, color: colors.text },
-  addRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  title: { fontFamily: 'Roboto', fontSize: 26, lineHeight: 34, fontWeight: '700', color: colors.text, marginTop: 6 },
+  copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 8 },
+  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 26, marginBottom: 12 },
+  hint: { fontFamily: 'Roboto', fontSize: 13, color: colors.muted, marginTop: 12 },
+  list: { marginTop: 4, gap: 10 },
+  item: {
+    minHeight: 72,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  itemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.softBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemCopy: { flex: 1, minWidth: 0 },
+  itemTitle: { fontFamily: 'Roboto', fontSize: 14.5, fontWeight: '700', color: colors.text },
+  itemSub: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 3 },
+  card: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    padding: 16,
+    marginTop: 6,
+    gap: 4,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  fieldBlock: { marginTop: 4, marginBottom: 8 },
+  fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 },
+  fieldCol: { flex: 1, minWidth: 96 },
+  label: { fontFamily: 'Roboto', fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 },
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    fontFamily: 'Roboto',
+    fontSize: 14,
+    color: colors.text,
+  },
+  addRow: { flexDirection: 'row', gap: 10, marginTop: 12, alignItems: 'center' },
   addInput: { flex: 1 },
-  addBtn: { width: 48, height: 48, borderRadius: 12, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, backgroundColor: colors.softGreen },
-  tagText: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '600', color: colors.deepTeal },
-  notice: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 22 },
+  addBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: colors.deepTeal,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notice: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    backgroundColor: colors.softBlue,
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 22,
+  },
   noticeText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
   saved: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.green, marginTop: 14, textAlign: 'center' },
-  pwPanel: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, marginTop: 10, gap: 6 },
-  cta: { height: 56, borderRadius: 17, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  pwPanel: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 6,
+    gap: 8,
+  },
+  cta: {
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: colors.deepTeal,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
   ctaDisabled: { opacity: 0.6 },
   ctaText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
-  ctaGhost: { height: 52, borderRadius: 17, borderWidth: 1, borderColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  ctaGhost: {
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.deepTeal,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingHorizontal: 16,
+  },
   ctaGhostText: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.deepTeal },
-  signOut: { gap: 0 },
-  package: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 16 },
-  packageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  packageName: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, flex: 1, marginRight: 10 },
-  packagePrice: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.deepTeal },
-  packageFeature: { fontFamily: 'Roboto', fontSize: 12.5, color: colors.textSecondary, marginTop: 6 },
+  authActions: { flexDirection: 'row', gap: 10, marginTop: 16, width: '100%' },
+  quickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 20,
+    width: '100%',
+  },
+  quickCard: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    minWidth: 140,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    padding: 14,
+    gap: 4,
+  },
+  quickCardTitle: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 4 },
+  quickCardSub: { fontFamily: 'Roboto', fontSize: 11.5, lineHeight: 16, color: colors.textSecondary },
+  package: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    padding: 16,
+  },
+  packageTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  packageName: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, flex: 1, minWidth: 150 },
+  packagePrice: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.deepTeal },
+  packageFeature: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: 6 },
   packageLink: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.deepTeal, marginTop: 12 },
-  priceCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.softBlue, padding: 18, marginTop: 8, alignItems: 'center' },
-  pill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: colors.softBlue },
-  pillActive: { backgroundColor: colors.softGreen },
-  pillText: { fontFamily: 'Roboto', fontSize: 11, fontWeight: '700', color: colors.deepTeal },
-  pillTextActive: { color: colors.green },
+  priceCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    backgroundColor: colors.softBlue,
+    padding: 18,
+    marginTop: 8,
+    alignItems: 'center',
+  },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 4 },
   checkText: { flex: 1, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyTitle: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 6 },
-  emptyCopy: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 19, color: colors.textSecondary, textAlign: 'center', maxWidth: 280 },
-  profileHeader: { alignItems: 'center', marginTop: 8, marginBottom: 4 },
-  avatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: colors.softGreen, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  avatarText: { fontFamily: 'Roboto', fontSize: 30, fontWeight: '700', color: colors.deepTeal },
-  name: { fontFamily: 'Roboto', fontSize: 24, fontWeight: '700', color: colors.text },
-  email: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: 4 },
-  signOutBtn: { height: 52, borderRadius: 17, borderWidth: 1, borderColor: colors.red, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24 },
-  signOutText: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.red },
-  version: { fontFamily: 'Roboto', fontSize: 11, color: colors.muted, textAlign: 'center', marginTop: 24 },
+  emptyCopy: {
+    fontFamily: 'Roboto',
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  profileHeader: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: colors.softBlue,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  avatar: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  avatarText: { fontFamily: 'Roboto', fontSize: 26, fontWeight: '700', color: colors.deepTeal },
+  name: { fontFamily: 'Roboto', fontSize: 22, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  email: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: 3, textAlign: 'center' },
+  version: { fontFamily: 'Roboto', fontSize: 11, color: colors.muted, textAlign: 'center', marginTop: 28 },
 });

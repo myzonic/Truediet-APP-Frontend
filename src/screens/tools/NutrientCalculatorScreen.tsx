@@ -1,7 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { SafeAreaView, ScrollView, View, Text, Pressable, TextInput, FlatList, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
+import { ArrowLeft, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { Pill, PillGroup } from '../../components/Pill';
+import { addMeal, MealType } from '../../lib/track';
 
 interface FoodEntry {
   id: string;
@@ -13,238 +17,225 @@ interface FoodEntry {
   fat: number;
 }
 
-const mockFoodDatabase: FoodEntry[] = [
-  { id: '1', name: 'Chicken Breast (100g)', servings: 1, calories: 165, protein: 31, carbohydrates: 0, fat: 3.6 },
-  { id: '2', name: 'Brown Rice (100g)', servings: 1, calories: 112, protein: 2.6, carbohydrates: 23, fat: 0.9 },
-  { id: '3', name: 'Avocado (100g)', servings: 1, calories: 160, protein: 2, carbohydrates: 9, fat: 15 },
-  { id: '4', name: 'Salmon (100g)', servings: 1, calories: 206, protein: 22, carbohydrates: 0, fat: 12 },
+const REFERENCE_FOODS: FoodEntry[] = [
+  { id: '1', name: 'Chicken Breast (100g cooked)', servings: 1, calories: 165, protein: 31, carbohydrates: 0, fat: 3.6 },
+  { id: '2', name: 'Brown Rice (1 cup cooked)', servings: 1, calories: 216, protein: 5, carbohydrates: 45, fat: 1.8 },
+  { id: '3', name: 'Avocado (1/2 medium)', servings: 1, calories: 160, protein: 2, carbohydrates: 9, fat: 15 },
+  { id: '4', name: 'Salmon (100g cooked)', servings: 1, calories: 206, protein: 22, carbohydrates: 0, fat: 12 },
   { id: '5', name: 'Egg (1 large)', servings: 1, calories: 78, protein: 6, carbohydrates: 0.6, fat: 5.3 },
-  { id: '6', name: 'Almonds (28g)', servings: 1, calories: 164, protein: 6, carbohydrates: 6, fat: 14 }
+  { id: '6', name: 'Almonds (28g handful)', servings: 1, calories: 164, protein: 6, carbohydrates: 6, fat: 14 },
+  { id: '7', name: 'Greek Yogurt (1 cup)', servings: 1, calories: 146, protein: 20, carbohydrates: 8, fat: 4 },
+  { id: '8', name: 'Oats (1 cup cooked)', servings: 1, calories: 158, protein: 6, carbohydrates: 27, fat: 3.2 },
+  { id: '9', name: 'Whole Wheat Bread (1 slice)', servings: 1, calories: 81, protein: 4, carbohydrates: 14, fat: 1.1 },
+  { id: '10', name: 'Banana (1 medium)', servings: 1, calories: 105, protein: 1.3, carbohydrates: 27, fat: 0.4 },
 ];
 
-interface CalculatorState {
-  foods: FoodEntry[];
-  selectedFoodId: string | null;
-  customName: string;
-  customServings: number;
-  customCalories: number;
-  customProtein: number;
-  customCarbs: number;
-  customFat: number;
-}
+export default function NutrientCalculatorScreen({ navigation }: any) {
+  const [selectedFoods, setSelectedFoods] = useState<FoodEntry[]>([]);
+  const [search, setSearch] = useState('');
+  const [mealType, setMealType] = useState<MealType>('lunch');
+  const [customName, setCustomName] = useState('');
+  const [customCalories, setCustomCalories] = useState('');
+  const [customProtein, setCustomProtein] = useState('');
+  const [customCarbs, setCustomCarbs] = useState('');
+  const [customFat, setCustomFat] = useState('');
+  const [saving, setSaving] = useState(false);
 
-export default function NutrientCalculatorScreen({navigation}: any) {
-  const [state, setState] = useState<CalculatorState>({
-    foods: [],
-    selectedFoodId: null,
-    customName: '',
-    customServings: 1,
-    customCalories: 0,
-    customProtein: 0,
-    customCarbs: 0,
-    customFat: 0
-  });
+  const filteredDatabase = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return REFERENCE_FOODS;
+    return REFERENCE_FOODS.filter((f) => f.name.toLowerCase().includes(q));
+  }, [search]);
 
-  const foods = useMemo(() => mockFoodDatabase, []);
-
-  const addFood = (food: FoodEntry, servings: number) => {
-    const existing = state.foods.find((f) => f.id === food.id);
-    if (existing) {
-      setState(prev => ({
-        ...prev,
-        foods: prev.foods.map((f) =>
-          f.id === food.id ? { ...f, servings: f.servings + servings } : f
-        )
-      }));
-    } else {
-      setState(prev => ({
-        ...prev,
-        foods: [...prev.foods, { ...food, servings }]
-      }));
-    }
+  const addFood = (food: FoodEntry) => {
+    setSelectedFoods((prev) => {
+      const existing = prev.find((f) => f.id === food.id);
+      if (existing) {
+        return prev.map((f) => (f.id === food.id ? { ...f, servings: f.servings + 1 } : f));
+      }
+      return [...prev, { ...food, servings: 1 }];
+    });
   };
 
   const removeFood = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      foods: prev.foods.filter((f) => f.id !== id)
-    }));
+    setSelectedFoods((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const calculateTotals = () => {
-    const totalCalories = state.foods.reduce((sum, f) => sum + f.calories * f.servings, 0);
-    const totalProtein = state.foods.reduce((sum, f) => sum + f.protein * f.servings, 0);
-    const totalCarbs = state.foods.reduce((sum, f) => sum + f.carbohydrates * f.servings, 0);
-    const totalFat = state.foods.reduce((sum, f) => sum + f.fat * f.servings, 0);
-    return { totalCalories, totalProtein, totalCarbs, totalFat };
-  };
-
-  const handleAddCustom = () => {
-    if (!state.customName.trim()) return;
-    const newFood: FoodEntry = {
-      id: 'custom-' + Date.now(),
-      name: state.customName,
-      servings: state.customServings,
-      calories: state.customCalories,
-      protein: state.customProtein,
-      carbohydrates: state.customCarbs,
-      fat: state.customFat
+  const addCustomFood = () => {
+    const name = customName.trim();
+    if (!name) return;
+    const newEntry: FoodEntry = {
+      id: `custom-${Date.now()}`,
+      name,
+      servings: 1,
+      calories: Math.max(0, Number(customCalories) || 0),
+      protein: Math.max(0, Number(customProtein) || 0),
+      carbohydrates: Math.max(0, Number(customCarbs) || 0),
+      fat: Math.max(0, Number(customFat) || 0),
     };
-    addFood(newFood, state.customServings);
-    setState({
-      ...state,
-      customName: '',
-      customServings: 1,
-      customCalories: 0,
-      customProtein: 0,
-      customCarbs: 0,
-      customFat: 0
-    });
-    Alert.alert('Added', 'Custom food has been added to your calculation.');
+    setSelectedFoods((prev) => [...prev, newEntry]);
+    setCustomName('');
+    setCustomCalories('');
+    setCustomProtein('');
+    setCustomCarbs('');
+    setCustomFat('');
   };
 
-  const foodList = state.foods.map((food) => (
-    <View key={food.id} style={s.foodRow}>
-      <Text style={s.foodName}>{food.name}</Text>
-      <Text style={s.foodServings}>x {String(food.servings)}</Text>
-      <Pressable style={s.removeButton} onPress={() => removeFood(food.id)}>
-        <Text style={s.removeText}>Remove</Text>
-      </Pressable>
-    </View>
-  ));
+  const totals = useMemo(() => {
+    return selectedFoods.reduce(
+      (acc, f) => ({
+        calories: acc.calories + f.calories * f.servings,
+        protein: acc.protein + f.protein * f.servings,
+        carbs: acc.carbs + f.carbohydrates * f.servings,
+        fat: acc.fat + f.fat * f.servings,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+  }, [selectedFoods]);
+
+  const saveToDiary = async () => {
+    if (!selectedFoods.length || saving) return;
+    setSaving(true);
+    try {
+      const description = selectedFoods
+        .map((f) => `${f.servings > 1 ? `${f.servings}x ` : ''}${f.name}`)
+        .join(', ');
+      const notes = `Estimated nutrition: ${Math.round(totals.calories)} kcal · ${totals.protein.toFixed(1)}g protein · ${totals.carbs.toFixed(1)}g carbs · ${totals.fat.toFixed(1)}g fat`;
+      await addMeal({ mealType, description, notes, source: 'manual' });
+      Alert.alert('Saved to Food Diary', 'Your calculated meal was saved to today’s Food Diary.');
+      navigation.goBack();
+    } catch (e: any) {
+      Alert.alert('Could not save', e?.message || 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <View style={s.header}>
-          <Text style={s.headerTitle}>Nutrient Calculator</Text>
-          <Text style={s.headerSubtitle}>Calculate nutrition for foods and meals</Text>
-        </View>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
+          <ArrowLeft size={22} color={colors.text} />
+        </Pressable>
 
-        <View style={s.foodList}>
-          {state.foods.length === 0 ? (
-            <Text style={s.emptyText}>No foods added. Search the database below.</Text>
-          ) : (
-            <View>{foodList}</View>
-          )}
-        </View>
+        <Text style={s.eyebrow}>NUTRIENT CALCULATOR</Text>
+        <Text style={s.title}>Estimate meal nutrients.</Text>
+        <Text style={s.subtitle}>
+          Combine reference foods to see how protein, carbohydrates, and fats work together, then optionally log the meal to your Food Diary.
+        </Text>
 
-        <View style={s.calculatorSection}>
-          <Text style={s.calculatorTitle}>Add Food</Text>
-
-          <View style={s.foodSearch}>
-            <TextInput
-              placeholder="Search food database..."
-              onChangeText={() => {}}
-              placeholderTextColor={colors.muted}
-              style={s.input}
-            />
-            <Pressable style={s.searchButton}>
-              <Text style={s.searchButtonText}>Search</Text>
-            </Pressable>
+        {/* Totals Summary */}
+        <View style={s.totalsCard}>
+          <Text style={s.totalsLabel}>MEAL ESTIMATE</Text>
+          <View style={s.totalsGrid}>
+            <View style={s.totalItem}>
+              <Text style={s.totalVal}>{Math.round(totals.calories)}</Text>
+              <Text style={s.totalKey}>kcal</Text>
+            </View>
+            <View style={s.totalItem}>
+              <Text style={s.totalVal}>{totals.protein.toFixed(1)}g</Text>
+              <Text style={s.totalKey}>Protein</Text>
+            </View>
+            <View style={s.totalItem}>
+              <Text style={s.totalVal}>{totals.carbs.toFixed(1)}g</Text>
+              <Text style={s.totalKey}>Carbs</Text>
+            </View>
+            <View style={s.totalItem}>
+              <Text style={s.totalVal}>{totals.fat.toFixed(1)}g</Text>
+              <Text style={s.totalKey}>Fat</Text>
+            </View>
           </View>
+        </View>
 
-          {state.selectedFoodId && (
-            <View style={s.foodDetails}>
-              <Text style={s.foodDetailTitle}>
-                {foods.find((f) => f.id === state.selectedFoodId)?.name || 'Food'}
-              </Text>
-              <View>
-                <Pressable style={s.servingButton}>
-                  <Text style={s.servingText}>1 serving</Text>
+        {selectedFoods.length > 0 ? (
+          <View style={s.selectedSection}>
+            <Text style={s.section}>Selected Foods ({selectedFoods.length})</Text>
+            {selectedFoods.map((f) => (
+              <View key={f.id} style={s.selectedRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.foodName}>
+                    {f.name} {f.servings > 1 ? `× ${f.servings}` : ''}
+                  </Text>
+                  <Text style={s.foodMeta}>
+                    {Math.round(f.calories * f.servings)} kcal · {(f.protein * f.servings).toFixed(1)}g P · {(f.carbohydrates * f.servings).toFixed(1)}g C · {(f.fat * f.servings).toFixed(1)}g F
+                  </Text>
+                </View>
+                <Pressable onPress={() => removeFood(f.id)} hitSlop={8}>
+                  <Trash2 size={17} color={colors.red} />
                 </Pressable>
               </View>
-              <Pressable style={s.addButton} onPress={() => addFood(foods.find((f) => f.id === state.selectedFoodId)!, 1)}>
-                <Text style={s.addButtonText}>Add to calculation</Text>
-              </Pressable>
-            </View>
-          )}
+            ))}
 
-          <View style={s.customInputSection}>
-            <TextInput
-              placeholder="Custom food name"
-              value={state.customName}
-              onChangeText={(text) => setState({ ...state, customName: text })}
-              placeholderTextColor={colors.muted}
-              style={s.input}
-            />
-            <TextInput
-              placeholder="Servings"
-              value={String(state.customServings)}
-              onChangeText={(text) => setState({ ...state, customServings: Number(text) || 1 })}
-              keyboardType="number-pad"
-              placeholderTextColor={colors.muted}
-              style={s.input}
-            />
-            <View style={s.nutrientsRow}>
-              <View>
-                <Text style={s.nutrientLabel}>Calories</Text>
-                <TextInput
-                  value={String(state.customCalories)}
-                  onChangeText={(text) => setState({ ...state, customCalories: Number(text) || 0 })}
-                  keyboardType="number-pad"
-                  placeholderTextColor={colors.muted}
-                  style={s.input}
+            <Text style={s.label}>Log as Meal Type</Text>
+            <PillGroup>
+              {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map((t) => (
+                <Pill
+                  key={t}
+                  label={t.charAt(0).toUpperCase() + t.slice(1)}
+                  selected={mealType === t}
+                  onPress={() => setMealType(t)}
                 />
-              </View>
-              <View>
-                <Text style={s.nutrientLabel}>Protein (g)</Text>
-                <TextInput
-                  value={String(state.customProtein)}
-                  onChangeText={(text) => setState({ ...state, customProtein: Number(text) || 0 })}
-                  keyboardType="number-pad"
-                  placeholderTextColor={colors.muted}
-                  style={s.input}
-                />
-              </View>
-              <View>
-                <Text style={s.nutrientLabel}>Carbs (g)</Text>
-                <TextInput
-                  value={String(state.customCarbs)}
-                  onChangeText={(text) => setState({ ...state, customCarbs: Number(text) || 0 })}
-                  keyboardType="number-pad"
-                  placeholderTextColor={colors.muted}
-                  style={s.input}
-                />
-              </View>
-              <View>
-                <Text style={s.nutrientLabel}>Fat (g)</Text>
-                <TextInput
-                  value={String(state.customFat)}
-                  onChangeText={(text) => setState({ ...state, customFat: Number(text) || 0 })}
-                  keyboardType="number-pad"
-                  placeholderTextColor={colors.muted}
-                  style={s.input}
-                />
-              </View>
-            </View>
+              ))}
+            </PillGroup>
+
+            <Pressable style={s.primary} onPress={saveToDiary} disabled={saving}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryText}>Save Meal to Food Diary</Text>}
+            </Pressable>
           </View>
+        ) : null}
 
-          <Pressable style={s.calculateButton} onPress={handleAddCustom}>
-            <Text style={s.calculateButtonText}>Add Custom Food</Text>
+        <Text style={s.section}>Reference Food Database</Text>
+        <View style={s.searchBox}>
+          <Search size={18} color={colors.muted} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search reference foods…"
+            placeholderTextColor={colors.muted}
+            style={s.searchInput}
+          />
+        </View>
+        <View style={s.dbList}>
+          {filteredDatabase.map((item) => (
+            <Pressable key={item.id} style={s.dbRow} onPress={() => addFood(item)}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.foodName}>{item.name}</Text>
+                <Text style={s.foodMeta}>
+                  {item.calories} kcal · {item.protein}g P · {item.carbohydrates}g C · {item.fat}g F
+                </Text>
+              </View>
+              <View style={s.plusBadge}>
+                <Plus size={16} color={colors.deepTeal} />
+              </View>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={s.section}>Add Custom Food Item</Text>
+        <View style={s.customCard}>
+          <TextInput
+            value={customName}
+            onChangeText={setCustomName}
+            placeholder="Food name (e.g. Homemade lentil soup)"
+            placeholderTextColor={colors.muted}
+            style={s.input}
+          />
+          <View style={s.customGrid}>
+            <TextInput value={customCalories} onChangeText={setCustomCalories} keyboardType="numeric" placeholder="kcal" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
+            <TextInput value={customProtein} onChangeText={setCustomProtein} keyboardType="numeric" placeholder="Protein (g)" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
+            <TextInput value={customCarbs} onChangeText={setCustomCarbs} keyboardType="numeric" placeholder="Carbs (g)" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
+            <TextInput value={customFat} onChangeText={setCustomFat} keyboardType="numeric" placeholder="Fat (g)" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
+          </View>
+          <Pressable style={s.secondaryBtn} onPress={addCustomFood}>
+            <Text style={s.secondaryBtnText}>+ Add Custom Item</Text>
           </Pressable>
         </View>
 
-        <View style={s.totalsSection}>
-          <Text style={s.totalsTitle}>Totals</Text>
-          <View style={s.totalsGrid}>
-            <View>
-              <Text style={s.totalLabel}>Calories</Text>
-              <Text style={s.totalValue}>{calculateTotals().totalCalories}</Text>
-            </View>
-            <View>
-              <Text style={s.totalLabel}>Protein</Text>
-              <Text style={s.totalValue}>{calculateTotals().totalProtein.toFixed(1)} g</Text>
-            </View>
-            <View>
-              <Text style={s.totalLabel}>Carbs</Text>
-              <Text style={s.totalValue}>{calculateTotals().totalCarbs.toFixed(1)} g</Text>
-            </View>
-            <View>
-              <Text style={s.totalLabel}>Fat</Text>
-              <Text style={s.totalValue}>{calculateTotals().totalFat.toFixed(1)} g</Text>
-            </View>
-          </View>
+        <View style={s.disclaimer}>
+          <ShieldCheck size={18} color={colors.deepTeal} />
+          <Text style={s.disclaimerText}>
+            Educational estimate only — nutrient values in whole foods vary naturally by preparation and brand.
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -252,191 +243,36 @@ export default function NutrientCalculatorScreen({navigation}: any) {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: {
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    paddingHorizontal: 24,
-    paddingBottom: 40
-  },
-  header: {
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: 24
-  },
-  headerTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text
-  },
-  headerSubtitle: {
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.textSecondary
-  },
-  foodList: {
-    marginBottom: 24
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    marginVertical: 24,
-    textAlign: 'center'
-  },
-  foodRow: {
-    padding: 12,
-    marginBottom: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  foodName: {
-    flex: 1,
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.text
-  },
-  foodServings: {
-    color: colors.textSecondary,
-    fontFamily: 'Roboto',
-    fontSize: 12
-  },
-  removeButton: {
-    padding: 4,
-    marginLeft: 8
-  },
-  removeText: {
-    color: colors.muted,
-    fontFamily: 'Roboto',
-    fontSize: 12
-  },
-  calculatorSection: {
-    marginBottom: 24
-  },
-  calculatorTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16
-  },
-  foodSearch: {
-    marginBottom: 12
-  },
-  input: {
-    fontFamily: 'Roboto',
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 48,
-    backgroundColor: colors.surface
-  },
-  searchButton: {
-    marginLeft: 8,
-    padding: 8,
-    backgroundColor: colors.deepTeal,
-    borderRadius: 8
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontFamily: 'Roboto',
-    fontSize: 12
-  },
-  foodDetails: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: colors.surface,
-    borderRadius: 12
-  },
-  foodDetailTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12
-  },
-  servingButton: {
-    padding: 8,
-    margin: 4,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    alignItems: 'center'
-  },
-  servingText: {
-    color: colors.text,
-    fontFamily: 'Roboto',
-    fontSize: 12
-  },
-  addButton: {
-    marginTop: 12,
-    backgroundColor: colors.deepTeal,
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center'
-  },
-  addButtonText: {
-    color: '#fff',
-    fontFamily: 'Roboto',
-    fontSize: 14
-  },
-  calculateButton: {
-    marginTop: 20,
-    backgroundColor: colors.deepTeal,
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center'
-  },
-  calculateButtonText: {
-    color: '#fff',
-    fontFamily: 'Roboto',
-    fontSize: 15,
-    fontWeight: '700'
-  },
-  customInputSection: {
-    marginTop: 12
-  },
-  nutrientsRow: {
-    flexDirection: 'row',
-    marginBottom: 8
-  },
-  nutrientLabel: {
-    fontFamily: 'Roboto',
-    fontSize: 12,
-    color: colors.textSecondary,
-    width: 80
-  },
-  totalsSection: {
-    marginTop: 24
-  },
-  totalsTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12
-  },
-  totalsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 8
-  },
-  totalLabel: {
-    fontFamily: 'Roboto',
-    fontSize: 12,
-    color: colors.textSecondary
-  },
-  totalValue: {
-    fontFamily: 'Roboto',
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.deepTeal
-  }
+  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
+  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
+  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
+  eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
+  title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
+  subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
+  totalsCard: { backgroundColor: colors.softGreen, borderRadius: 20, padding: 18, marginTop: 18 },
+  totalsLabel: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.green },
+  totalsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
+  totalItem: { flex: 1, minWidth: 70, backgroundColor: colors.surface, borderRadius: 14, padding: 12, alignItems: 'center' },
+  totalVal: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.deepTeal },
+  totalKey: { fontFamily: 'Roboto', fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  selectedSection: { marginTop: 10 },
+  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 22, marginBottom: 10 },
+  label: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.text, marginTop: 14, marginBottom: 8 },
+  selectedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  foodName: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
+  foodMeta: { fontFamily: 'Roboto', fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  searchBox: { height: 46, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
+  searchInput: { flex: 1, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
+  dbList: { marginTop: 10, gap: 8 },
+  dbRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12 },
+  plusBadge: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.softBlue, alignItems: 'center', justifyContent: 'center' },
+  customCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.surface, padding: 14, gap: 10 },
+  customGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  input: { height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 13.5, color: colors.text },
+  secondaryBtn: { height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { fontFamily: 'Roboto', fontSize: 13.5, fontWeight: '700', color: colors.deepTeal },
+  primary: { height: 52, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
+  primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 20, alignItems: 'flex-start' },
+  disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

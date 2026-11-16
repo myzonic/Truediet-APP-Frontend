@@ -721,7 +721,7 @@ const s = StyleSheet.create({
   specLabel: { color: colors.muted, fontSize: 11, fontWeight: '700' },
   specValue: { color: colors.text, fontSize: 13, marginTop: 2 },
   toolGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 12 },
-  toolTile: { width: '31%', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 14 },
+  toolTile: { flexBasis: '30%', flexGrow: 1, minWidth: 96, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 8 },
   toolTileText: { color: colors.text, fontWeight: '700', fontSize: 12 },
   sectionTitle: { color: colors.text, fontWeight: '800', fontSize: 17, marginTop: 20, marginBottom: 2 },
 });

@@ -39,10 +39,13 @@ export async function readLocalProfile(): Promise<ProfileRecord | null> {
   }
 }
 
-export async function saveProfile(data: OnboardingData): Promise<ProfileRecord | null> {
+export async function saveProfile(
+  data: Partial<OnboardingData> & { displayName?: string; isAssessmentComplete?: boolean }
+): Promise<ProfileRecord | null> {
   const res = await apiFetch<{ profile: ProfileRecord }>('/api/profile', {
     method: 'POST',
     body: {
+      displayName: data.displayName || undefined,
       goal: data.goal || undefined,
       age: data.age || undefined,
       sex: data.sex || undefined,
@@ -53,7 +56,8 @@ export async function saveProfile(data: OnboardingData): Promise<ProfileRecord |
       // Omitted entirely when there is no assessment in this session, so a
       // returning member's completed assessment is never reset to false by a
       // plain sign-in. The server keeps the stored value for undefined.
-      isAssessmentComplete: data.goal ? true : undefined,
+      isAssessmentComplete:
+        data.isAssessmentComplete !== undefined ? data.isAssessmentComplete : data.goal ? true : undefined,
     },
   });
 

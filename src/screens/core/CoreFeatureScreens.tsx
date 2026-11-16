@@ -2,14 +2,14 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
-import { ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Clock3, Heart, Mic, Phone, Send, ShieldCheck, Video } from 'lucide-react-native';
+import { ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Clock3, Heart, Mic, Pause, Phone, Play, Plus, Send, ShieldCheck, Square, Trash2, Video, X } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { sendMessage } from '../../lib/messages';
-import { addMeal, MealType } from '../../lib/track';
+import { addMeal, loadVoiceTranscriptions, removeVoiceTranscription, MealType } from '../../lib/track';
 import { recipes, findRecipe, Recipe } from '../../lib/recipeContent';
 import { loadRecipes } from '../../lib/contentLibrary';
 import { saveContent } from '../../lib/content';
-import { isSpeechSupported, prepareSpeech, startSpeechRecording, stopSpeechAndTranscribe, cancelSpeech } from '../../lib/speech';
+import { isSpeechSupported, startSpeechRecording, pauseSpeechRecording, resumeSpeechRecording, stopSpeechAndTranscribeFull, parseFoodTranscript, cancelSpeech, ProposedFoodItem } from '../../lib/speech';
 import { createCalBooking, getCalAvailableSlots, getCalConfig, type CalBookingResult, type CalConfig } from '../../lib/cal';
 import { cancelAppointment, loadAppointment, saveAppointment } from '../../lib/appointments';
 
@@ -18,106 +18,302 @@ function Shell({children,navigation}:{children:React.ReactNode;navigation:any}){
 export function RecipesScreen({navigation}:any){const [items,setItems]=useState<Recipe[]>(recipes);useEffect(()=>{let active=true;loadRecipes().then(r=>{if(active&&r.length)setItems(r);}).catch(()=>undefined);return()=>{active=false;};},[]);return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPES</Text><Text style={s.title}>Food ideas with flexibility.</Text><Text style={s.copy}>Practical recipes built around balance, variety, preferences and real life.</Text><View style={s.list}>{items.map(r=><Pressable key={r.id} style={s.card} onPress={()=>navigation.navigate('RecipeDetail',{recipeId:r.id,title:r.title})}><View style={s.recipeArt}><Heart size={24} color={colors.green}/></View><View style={s.cardCopy}><Text style={s.cardTitle}>{r.title}</Text><Text style={s.meta}>{r.time} · {r.category}</Text><Text style={s.desc}>{r.whyItWorks}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>)}</View></Shell>}
 export function RecipeDetailScreen({navigation,route}:any){const [recipe,setRecipe]=useState<Recipe|null>(null);useEffect(()=>{let active=true;const fallback=()=>{const byId=recipes.find(r=>r.id===route.params?.recipeId);return byId||findRecipe(route.params?.title||route.params?.recipeId);};loadRecipes().then(list=>{if(!active)return;const match=list.find(r=>r.id===route.params?.recipeId)||list.find(r=>r.title===route.params?.title);setRecipe(match||fallback());}).catch(()=>{if(active)setRecipe(fallback());});return()=>{active=false;};},[route.params?.recipeId,route.params?.title]);const [saving,setSaving]=useState(false);if(!recipe)return <Shell navigation={navigation}><ActivityIndicator color={colors.deepTeal} style={{marginTop:40}}/></Shell>;const onSave=async()=>{if(saving)return;setSaving(true);try{await saveContent(`recipe-${recipe.id}`,{title:recipe.title,subtitle:`${recipe.time} · ${recipe.category}`,route:'RecipeDetail',type:'recipe'});Alert.alert('Saved','This recipe was added to your saved content.');}catch(e:any){Alert.alert('Could not save',e?.message||'Please try again.');}finally{setSaving(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPE</Text><Text style={s.title}>{recipe.title}</Text><Text style={s.meta}>{recipe.time} · {recipe.category}</Text><View style={s.hero}><Heart size={38} color={colors.green}/></View><Text style={s.section}>Why it works</Text><Text style={s.copy}>{recipe.whyItWorks} This is a flexible template - not a prescription. Adapt ingredients to what you enjoy, need, and have available.</Text><Text style={s.section}>Ingredients</Text>{recipe.ingredients.map(x=><View key={x} style={s.step}><Text style={s.stepText}>• {x}</Text></View>)}<Text style={s.section}>Method</Text>{recipe.steps.map((x,i)=><View key={x} style={s.step}><Text style={s.stepNumber}>{i+1}</Text><Text style={s.stepText}>{x}</Text></View>)}<View style={{backgroundColor:colors.softGreen,borderRadius:16,padding:16,marginTop:20}}><Text style={{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.2,color:colors.green}}>TIP</Text><Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.text,marginTop:6}}>{recipe.tip}</Text></View><Pressable style={s.primary} onPress={onSave} disabled={saving}>{saving?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Save Recipe</Text>}</Pressable></Shell>}
 export function VoiceFoodLogScreen({navigation}:any){
-  const [status,setStatus]=useState<'idle'|'preparing'|'recording'|'transcribing'>('idle');
+  const [status,setStatus]=useState<'idle'|'recording'|'paused'|'transcribing'|'reviewing'>('idle');
   const [transcript,setTranscript]=useState('');
+  const [mealType,setMealType]=useState<MealType>(()=>{const h=new Date().getHours();return h<11?'breakfast':h<15?'lunch':h<21?'dinner':'snack';});
+  const [language,setLanguage]=useState<'en'|'es'|'fr'|'de'|'auto'>('en');
+  const [items,setItems]=useState<ProposedFoodItem[]>([]);
+  const [newItemText,setNewItemText]=useState('');
+  const [history,setHistory]=useState<{id:string;text:string;status:string}[]>([]);
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState('');
-  const [progress,setProgress]=useState<{loaded:number;total:number}|null>(null);
-  const supported=isSpeechSupported();
-  // Warm the speech model the moment the screen opens, so the first tap only
-  // waits for microphone permission instead of a ~160 MB download.
-  useEffect(()=>{
-    if(!supported)return;
-    prepareSpeech((p)=>setProgress({loaded:p.loaded,total:p.total}))
-      .then(()=>setProgress(null))
-      .catch(()=>{/* surfaced by handleStart if it is still failing */});
-  },[]);
-  // Live elapsed timer: the tap must respond visibly right away, even while
-  // the microphone finishes starting.
   const [elapsed,setElapsed]=useState(0);
+  const supported=isSpeechSupported();
+
   useEffect(()=>{
-    if(status!=='recording'){setElapsed(0);return;}
-    const started=Date.now();
-    setElapsed(0);
-    const id=setInterval(()=>setElapsed(Math.floor((Date.now()-started)/1000)),500);
+    let active=true;
+    loadVoiceTranscriptions().then(h=>{if(active)setHistory(h);}).catch(()=>undefined);
+    return ()=>{active=false;void cancelSpeech();};
+  },[]);
+
+  useEffect(()=>{
+    if(status!=='recording')return;
+    const id=setInterval(()=>setElapsed(prev=>prev+1),1000);
     return ()=>clearInterval(id);
   },[status]);
-  useEffect(()=>()=>{void cancelSpeech();},[]);
+
   const handleStart=async()=>{
-    if(!supported){setError('Voice capture is available in the web app and the native store build. You can type your meal note here instead.');return;}
+    if(!supported){
+      setError('Microphone recording is not available on this device. You can type your meal below.');
+      return;
+    }
     setError('');
-    setStatus('recording');
-    const prep=prepareSpeech((p)=>setProgress({loaded:p.loaded,total:p.total}));
+    setElapsed(0);
     try{
       await startSpeechRecording();
+      setStatus('recording');
     }catch(e:any){
-      setError(e?.message||'Could not start recording.');
+      setError(e?.message||'Could not start recording. Check microphone permissions.');
       setStatus('idle');
     }
-    prep.then(()=>setProgress(null)).catch((e:any)=>{
-      setError(e?.message||'The speech model could not load. You can type your note instead.');
-      setProgress(null);
-    });
   };
+
+  const handlePauseResume=async()=>{
+    try{
+      if(status==='recording'){
+        const ok=await pauseSpeechRecording();
+        if(ok) setStatus('paused');
+      }else if(status==='paused'){
+        const ok=await resumeSpeechRecording();
+        if(ok) setStatus('recording');
+      }
+    }catch(e:any){
+      setError(e?.message||'Could not pause/resume recording.');
+    }
+  };
+
+  const handleCancelRecording=async()=>{
+    await cancelSpeech();
+    setElapsed(0);
+    setStatus('idle');
+  };
+
   const handleStop=async()=>{
     setError('');
+    setStatus('transcribing');
     try{
-      setStatus('transcribing');
-      const text=await stopSpeechAndTranscribe();
-      if(text) setTranscript(prev=>prev?`${prev} ${text}`:text);
+      const result=await stopSpeechAndTranscribeFull(language);
+      setTranscript(result.text||'');
+      if(result.mealType) setMealType(result.mealType);
+      setItems(result.items||[]);
+      setStatus('reviewing');
     }catch(e:any){
-      setError(e?.message||'Could not transcribe your note.');
-    }finally{
+      setError(e?.message||'Could not transcribe your recording. Try again or edit the text below.');
       setStatus('idle');
-      setProgress(null);
     }
   };
-  const handleMic=()=>{
-    if(status==='recording'){void handleStop();}
-    else if(status==='idle'){void handleStart();}
-  };
-  const save=async()=>{
-    if(!transcript.trim()||saving)return;
-    setSaving(true);setError('');
-    const hour=new Date().getHours();
-    const mealType:MealType=hour<11?'breakfast':hour<15?'lunch':hour<21?'dinner':'snack';
+
+  const reparseTranscript=async()=>{
+    const text=transcript.trim();
+    if(!text)return;
+    setError('');
     try{
-      await addMeal({mealType,description:transcript.trim(),source:'voice'});
-      Alert.alert('Meal note saved','Your voice food log was added to today’s entries.');
+      const parsed=await parseFoodTranscript(text);
+      if(parsed.mealType) setMealType(parsed.mealType);
+      setItems(parsed.items||[]);
+      setStatus('reviewing');
+    }catch{
+      // local fallback split
+      const lines=text.split(/[,;\n]+|\band\b/i).map(x=>x.trim()).filter(Boolean);
+      setItems(lines.map((l,i)=>({id:`local-${i}`,name:l,quantity:'1',unit:'serving',rawText:l,uncertain:true})));
+      setStatus('reviewing');
+    }
+  };
+
+  const updateItem=(id:string,patch:Partial<ProposedFoodItem>)=>{
+    setItems(prev=>prev.map(it=>it.id===id?{...it,...patch}:it));
+  };
+
+  const removeItem=(id:string)=>{
+    setItems(prev=>prev.filter(it=>it.id!==id));
+  };
+
+  const addManualItem=()=>{
+    const t=newItemText.trim();
+    if(!t)return;
+    setItems(prev=>[...prev,{id:`manual-${Date.now()}`,name:t,quantity:'1',unit:'serving',rawText:t,uncertain:false}]);
+    setNewItemText('');
+  };
+
+  const save=async()=>{
+    const finalDescription=items.length>0
+      ? items.map(it=>`${it.quantity&&it.quantity!=='1'?`${it.quantity} ${it.unit} `:''}${it.name}`.trim()).join(', ')
+      : transcript.trim();
+    if(!finalDescription||saving)return;
+    setSaving(true);setError('');
+    try{
+      const totalCals=items.reduce((sum,it)=>sum+(it.calories||0),0);
+      const totalProt=items.reduce((sum,it)=>sum+(it.protein||0),0);
+      const totalCarbs=items.reduce((sum,it)=>sum+(it.carbs||0),0);
+      const totalFat=items.reduce((sum,it)=>sum+(it.fat||0),0);
+      const macroNote=totalCals>0?`Estimated reference nutrition: ${totalCals} kcal (${totalProt.toFixed(0)}g protein, ${totalCarbs.toFixed(0)}g carbs, ${totalFat.toFixed(0)}g fat)`:undefined;
+      await addMeal({mealType,description:finalDescription,notes:macroNote,source:'voice'});
+      Alert.alert('Saved to Food Diary',`Your ${mealType} entry was saved to your Food Diary.`);
       setTranscript('');
+      setItems([]);
+      setStatus('idle');
       navigation.goBack();
     }catch(e:any){
-      setError(e?.message||'Could not save your meal note. Please try again.');
+      setError(e?.message||'Could not save your food diary entry. Please try again.');
     }finally{setSaving(false);}
   };
-  const micLabel=status==='recording'?'Tap to finish':status==='transcribing'?'Transcribing…':isSpeechSupported()?'Tap to start recording':'Tap to type note';
-  const pct=progress&&progress.total?Math.min(100,Math.round(progress.loaded/progress.total*100)):null;
+
+  const deleteHistoryItem=async(id:string)=>{
+    try{
+      await removeVoiceTranscription(id);
+      setHistory(prev=>prev.filter(h=>h.id!==id));
+    }catch{}
+  };
+
+  const mealOptions:[MealType,string][]=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack']];
+  const langOptions:[typeof language,string][]=[['en','English'],['es','Español'],['fr','Français'],['de','Deutsch'],['auto','Auto']];
+  const micLabel=status==='recording'?'Tap to finish & transcribe':status==='paused'?'Recording paused':status==='transcribing'?'Transcribing with Groq Whisper…':'Tap microphone to start recording';
+
   return <Shell navigation={navigation}>
-    <Text style={s.eyebrow}>VOICE FOOD LOG</Text>
+    <Text style={s.eyebrow}>VOICE FOOD LOG · GROQ WHISPER</Text>
     <Text style={s.title}>Tell us about your meal.</Text>
-    <Text style={s.copy}>Speak naturally. True Diet turns your words into a private meal note without scoring or judging food.</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel={micLabel} accessibilityState={{disabled:status==='transcribing'}} hitSlop={12} disabled={status==='transcribing'} onPress={handleMic} style={({pressed})=>[s.recordTouch,pressed&&s.recordTouchPressed,status==='transcribing'&&s.disabled]}>
-      <View style={[s.micWrap,status==='recording'&&s.micWrapOn]}>
-        <View style={[s.mic,status==='recording'&&s.micOn]}>
-          {status==='transcribing'?<ActivityIndicator color="#fff"/>:<Mic size={32} color="#fff"/>}
+    <Text style={s.copy}>Speak naturally (e.g., “I had two boiled eggs, two slices of whole wheat toast and one cup of milk for breakfast”). Review and edit before saving to your Food Diary.</Text>
+
+    <Text style={[s.label,{marginTop:16,marginBottom:8}]}>Language</Text>
+    <View style={s.chips}>
+      {langOptions.map(([code,label])=>(
+        <Pressable key={code} onPress={()=>setLanguage(code)} style={[s.slot,language===code&&s.slotActive]}>
+          <Text style={[s.slotText,language===code&&s.slotTextActive]}>{label}</Text>
+        </Pressable>
+      ))}
+    </View>
+
+    <View style={[s.recordTouch,status==='transcribing'&&s.disabled]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={micLabel}
+        disabled={status==='transcribing'}
+        onPress={()=>{if(status==='recording'||status==='paused'){void handleStop();}else{void handleStart();}}}
+        style={{alignItems:'center'}}
+      >
+        <View style={[s.micWrap,(status==='recording'||status==='paused')&&s.micWrapOn]}>
+          <View style={[s.mic,(status==='recording'||status==='paused')&&s.micOn]}>
+            {status==='transcribing'?<ActivityIndicator color="#fff"/>:(status==='recording'||status==='paused')?<Square size={26} color="#fff"/>:<Mic size={32} color="#fff"/>}
+          </View>
+        </View>
+        <Text style={s.micLabel}>{micLabel}</Text>
+      </Pressable>
+
+      {(status==='recording'||status==='paused')?(
+        <View style={{alignItems:'center',marginTop:10,gap:10}}>
+          <Text style={s.recTimer}>● {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} {status==='paused'?'(Paused)':'recording'}</Text>
+          <View style={{flexDirection:'row',gap:10}}>
+            <Pressable onPress={handlePauseResume} style={[s.slot,{paddingHorizontal:14,paddingVertical:8}]}>
+              {status==='recording'?<Pause size={15} color={colors.deepTeal}/>:<Play size={15} color={colors.deepTeal}/>}
+              <Text style={s.slotText}>{status==='recording'?'Pause':'Resume'}</Text>
+            </Pressable>
+            <Pressable onPress={handleCancelRecording} style={[s.slot,{paddingHorizontal:14,paddingVertical:8,borderColor:colors.red}]}>
+              <X size={15} color={colors.red}/>
+              <Text style={[s.slotText,{color:colors.red}]}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      ):null}
+    </View>
+
+    <Text style={[s.label,{marginTop:18,marginBottom:8}]}>Select Meal Type</Text>
+    <View style={s.chips}>
+      {mealOptions.map(([key,label])=>(
+        <Pressable key={key} onPress={()=>setMealType(key)} style={[s.slot,mealType===key&&s.slotActive]}>
+          <Text style={[s.slotText,mealType===key&&s.slotTextActive]}>{label}</Text>
+        </Pressable>
+      ))}
+    </View>
+
+    <View style={s.transcript}>
+      <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+        <Text style={s.transcriptLabel}>TRANSCRIPTION REVIEW (EDITABLE)</Text>
+        {transcript.trim().length>0?(
+          <Pressable onPress={reparseTranscript} hitSlop={8}>
+            <Text style={{fontFamily:'Roboto',fontSize:12,fontWeight:'700',color:colors.deepTeal}}>Analyze Items ↻</Text>
+          </Pressable>
+        ):null}
+      </View>
+      <TextInput
+        value={transcript}
+        onChangeText={setTranscript}
+        multiline
+        placeholder="Speak above or type what you ate here — then review recognized items before saving."
+        placeholderTextColor={colors.muted}
+        style={[s.transcriptText,{minHeight:74,padding:0}]}
+      />
+    </View>
+
+    {items.length>0?(
+      <View style={{marginTop:18,borderWidth:1,borderColor:colors.border,borderRadius:18,padding:16,backgroundColor:colors.surface,gap:10}}>
+        <Text style={s.transcriptLabel}>PROPOSED FOOD ITEMS (CONFIRM OR EDIT)</Text>
+        {items.map((it)=>(
+          <View key={it.id} style={{borderBottomWidth:1,borderBottomColor:colors.border,paddingBottom:10,gap:6}}>
+            <View style={{flexDirection:'row',alignItems:'center',gap:8}}>
+              <TextInput
+                value={it.quantity}
+                onChangeText={(v)=>updateItem(it.id,{quantity:v})}
+                placeholder="Qty"
+                style={{width:52,height:38,borderWidth:1,borderColor:colors.border,borderRadius:10,paddingHorizontal:8,fontSize:13,color:colors.text,backgroundColor:colors.background}}
+              />
+              <TextInput
+                value={it.unit}
+                onChangeText={(v)=>updateItem(it.id,{unit:v})}
+                placeholder="Unit"
+                style={{width:86,height:38,borderWidth:1,borderColor:colors.border,borderRadius:10,paddingHorizontal:8,fontSize:13,color:colors.text,backgroundColor:colors.background}}
+              />
+              <TextInput
+                value={it.name}
+                onChangeText={(v)=>updateItem(it.id,{name:v,uncertain:false})}
+                placeholder="Food item"
+                style={{flex:1,height:38,borderWidth:1,borderColor:colors.border,borderRadius:10,paddingHorizontal:10,fontSize:13,fontWeight:'600',color:colors.text,backgroundColor:colors.background}}
+              />
+              <Pressable onPress={()=>removeItem(it.id)} hitSlop={8} accessibilityLabel={`Remove ${it.name}`}>
+                <Trash2 size={17} color={colors.red}/>
+              </Pressable>
+            </View>
+            {it.calories!=null?(
+              <Text style={{fontFamily:'Roboto',fontSize:11.5,color:colors.green}}>
+                Reference nutrition: {it.calories} kcal · {it.protein}g protein · {it.carbs}g carbs · {it.fat}g fat
+              </Text>
+            ):(
+              <Text style={{fontFamily:'Roboto',fontSize:11.5,color:colors.orange}}>
+                Uncertain nutrition match — verify item name & quantity above (no fabricated nutrition values added).
+              </Text>
+            )}
+          </View>
+        ))}
+
+        <View style={{flexDirection:'row',gap:8,marginTop:4}}>
+          <TextInput
+            value={newItemText}
+            onChangeText={setNewItemText}
+            placeholder="Add missing item (e.g. 1 cup berries)"
+            placeholderTextColor={colors.muted}
+            onSubmitEditing={addManualItem}
+            style={{flex:1,height:42,borderWidth:1,borderColor:colors.border,borderRadius:10,paddingHorizontal:12,fontSize:13,color:colors.text}}
+          />
+          <Pressable onPress={addManualItem} style={{width:42,height:42,borderRadius:10,backgroundColor:colors.deepTeal,alignItems:'center',justifyContent:'center'}}>
+            <Plus size={18} color="#fff"/>
+          </Pressable>
         </View>
       </View>
-      <Text style={s.micLabel}>{micLabel}</Text>
-      {status==='recording'?<Text style={s.recTimer}>{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} recorded</Text>:null}
-    </Pressable>
-    {pct!==null?<View style={s.progressWrap}><View style={s.progressTrack}><View style={[s.progressFill,{width:`${pct}%`}]}/></View><Text style={s.progressText}>Preparing speech model… {pct}%</Text></View>:null}
-    <View style={s.transcript}>
-      <Text style={s.transcriptLabel}>MEAL NOTE</Text>
-      <TextInput value={transcript} onChangeText={setTranscript} multiline placeholder="Your voice note will appear here — you can edit it." placeholderTextColor={colors.muted} style={[s.transcriptText,{minHeight:70,padding:0}]}/>
-    </View>
+    ):null}
+
     <View style={s.apiNote}>
       <ShieldCheck size={19} color={colors.deepTeal}/>
-      <Text style={s.apiCopy}>{supported?'Voice notes are transcribed on your device with sherpa-onnx (Whisper base.en). Audio never leaves your device. First use downloads the model once.':'Voice capture requires a native build (expo prebuild + Android/iOS). Tap above to type your meal note instead.'}</Text>
+      <Text style={s.apiCopy}>Audio is securely transcribed via Groq Whisper (`whisper-large-v3-turbo`) on the True Diet backend and immediately discarded. Nothing is saved to your Food Diary until you review and confirm.</Text>
     </View>
+
     {error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}
-    <Pressable style={[s.primary,(!transcript.trim()||saving)&&s.disabled]} disabled={!transcript.trim()||saving} onPress={save}>
-      <Text style={s.primaryText}>{saving?'Saving…':'Save Meal Note'}</Text>
+
+    <Pressable style={[s.primary,(!transcript.trim()&&items.length===0||saving)&&s.disabled]} disabled={(!transcript.trim()&&items.length===0)||saving} onPress={save}>
+      <Text style={s.primaryText}>{saving?'Saving to Food Diary…':'Confirm & Save to Food Diary'}</Text>
     </Pressable>
+
+    {history.length>0?(
+      <View style={{marginTop:26}}>
+        <Text style={s.section}>Recent Voice Food Logs</Text>
+        {history.slice(0,5).map((h)=>(
+          <View key={h.id} style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:10,borderBottomWidth:1,borderBottomColor:colors.border}}>
+            <Text style={{flex:1,fontFamily:'Roboto',fontSize:13,color:colors.text,marginRight:10}} numberOfLines={2}>{h.text}</Text>
+            <Pressable onPress={()=>deleteHistoryItem(h.id)} hitSlop={8}>
+              <Trash2 size={16} color={colors.red}/>
+            </Pressable>
+          </View>
+        ))}
+      </View>
+    ):null}
   </Shell>;
 }
 export function DietitianScreen({navigation}:any){const [message,setMessage]=useState('');const [sent,setSent]=useState(false);const [sending,setSending]=useState(false);const [error,setError]=useState('');const submit=async()=>{const body=message.trim();if(!body||sending)return;setSending(true);setError('');try{await sendMessage(body);setSent(true);setMessage('');}catch(e:any){setError(e?.message||'Could not send your message. Please try again.');}finally{setSending(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>ASK THE DIETITIAN</Text><Text style={s.title}>Guidance with context.</Text><Text style={s.copy}>Send a non-urgent nutrition education question to your Registered Dietitian.</Text><View style={s.secure}><ShieldCheck size={22} color={colors.green}/><View><Text style={s.cardTitle}>Secure messaging</Text><Text style={s.desc}>For education and support—not urgent or emergency care.</Text></View></View><Text style={s.label}>Your question</Text><TextInput value={message} onChangeText={(value)=>{setMessage(value);if(sent)setSent(false);}} multiline placeholder="What would you like to understand?" placeholderTextColor={colors.muted} style={s.textArea}/>{sent&&<Text style={s.sent}>Message saved for secure delivery.</Text>}{error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}<Pressable style={[s.primary,(!message.trim()||sending)&&s.disabled]} disabled={!message.trim()||sending} onPress={submit}><Send size={18} color="#fff"/><Text style={s.primaryText}>{sending?'Sending…':'Send Secure Message'}</Text></Pressable><Pressable onPress={()=>navigation.navigate('MessageDetail')} hitSlop={8}><Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>View my conversation →</Text></Pressable></Shell>}

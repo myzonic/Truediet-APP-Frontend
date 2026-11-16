@@ -175,6 +175,37 @@ export async function removeMeal(id: string): Promise<void> {
 }
 
 /**
+ * Update an existing meal entry by ID.
+ * Calls PATCH /api/meals/:id, falls back to AsyncStorage.
+ */
+export async function updateMeal(
+  id: string,
+  patch: { mealType?: MealType; description?: string; notes?: string }
+): Promise<MealLog | null> {
+  try {
+    const res = await apiFetch<{ meal: MealLog }>(`/api/meals/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: patch,
+    });
+    return res?.meal ?? null;
+  } catch (error) {
+    if (!isOfflineError(error)) throw error;
+    const items = await readLocal<MealLog>('truediet.meals.v1');
+    const updated = items.map(function (m): MealLog {
+      if (m.id !== id) return m;
+      return {
+        ...m,
+        mealType: patch.mealType ?? m.mealType,
+        description: patch.description ?? m.description,
+        notes: patch.notes !== undefined ? patch.notes || null : m.notes,
+      };
+    });
+    await writeLocal('truediet.meals.v1', updated);
+    return updated.find((m) => m.id === id) ?? null;
+  }
+}
+
+/**
  * Read all hunger check-ins.
  * Calls GET /api/hunger, falls back to AsyncStorage.
  */
@@ -362,7 +393,7 @@ export async function loadDailyProgress(date?: string): Promise<DailyProgress> {
 }
 
 /** Water summary from backend or local storage */
-async function loadWaterSummary(): Promise<{ dailyGoalMl: number; totalMl: number; remainingMl: number }> {
+export async function loadWaterSummary(): Promise<{ dailyGoalMl: number; totalMl: number; remainingMl: number }> {
   try {
     const res = await apiFetch<{ dailyGoalMl: number; totalMl: number }>('/api/water-summary', {
       method: 'GET',

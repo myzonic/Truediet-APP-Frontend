@@ -1,195 +1,137 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, Pressable, TextInput, FlatList, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
+import { ArrowLeft, ArrowRightLeft, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { Pill, PillGroup } from '../../components/Pill';
 
-interface FoodItem {
-  id: string;
+interface SwapOption {
   name: string;
-  category: string;
-  calories: number;
-  protein: number;
-  carbohydrates: number;
-  fat: number;
+  reason: string;
+  nutritionComparison: string;
   allergens: string;
 }
 
-const originalFoods: FoodItem[] = [
-  { id: '1', name: 'Whole Milk', category: 'Dairy', calories: 150, protein: 8, carbohydrates: 12, fat: 8, allergens: 'None' },
-  { id: '2', name: 'Almond Milk', category: 'Dairy', calories: 30, protein: 1, carbohydrates: 1, fat: 2.5, allergens: 'None' },
-  { id: '3', name: 'White Bread', category: 'Grains', calories: 80, protein: 3, carbohydrates: 13, fat: 1, allergens: 'Gluten' },
-  { id: '4', name: 'Whole Wheat Bread', category: 'Grains', calories: 100, protein: 4, carbohydrates: 15, fat: 1, allergens: 'Gluten' },
-  { id: '5', name: 'Soy Sauce', category: 'Condiment', calories: 10, protein: 1, carbohydrates: 1, fat: 0, allergens: 'Soy' },
-  { id: '6', name: 'Tamari', category: 'Condiment', calories: 15, protein: 2, carbohydrates: 0, fat: 0, allergens: 'Soy' }
+interface OriginalFood {
+  id: string;
+  name: string;
+  category: string;
+  nutrition: string;
+  swaps: SwapOption[];
+}
+
+const FOOD_SWAPS: OriginalFood[] = [
+  {
+    id: 'milk',
+    name: 'Cow’s Milk (Whole)',
+    category: 'Dairy',
+    nutrition: '150 kcal · 8g protein · 12g carbs · 8g fat per cup',
+    swaps: [
+      { name: 'Unsweetened Soy Milk', reason: 'Dairy-free / Closest protein match', nutritionComparison: '80 kcal · 7g protein · 4g carbs · 4g fat', allergens: 'Soy' },
+      { name: 'Fortified Oat Milk', reason: 'Creamy texture for coffee & oats', nutritionComparison: '120 kcal · 3g protein · 16g carbs · 5g fat', allergens: 'Gluten (unless certified GF)' },
+      { name: 'Unsweetened Almond Milk', reason: 'Lighter calorie & lower carb option', nutritionComparison: '30 kcal · 1g protein · 1g carbs · 2.5g fat', allergens: 'Tree nuts' },
+    ],
+  },
+  {
+    id: 'bread',
+    name: 'White Sandwich Bread',
+    category: 'Grains',
+    nutrition: '80 kcal · 3g protein · 15g carbs · 1g fiber per slice',
+    swaps: [
+      { name: 'Sprouted Whole Grain Bread', reason: 'Higher fiber & slower digestion', nutritionComparison: '80 kcal · 5g protein · 15g carbs · 3g fiber', allergens: 'Wheat / Gluten' },
+      { name: 'Certified Gluten-Free Seeded Bread', reason: 'Celiac / gluten intolerance safe', nutritionComparison: '110 kcal · 3g protein · 18g carbs · 3g fiber', allergens: 'None (check label for eggs/seeds)' },
+      { name: 'Corn Tortillas (2 small)', reason: 'Naturally gluten-free whole grain', nutritionComparison: '100 kcal · 2g protein · 21g carbs · 2.5g fiber', allergens: 'None' },
+    ],
+  },
+  {
+    id: 'rice',
+    name: 'White Rice',
+    category: 'Grains & Starches',
+    nutrition: '205 kcal · 4g protein · 45g carbs · 0.6g fiber per cup',
+    swaps: [
+      { name: 'Quinoa (cooked)', reason: 'Complete plant protein & higher fiber', nutritionComparison: '222 kcal · 8g protein · 39g carbs · 5g fiber', allergens: 'None' },
+      { name: 'Brown or Wild Rice', reason: 'Intact bran & micronutrients', nutritionComparison: '216 kcal · 5g protein · 45g carbs · 3.5g fiber', allergens: 'None' },
+      { name: 'Half Rice + Half Cauliflower Rice', reason: 'Higher vegetable volume, familiar texture', nutritionComparison: '115 kcal · 3g protein · 25g carbs · 2g fiber', allergens: 'None' },
+    ],
+  },
+  {
+    id: 'sour-cream',
+    name: 'Sour Cream / HeavyMayo',
+    category: 'Condiments & Fats',
+    nutrition: '60–90 kcal · 1g protein · 6–10g fat per 2 tbsp',
+    swaps: [
+      { name: 'Plain Greek Yogurt', reason: 'Higher protein, tangy swap for dips & toppings', nutritionComparison: '35 kcal · 5g protein · 1g fat per 2 tbsp', allergens: 'Dairy' },
+      { name: 'Mashed Avocado', reason: 'Dairy-free, heart-healthy monounsaturated fat', nutritionComparison: '50 kcal · 0.6g protein · 4.5g unsaturated fat', allergens: 'None' },
+    ],
+  },
+  {
+    id: 'soy-sauce',
+    name: 'Regular Soy Sauce',
+    category: 'Condiments',
+    nutrition: '10 kcal · ~900mg sodium per tbsp',
+    swaps: [
+      { name: 'Reduced-Sodium Tamari', reason: 'Gluten-free & lower sodium', nutritionComparison: '15 kcal · ~550mg sodium per tbsp', allergens: 'Soy' },
+      { name: 'Coconut Aminos', reason: 'Soy-free & gluten-free savory seasoning', nutritionComparison: '15 kcal · ~270mg sodium per tbsp', allergens: 'None' },
+    ],
+  },
 ];
 
-const substitutionReasons = ['Allergy', 'Intolerance', 'Dietary preference', 'Availability', 'Budget', 'Nutritional preference', 'Taste'];
-
-const alternatives: Record<string, FoodItem[]> = {
-  'Whole Milk': [
-    { id: 'a1', name: 'Almond Milk', category: 'Dairy', calories: 30, protein: 1, carbohydrates: 1, fat: 2.5, allergens: 'None' },
-    { id: 'a2', name: 'Soy Milk', category: 'Dairy', calories: 80, protein: 7, carbohydrates: 4, fat: 4, allergens: 'Soy' },
-    { id: 'a3', name: 'Oat Milk', category: 'Dairy', calories: 120, protein: 3, carbohydrates: 16, fat: 5, allergens: 'None' }
-  ],
-  'White Bread': [
-    { id: 'b1', name: 'Gluten-Free Bread', category: 'Grains', calories: 110, protein: 2, carbohydrates: 22, fat: 2, allergens: 'None' },
-    { id: 'b2', name: 'Lettuce Wraps', category: 'Vegetables', calories: 15, protein: 1, carbohydrates: 3, fat: 0, allergens: 'None' },
-    { id: 'b3', name: 'Corn Tortillas', category: 'Grains', calories: 95, protein: 3, carbohydrates: 20, fat: 1, allergens: 'Gluten' }
-  ]
-};
-
-export default function FoodSubstitutionScreen({navigation}: any) {
-  const [originalFood, setOriginalFood] = useState<FoodItem | null>(null);
-  const [reason, setReason] = useState('');
-  const [showAlternatives, setShowAlternatives] = useState(false);
-  const [filteredAlternatives, setFilteredAlternatives] = useState<FoodItem[]>([]);
-  const [search, setSearch] = useState('');
-
-  const handleSelectOriginal = (food: FoodItem) => {
-    setOriginalFood(food);
-    setReason('');
-    setShowAlternatives(false);
-  };
-
-  const handleSelectReason = (r: string) => {
-    setReason(r);
-    if (r !== '' && r !== 'Select reason') {
-      setShowAlternatives(true);
-      const orig = originalFoods.find((f) => f.id === originalFood?.id);
-      if (orig) {
-        const subs = alternatives[orig.name] || [];
-        setFilteredAlternatives(subs.filter((s) =>
-          s.name.toLowerCase().includes(search.toLowerCase())
-        ));
-      }
-    } else {
-      setShowAlternatives(false);
-      setFilteredAlternatives([]);
-    }
-  };
-
-  const handleSearchChange = (text: string) => {
-    setSearch(text);
-    if (originalFood) {
-      const orig = originalFoods.find((f) => f.id === originalFood.id);
-      if (orig) {
-        setFilteredAlternatives(alternatives[orig.name]?.filter((s) =>
-          s.name.toLowerCase().includes(text.toLowerCase())
-        ) || []);
-      } else {
-        setFilteredAlternatives([]);
-      }
-    }
-  };
-
-  const addToSubstitutions = () => {
-    if (!originalFood || !reason) return;
-    Alert.alert(
-      'Substitution Added',
-      'Added ' + originalFood.name + ' alternative selection for: ' + reason
-    );
-    setOriginalFood(null);
-    setReason('');
-    setShowAlternatives(false);
-    setSearch('');
-  };
+export default function FoodSubstitutionScreen({ navigation }: any) {
+  const [selectedId, setSelectedId] = useState<string>(FOOD_SWAPS[0].id);
+  const current = FOOD_SWAPS.find((f) => f.id === selectedId) || FOOD_SWAPS[0];
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <View style={s.header}>
-          <Text style={s.headerTitle}>Food Substitution Tool</Text>
-          <Text style={s.headerSubtitle}>Find alternatives and compare nutrition</Text>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
+          <ArrowLeft size={22} color={colors.text} />
+        </Pressable>
+
+        <Text style={s.eyebrow}>FOOD SUBSTITUTION TOOL</Text>
+        <Text style={s.title}>Practical food swaps.</Text>
+        <Text style={s.subtitle}>
+          Explore allergy-safe, higher-fiber, or preference-friendly alternatives and compare their nutrition side by side.
+        </Text>
+
+        <Text style={s.label}>1. Choose a food to swap</Text>
+        <PillGroup>
+          {FOOD_SWAPS.map((item) => (
+            <Pill
+              key={item.id}
+              label={item.name}
+              selected={selectedId === item.id}
+              onPress={() => setSelectedId(item.id)}
+            />
+          ))}
+        </PillGroup>
+
+        <View style={s.origCard}>
+          <Text style={s.origCategory}>{current.category.toUpperCase()}</Text>
+          <Text style={s.origName}>{current.name}</Text>
+          <Text style={s.origNutrition}>{current.nutrition}</Text>
         </View>
 
-        <View style={s.formSection}>
-          <Text style={s.formLabel}>Original Food</Text>
-          {originalFood ? (
-            <View style={s.foodDisplay}>
-              <Text style={s.foodName}>{originalFood.name}</Text>
-              <Text style={s.foodDetails}>
-                Calories: {String(originalFood.calories)} | Protein: {String(originalFood.protein)}g | Carbs: {String(originalFood.carbohydrates)}g | Fat: {String(originalFood.fat)}g
-              </Text>
-              <Text style={s.foodAllergens}>Allergens: {originalFood.allergens}</Text>
+        <Text style={s.label}>2. Recommended Alternatives</Text>
+        <View style={s.list}>
+          {current.swaps.map((swap) => (
+            <View key={swap.name} style={s.swapCard}>
+              <View style={s.swapHead}>
+                <ArrowRightLeft size={18} color={colors.green} />
+                <Text style={s.swapTitle}>{swap.name}</Text>
+              </View>
+              <Text style={s.swapReason}>{swap.reason}</Text>
+              <Text style={s.swapMeta}>{swap.nutritionComparison}</Text>
+              <Text style={s.swapAllergen}>Allergens: {swap.allergens}</Text>
             </View>
-          ) : (
-            <Text style={s.noSelection}>Select an original food above</Text>
-          )}
-
-          <View style={s.reasonSelector}>
-            <Text style={s.reasonLabel}>Reason for substitution:</Text>
-            <FlatList
-              data={substitutionReasons}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={[
-                    s.reasonButton,
-                    reason === item ? s.reasonButtonActive : s.reasonButtonInactive
-                  ]}
-                  onPress={() => handleSelectReason(item)}
-                >
-                  <Text style={s.reasonText}>{item}</Text>
-                </Pressable>
-              )}
-            />
-          </View>
+          ))}
         </View>
 
-        {originalFood && reason && showAlternatives ? (
-          <View style={s.alternativesSection}>
-            <Text style={s.alternativesTitle}>Suggested Alternatives</Text>
-            <Text style={s.alternativesSub}>
-              {originalFood.name} alternatives for: {reason}
-            </Text>
-            <TextInput
-              placeholder="Search alternatives..."
-              value={search}
-              onChangeText={handleSearchChange}
-              placeholderTextColor={colors.muted}
-              style={s.searchInput}
-            />
-            <FlatList
-              data={filteredAlternatives}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={s.alternativeItem}
-                  onPress={() => {
-                    Alert.alert(
-                      'Substitution Selected',
-                      'Selected: ' + item.name + '\n' +
-                        originalFood.name + ' -> ' + item.name + '\n' +
-                        'Calories: ' + String(originalFood.calories) + ' -> ' + String(item.calories) + '\n' +
-                        'Protein: ' + String(originalFood.protein) + 'g -> ' + String(item.protein) + 'g'
-                    );
-                    addToSubstitutions();
-                  }}
-                >
-                  <View style={s.alternativeInfo}>
-                    <Text style={s.alternativeName}>{item.name}</Text>
-                    <Text style={s.alternativeCalories}>
-                      {String(item.calories)} cal · {String(item.protein)}g protein · {String(item.carbohydrates)}g carbs · {String(item.fat)}g fat
-                    </Text>
-                  </View>
-                  <Text style={s.alternativeCheck}>✓</Text>
-                </Pressable>
-              )}
-            />
-            {filteredAlternatives.length === 0 && (
-              <Text style={s.noAlternatives}>No alternatives found.</Text>
-            )}
-          </View>
-        ) : (
-          <Text style={s.noSubstitutionText}>
-            Select an original food and reason to see alternatives
+        <View style={s.disclaimer}>
+          <ShieldCheck size={18} color={colors.deepTeal} />
+          <Text style={s.disclaimerText}>
+            Always check product ingredient labels when managing a diagnosed food allergy or celiac disease.
           </Text>
-        )}
-
-        <View style={s.actionSection}>
-          <Pressable style={s.addButton} onPress={addToSubstitutions}>
-            <Text style={s.addButtonText}>Add to Substitutions</Text>
-          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -197,186 +139,24 @@ export default function FoodSubstitutionScreen({navigation}: any) {
 }
 
 const s = StyleSheet.create({
-
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: {
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    paddingHorizontal: 24,
-    paddingBottom: 40
-  },
-  header: {
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: 24
-  },
-  headerTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text
-  },
-  headerSubtitle: {
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.textSecondary
-  },
-  formSection: {
-    marginBottom: 24
-  },
-  foodDisplay: {
-    padding: 16,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    marginBottom: 16
-  },
-  foodName: {
-    fontFamily: 'Roboto',
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4
-  },
-  foodDetails: {
-    fontFamily: 'Roboto',
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 4
-  },
-  foodAllergens: {
-    fontFamily: 'Roboto',
-    fontSize: 11,
-    color: colors.muted,
-    marginTop: 2
-  },
-  formLabel: {
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 8
-  },
-  reasonSelector: {
-    marginBottom: 24
-  },
-  reasonLabel: {
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 8
-  },
-  reasonButton: {
-    padding: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    marginHorizontal: 4,
-    backgroundColor: colors.surface,
-    minHeight: 32
-  },
-  reasonButtonInactive: {
-    padding: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    marginHorizontal: 4,
-    backgroundColor: colors.surface,
-    minHeight: 32
-  },
-  reasonButtonActive: {
-    padding: 8,
-    borderColor: colors.deepTeal,
-    borderRadius: 20,
-    marginHorizontal: 4,
-    backgroundColor: colors.deepTeal,
-    minHeight: 32
-  },
-  reasonText: {
-    color: colors.text,
-    fontFamily: 'Roboto',
-    fontSize: 13
-  },
-  noSelection: {
-    color: colors.textSecondary,
-    marginVertical: 24,
-    textAlign: 'center'
-  },
-  alternativesSection: {
-    marginBottom: 24
-  },
-  alternativesTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8
-  },
-  alternativesSub: {
-    fontFamily: 'Roboto',
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 12
-  },
-  searchInput: {
-    fontFamily: 'Roboto',
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 48,
-    backgroundColor: colors.surface,
-    marginBottom: 8
-  },
-  alternativeItem: {
-    padding: 12,
-    marginBottom: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  alternativeInfo: {},
-  alternativeName: {
-    flex: 1,
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.text
-  },
-  alternativeCalories: {
-    fontFamily: 'Roboto',
-    fontSize: 11,
-    color: colors.textSecondary
-  },
-  alternativeCheck: {
-    color: colors.deepTeal,
-    fontSize: 14
-  },
-  noAlternatives: {
-    color: colors.textSecondary,
-    marginVertical: 8,
-    textAlign: 'center'
-  },
-  noSubstitutionText: {
-    color: colors.textSecondary,
-    marginVertical: 24,
-    textAlign: 'center'
-  },
-  actionSection: {
-    marginTop: 24,
-    alignItems: 'center'
-  },
-  addButton: {
-    backgroundColor: colors.deepTeal,
-    padding: 12,
-    borderRadius: 12
-  },
-  addButtonText: {
-    color: '#fff',
-    fontFamily: 'Roboto',
-    fontSize: 15,
-    fontWeight: '700'
-  }
+  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
+  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
+  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
+  eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
+  title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
+  subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
+  label: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 22, marginBottom: 10 },
+  origCard: { backgroundColor: colors.softBlue, borderRadius: 18, padding: 16, marginTop: 16 },
+  origCategory: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.1, color: colors.deepTeal },
+  origName: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 4 },
+  origNutrition: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: 4 },
+  list: { gap: 10 },
+  swapCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 16, gap: 4 },
+  swapHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  swapTitle: { fontFamily: 'Roboto', fontSize: 15.5, fontWeight: '700', color: colors.text },
+  swapReason: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '600', color: colors.green, marginTop: 2 },
+  swapMeta: { fontFamily: 'Roboto', fontSize: 12.5, color: colors.textSecondary, marginTop: 2 },
+  swapAllergen: { fontFamily: 'Roboto', fontSize: 11.5, color: colors.muted, marginTop: 2 },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softGreen, borderRadius: 16, padding: 14, marginTop: 22, alignItems: 'flex-start' },
+  disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

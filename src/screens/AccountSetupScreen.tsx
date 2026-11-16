@@ -2,13 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
-import { ArrowLeft, CheckCircle2, Eye, EyeOff, LockKeyhole } from 'lucide-react-native';
+import { ArrowLeft, Check, CheckCircle2, Eye, EyeOff, LockKeyhole } from 'lucide-react-native';
 import { colors } from '../theme/colors';
-import { signIn, signUp, signOut, refetchSession, requestPasswordReset, resetPassword, sendVerificationEmail, verifyEmail, isAuthenticated, getCurrentUser } from '../lib/auth-service';
+import { signIn, signUp, signInWithGoogle, requestPasswordReset, sendVerificationEmail } from '../lib/auth-service';
 import { useAuth } from '../context/AuthContext';
 import { useOnboarding } from '../context/OnboardingContext';
 import { saveProfile } from '../lib/profile';
 import { API_BASE_URL } from '../lib/api-client';
+
+function friendlyAuthError(message?: string): string {
+  const m = (message || '').toLowerCase();
+  if (!m) return 'Something went wrong — please try again.';
+  if (m.includes('invalid email or password') || m.includes('invalid_credentials'))
+    return 'Email or password is incorrect.';
+  if (m.includes('already exists') || m.includes('user_exists'))
+    return 'An account with this email already exists — switch to Sign In.';
+  if (m.includes('not verified'))
+    return 'Confirm your email first — you can resend the link below.';
+  if (m.includes('rate') || m.includes('too many') || m.includes('429'))
+    return 'Too many attempts — wait a minute and try again.';
+  if (m.includes('fetch') || m.includes('network') || m.includes('load failed'))
+    return 'Could not reach the server — check your connection and try again.';
+  return message as string;
+}
 
 export default function AccountSetupScreen({ navigation, route }: any) {
   const [mode, setMode] = useState<'signup' | 'signin'>(
@@ -17,6 +33,8 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -29,7 +47,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   const [resetCooldown, setResetCooldown] = useState(false);
   const [serverFlags, setServerFlags] = useState<{ emailVerification: boolean; google: boolean }>({
     emailVerification: false,
-    google: false,
+    google: true,
   });
   const { refetchSession } = useAuth();
   const { data } = useOnboarding();
@@ -38,19 +56,16 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     let active = true;
     (async () => {
       try {
-        const base = API_BASE_URL;
-        const res = await fetch(`${base}/health`);
+        const res = await fetch(`${API_BASE_URL}/health`);
         const j = await res.json();
         if (active) {
           setServerFlags({
             emailVerification: !!j.emailVerificationEnabled,
-            google: !!j.googleSignInEnabled,
+            google: j.googleSignInEnabled !== undefined ? !!j.googleSignInEnabled : true,
           });
         }
       } catch {
-        if (active) {
-          setServerFlags((prev) => ({ ...prev, emailVerification: true }));
-        }
+        // keep defaults
       }
     })();
     return () => {
@@ -59,10 +74,11 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   }, []);
 
   const isSignUp = mode === 'signup';
+  const passwordsMatch = !isSignUp || !confirmPassword || password === confirmPassword;
   const ready =
-    email.includes('@') &&
+    email.trim().includes('@') &&
     password.length >= 8 &&
-    (!isSignUp || name.trim().length > 1);
+    (!isSignUp || (name.trim().length > 1 && password === confirmPassword && acceptedTerms));
 
   /** Shared tail of every successful sign-in path. */
   const finishAccount = async () => {
@@ -98,17 +114,19 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   };
 
   const handleSubmit = async () => {
-    if (!ready || loading || pendingVerify) return;
+    if (loading || pendingVerify) return;
+    if (isSignUp && password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return;
+    }
+    if (!ready) return;
     setLoading(true);
     setErrorMessage('');
 
     try {
       if (isSignUp) {
-        // Errors (duplicate email, weak password, network) surface through the
-        // thrown error from the auth service / API client.
-        await signUp(name.trim(), email.trim().toLowerCase(), password);
-
-        if (serverFlags.emailVerification) {
+        const res = await signUp(name.trim(), email.trim().toLowerCase(), password);
+        if (serverFlags.emailVerification || res.verificationEmailSent) {
           setPendingVerify(email.trim().toLowerCase());
           return;
         }
@@ -118,7 +136,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
         await finishAccount();
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Something went wrong — please try again.');
+      setErrorMessage(friendlyAuthError(err?.message));
     } finally {
       setLoading(false);
     }
@@ -136,7 +154,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     setResetMsg('');
     try {
       const res = await requestPasswordReset(em);
-      if (!res?.success) {
+      if (!res?.success && !res?.status) {
         setErrorMessage('Could not reach the server — try again.');
       } else {
         setResetMsg(
@@ -145,8 +163,8 @@ export default function AccountSetupScreen({ navigation, route }: any) {
         setResetCooldown(true);
         setTimeout(() => setResetCooldown(false), 60000);
       }
-    } catch {
-      setErrorMessage('Could not reach the server — try again.');
+    } catch (e: any) {
+      setErrorMessage(friendlyAuthError(e?.message) || 'Could not reach the server — try again.');
     } finally {
       setResetBusy(false);
     }
@@ -158,15 +176,17 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     setVerifyMsg('');
     try {
       const res = await sendVerificationEmail(pendingVerify, '/verify-email');
-      if (!res?.success) {
-        setVerifyMsg('Could not send verification email — try again.');
-      } else {
+      if (res?.alreadyVerified) {
+        setVerifyMsg('This email is already verified! Tap Continue below.');
+      } else if (res?.success || res?.status) {
         setVerifyMsg('Sent again — open the link in that email to verify your account.');
         setVerifyCooldown(true);
         setTimeout(() => setVerifyCooldown(false), 60000);
+      } else {
+        setVerifyMsg('Could not send verification email — try again.');
       }
-    } catch {
-      setVerifyMsg('Could not reach the server — try again.');
+    } catch (e: any) {
+      setVerifyMsg(friendlyAuthError(e?.message));
     } finally {
       setVerifyBusy(false);
     }
@@ -187,9 +207,15 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     setErrorMessage('');
     setLoading(true);
     try {
-      setErrorMessage('Google sign-in is not available — use email and password.');
-    } catch {
-      setErrorMessage('Google sign-in could not start — try again.');
+      const result = await signInWithGoogle();
+      if (result.cancelled) return;
+      if (result.user) {
+        await finishAccount();
+      } else {
+        setErrorMessage('Google sign-in did not complete — please try again.');
+      }
+    } catch (e: any) {
+      setErrorMessage(friendlyAuthError(e?.message));
     } finally {
       setLoading(false);
     }
@@ -369,7 +395,37 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                   </Pressable>
                 </View>
 
-                {!isSignUp ? (
+                {isSignUp ? (
+                  <>
+                    <Text style={s.label}>Confirm password</Text>
+                    <TextInput
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder="Repeat password"
+                      placeholderTextColor={colors.muted}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      style={[s.input, !passwordsMatch && { borderColor: colors.red }]}
+                    />
+                    {!passwordsMatch ? (
+                      <Text style={s.mismatchText}>Passwords do not match.</Text>
+                    ) : null}
+
+                    <Pressable
+                      style={s.termsRow}
+                      onPress={() => setAcceptedTerms((v) => !v)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: acceptedTerms }}
+                    >
+                      <View style={[s.checkbox, acceptedTerms && s.checkboxOn]}>
+                        {acceptedTerms ? <Check size={14} color="#fff" /> : null}
+                      </View>
+                      <Text style={s.termsText}>
+                        I agree to True Diet’s Terms of Use and Privacy Policy (educational guidance, not medical advice).
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : (
                   <Pressable onPress={onForgotPassword} disabled={resetBusy} hitSlop={8} style={s.forgotRow}>
                     <Text style={[s.forgotText, resetCooldown && s.forgotSent]}>
                       {resetBusy
@@ -379,7 +435,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                           : 'Forgot password?'}
                     </Text>
                   </Pressable>
-                ) : null}
+                )}
 
                 <View style={s.trust}>
                   <LockKeyhole size={18} color={colors.deepTeal} />
@@ -391,7 +447,6 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                 {isSignUp && (
                   <View style={s.benefits}>
                     {[
-
                       'Save your personalized nutrition profile',
                       'Keep your learning and tools together',
                       'Update your preferences any time',
@@ -464,7 +519,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  content: { maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1, padding: 24, paddingTop: 16 },
+  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1, padding: 24, paddingTop: 16 },
   logo: { width: 92, height: 92, marginBottom: 6, resizeMode: 'contain' },
   formSection: { width: '100%', alignSelf: 'stretch' },
   nameField: { width: '100%', marginBottom: 2 },
@@ -637,6 +692,38 @@ const s = StyleSheet.create({
   },
   forgotSent: {
     color: '#136C43',
+  },
+  mismatchText: {
+    fontFamily: 'Roboto',
+    fontSize: 12,
+    color: colors.red,
+    marginTop: 6,
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 16,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.deepTeal,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  checkboxOn: {
+    backgroundColor: colors.deepTeal,
+  },
+  termsText: {
+    flex: 1,
+    fontFamily: 'Roboto',
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: colors.textSecondary,
   },
   divider: {
     flexDirection: 'row',

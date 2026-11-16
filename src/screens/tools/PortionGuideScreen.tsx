@@ -1,100 +1,102 @@
 import React from 'react';
-import { SafeAreaView, ScrollView, View, Text, Pressable, Image, Dimensions, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
+import { ArrowLeft, Hand, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const portionData = {
-  protein: {
+const portionData = [
+  {
+    key: 'protein',
     title: 'Protein Portions',
+    cue: 'Palm of your hand',
     items: [
-      { name: 'Chicken/Fish', description: 'Palm-sized', measurement: 'approx 3 oz / 85 g' },
-      { name: 'Beef', description: 'Palm-sized (thicker)', measurement: 'approx 3-4 oz / 85-115 g' },
-      { name: 'Tofu', description: 'Fist-sized', measurement: 'approx 1/2 cup / 125 g' }
-    ]
+      { name: 'Poultry, Fish, or Lean Meat', description: '1 palm-sized portion', measurement: 'approx. 3–4 oz (85–115 g) cooked' },
+      { name: 'Tofu, Tempeh, or Beans', description: '1 fist-sized portion', measurement: 'approx. 1/2 to 3/4 cup (125 g)' },
+      { name: 'Eggs or Greek Yogurt', description: '2 eggs or 1 cupped hand', measurement: 'approx. 3/4 cup yogurt' },
+    ],
   },
-  grains: {
-    title: 'Grain Portions',
+  {
+    key: 'vegetables',
+    title: 'Non-Starchy Vegetables',
+    cue: '1–2 fists',
     items: [
-      { name: 'Rice/Pasta', description: 'Hand scoop', measurement: 'approx 1/2 cup cooked' },
-      { name: 'Bread', description: 'One slice', measurement: 'approx 1 slice (30-40 g)' },
-      { name: 'Oats', description: 'Fist-sized', measurement: 'approx 1/2 cup dry' }
-    ]
+      { name: 'Leafy Greens', description: '2 open handfuls', measurement: 'approx. 1–2 cups raw' },
+      { name: 'Cooked Broccoli, Peppers, Carrots', description: '1 fist-sized portion', measurement: 'approx. 1 cup cooked' },
+    ],
   },
-  vegetables: {
-    title: 'Vegetable Portions',
+  {
+    key: 'grains',
+    title: 'Grains & Starches',
+    cue: '1 cupped hand',
     items: [
-      { name: 'Leafy Greens', description: 'Handful', measurement: 'approx 1 cup raw' },
-      { name: 'Non-starchy veg', description: 'Handful', measurement: 'approx 1/2 cup cooked' },
-      { name: 'Starchy veg', description: 'Fist-sized', measurement: 'approx 1/2 cup cooked' }
-    ]
+      { name: 'Cooked Rice, Quinoa, or Pasta', description: '1 cupped hand', measurement: 'approx. 1/2 to 3/4 cup cooked' },
+      { name: 'Potatoes or Sweet Potatoes', description: '1 fist-sized portion', measurement: 'approx. 1 medium potato' },
+      { name: 'Whole Grain Bread', description: '1 flat palm', measurement: '1–2 standard slices' },
+    ],
   },
-  fruits: {
+  {
+    key: 'fruits',
     title: 'Fruit Portions',
+    cue: '1 fist or cupped hand',
     items: [
-      { name: 'Fresh fruit', description: 'Tennis ball-sized', measurement: 'approx 1 medium piece' },
-      { name: 'Berries', description: 'Handful', measurement: 'approx 1/2 cup' },
-      { name: 'Dried fruit', description: 'Thumb-sized', measurement: 'approx 2-3 pieces' }
-    ]
+      { name: 'Whole Fresh Fruit (Apple, Orange)', description: '1 fist / tennis ball', measurement: '1 medium piece' },
+      { name: 'Berries or Cut Fruit', description: '1 cupped hand', measurement: 'approx. 1/2 to 1 cup' },
+    ],
   },
-  fats: {
-    title: 'Fat Portions',
+  {
+    key: 'fats',
+    title: 'Healthy Fats',
+    cue: '1 thumb',
     items: [
-      { name: 'Oil/Butter', description: 'Thumb tip', measurement: 'approx 1 tsp / 5 ml' },
-      { name: 'Nuts/Seeds', description: 'Thumb-sized', measurement: 'approx 1/4 cup' },
-      { name: 'Avocado', description: 'Half fruit', measurement: 'approx 1/2 medium avocado' }
-    ]
+      { name: 'Olive Oil, Butter, or Nut Butter', description: '1 thumb tip to full thumb', measurement: 'approx. 1 tsp to 1 tbsp (5–15 ml)' },
+      { name: 'Nuts or Seeds', description: '1 small cupped palm', measurement: 'approx. 1/4 cup (28 g)' },
+      { name: 'Avocado', description: '2–3 thumb-sized slices', measurement: 'approx. 1/4 to 1/2 medium avocado' },
+    ],
   },
-  beverages: {
-    title: 'Beverage Portions',
-    items: [
-      { name: 'Water/Milk', description: 'Standard glass', measurement: 'approx 8 oz / 240 ml' },
-      { name: 'Juice', description: 'Small glass', measurement: 'approx 4-6 oz / 120-180 ml' },
-      { name: 'Alcohol', description: 'Small serving', measurement: 'approx 1.5 oz / 45 ml spirits' }
-    ]
-  }
-};
+];
 
-export default function PortionGuideScreen({navigation}: any) {
+export default function PortionGuideScreen({ navigation }: any) {
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <View style={s.header}>
-          <Text style={s.headerTitle}>Portion Guide</Text>
-          <Text style={s.headerSubtitle}>Hand-based portion sizes</Text>
-        </View>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
+          <ArrowLeft size={22} color={colors.text} />
+        </Pressable>
 
-        <View style={s.intro}>
-          <Text style={s.introText}>
-            Estimated portion sizes using your hand as a guide. Individual needs vary.
-          </Text>
-        </View>
+        <Text style={s.eyebrow}>PORTION GUIDE</Text>
+        <Text style={s.title}>Hand-based portion sizes.</Text>
+        <Text style={s.subtitle}>
+          Your hand is a portable, proportional guide that scales with your body — no scales or measuring cups required.
+        </Text>
 
-        {Object.entries(portionData).map(([category, data]) => (
-          <View key={category} style={s.categorySection}>
-            <Text style={s.categoryTitle}>{data.title}</Text>
-            <View style={s.categoryContent}>
-              {data.items.map((item) => (
-                <View key={item.name} style={s.portionItem}>
-                  <Text style={s.portionName}>{item.name}</Text>
-                  <Text style={s.portionDescription}>{item.description}</Text>
-                </View>
-              ))}
+        {portionData.map((section) => (
+          <View key={section.key} style={s.card}>
+            <View style={s.cardHead}>
+              <View style={s.iconWrap}>
+                <Hand size={18} color={colors.deepTeal} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>{section.title}</Text>
+                <Text style={s.cardCue}>Hand cue: {section.cue}</Text>
+              </View>
             </View>
+            {section.items.map((item) => (
+              <View key={item.name} style={s.itemRow}>
+                <Text style={s.itemName}>{item.name}</Text>
+                <Text style={s.itemDesc}>
+                  {item.description} · {item.measurement}
+                </Text>
+              </View>
+            ))}
           </View>
         ))}
 
-        <View style={s.visualGuide}>
-          <Text style={s.visualTitle}>Visual Guide</Text>
-          <View style={s.visualContainer}>
-            <View style={s.visualProtein} />
-            <View style={s.visualGrains} />
-            <View style={s.visualVeg} />
-            <View style={s.visualFruit} />
-            <View style={s.visualFat} />
-            <View style={s.visualBeverage} />
-          </View>
+        <View style={s.disclaimer}>
+          <ShieldCheck size={18} color={colors.deepTeal} />
+          <Text style={s.disclaimerText}>
+            Portion guides are starting points, not strict limits. Adjust portions based on your hunger, fullness, and activity level.
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -102,121 +104,20 @@ export default function PortionGuideScreen({navigation}: any) {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: {
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    paddingHorizontal: 24,
-    paddingBottom: 40
-  },
-  header: {
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: 24
-  },
-  headerTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text
-  },
-  headerSubtitle: {
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.textSecondary
-  },
-  intro: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: colors.surface,
-    borderRadius: 12
-  },
-  introText: {
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.textSecondary
-  },
-  categorySection: {
-    marginBottom: 24
-  },
-  categoryTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12
-  },
-  categoryContent: {},
-  portionItem: {
-    padding: 12,
-    marginBottom: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  portionName: {
-    flex: 1,
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.text
-  },
-  portionDescription: {
-    color: colors.textSecondary,
-    fontFamily: 'Roboto',
-    fontSize: 12
-  },
-  visualGuide: {
-    marginTop: 24
-  },
-  visualTitle: {
-    fontFamily: 'Roboto',
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16
-  },
-  visualContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center'
-  },
-  visualProtein: {
-    width: 60,
-    height: 60,
-    backgroundColor: colors.deepTeal,
-    borderRadius: 50
-  },
-  visualGrains: {
-    width: 50,
-    height: 50,
-    backgroundColor: colors.green,
-    borderRadius: 50
-  },
-  visualVeg: {
-    width: 40,
-    height: 40,
-    backgroundColor: colors.textSecondary,
-    borderRadius: 50
-  },
-  visualFruit: {
-    width: 30,
-    height: 30,
-    backgroundColor: colors.muted,
-    borderRadius: 50
-  },
-  visualFat: {
-    width: 35,
-    height: 35,
-    backgroundColor: colors.deepTeal,
-    borderRadius: 50
-  },
-  visualBeverage: {
-    width: 25,
-    height: 25,
-    backgroundColor: colors.muted,
-    borderRadius: 50
-  }
+  safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
+  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
+  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
+  eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
+  title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
+  subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6, marginBottom: 12 },
+  card: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 16, marginTop: 12, gap: 10 },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.softGreen, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text },
+  cardCue: { fontFamily: 'Roboto', fontSize: 12, fontWeight: '600', color: colors.deepTeal, marginTop: 2 },
+  itemRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 8 },
+  itemName: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
+  itemDesc: { fontFamily: 'Roboto', fontSize: 12.5, color: colors.textSecondary, marginTop: 2 },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 20, alignItems: 'flex-start' },
+  disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

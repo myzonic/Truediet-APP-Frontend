@@ -13,6 +13,14 @@ import ProgressPatternsScreen from '../screens/track/ProgressPatternsScreen';
 import ToolsScreen from '../screens/tools/ToolsScreen';
 import BalancedMealScreen from '../screens/tools/BalancedMealScreen';
 import LabelReadingScreen from '../screens/tools/LabelReadingScreen';
+import NutritionAssessmentScreen from '../screens/tools/NutritionAssessmentScreen';
+import HealthConditionsScreen from '../screens/tools/HealthConditionsScreen';
+import RecipeFinderScreen from '../screens/tools/RecipeFinderScreen';
+import MealPlannerScreen from '../screens/tools/MealPlannerScreen';
+import NutrientCalculatorScreen from '../screens/tools/NutrientCalculatorScreen';
+import PortionGuideScreen from '../screens/tools/PortionGuideScreen';
+import HydrationCalculatorScreen from '../screens/tools/HydrationCalculatorScreen';
+import FoodSubstitutionScreen from '../screens/tools/FoodSubstitutionScreen';
 import { DietitianScreen, RecipeDetailScreen, RecipesScreen, TelehealthScreen, VoiceFoodLogScreen } from '../screens/core/CoreFeatureScreens';
 import { ExtendedScreen } from '../screens/extended/ExtendedScreens';
 import { BlogScreen, NutritionReferenceScreen, PodcastDetailScreen, PodcastScreen, RecordedClassesScreen, ResourceCategoryScreen, ResourceDetailScreen, ResourceSearchScreen, ResourcesHubScreen, WebinarDetailScreen, WebinarsScreen } from '../screens/resources/ResourceScreens';
@@ -41,6 +49,14 @@ export default function MainNavigator(){
       <Stack.Screen name="Tools" component={ToolsScreen}/>
       <Stack.Screen name="BalancedMeal" component={BalancedMealScreen}/>
       <Stack.Screen name="LabelReading" component={LabelReadingScreen}/>
+      <Stack.Screen name="NutritionAssessment" component={NutritionAssessmentScreen}/>
+      <Stack.Screen name="HealthConditions" component={HealthConditionsScreen}/>
+      <Stack.Screen name="RecipeFinder" component={RecipeFinderScreen}/>
+      <Stack.Screen name="MealPlanner" component={MealPlannerScreen}/>
+      <Stack.Screen name="NutrientCalculator" component={NutrientCalculatorScreen}/>
+      <Stack.Screen name="PortionGuide" component={PortionGuideScreen}/>
+      <Stack.Screen name="HydrationCalculator" component={HydrationCalculatorScreen}/>
+      <Stack.Screen name="FoodSubstitution" component={FoodSubstitutionScreen}/>
       <Stack.Screen name="MaureenProfile" component={MaureenProfileScreen}/>
       <Stack.Screen name="Resources" component={ResourcesHubScreen}/>
       <Stack.Screen name="ResourceSearch" component={ResourceSearchScreen}/>

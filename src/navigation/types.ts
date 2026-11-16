@@ -13,6 +13,11 @@ export type MainStackParamList = {
   NutritionAssessment: undefined;
   HealthConditions: undefined;
   RecipeFinder: undefined;
+  MealPlanner: undefined;
+  NutrientCalculator: undefined;
+  PortionGuide: undefined;
+  HydrationCalculator: undefined;
+  FoodSubstitution: undefined;
   RecipeDetail: { recipeId?: string; title?: string; meta?: string; description?: string };
   Recipes: undefined;
   VoiceFoodLog: undefined;
@@ -75,6 +80,5 @@ export type MainTabParamList = {
   Track: undefined;
   Tools: undefined;
   Learn: undefined;
-  Resources: undefined;
   Profile: undefined;
 };

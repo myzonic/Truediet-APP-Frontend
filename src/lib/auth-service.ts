@@ -1,18 +1,22 @@
-import { apiFetch, ACCESS_TOKEN_KEY, SESSION_TOKEN_KEY_NAME, getStoredSessionToken } from './api-client';
+import { apiFetch, ACCESS_TOKEN_KEY, SESSION_TOKEN_KEY_NAME, getStoredSessionToken, API_BASE_URL } from './api-client';
 import * as SecureStore from 'expo-secure-store';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const COOKIE_KEY = 'truediet.auth.cookie'; // legacy key, cleared on sign-in
 const USER_KEY = 'truediet.auth.user';
 
-// Types matching the existing AuthContext interface
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
   image?: string | null;
+  emailVerified?: boolean;
 }
 
-interface Session {
+export interface Session {
   id: string;
   userId: string;
   token: string;
@@ -21,12 +25,6 @@ interface Session {
 
 /**
  * Persists the credentials returned by the custom auth endpoints.
- *
- * Login/register return `{ token: <bearer JWT>, session.token: <opaque> }`;
- * GET /api/auth/session returns the refreshed JWT as `session.token`. The JWT
- * is what protected routes expect in `Authorization: Bearer`, so it goes under
- * ACCESS_TOKEN_KEY. The opaque value only identifies the server-side session
- * row for sign-out.
  */
 async function persistTokens(result: { token?: string; session?: { token?: string } }) {
   const jwt = result.token || result.session?.token;
@@ -39,7 +37,6 @@ async function persistTokens(result: { token?: string; session?: { token?: strin
 
 /**
  * Logs in a user with email and password.
- * Calls the backend API and stores the session cookie and user data.
  */
 export async function signIn(email: string, password: string) {
   const result = await apiFetch<{ user: User; session: Session; token?: string }>('/api/auth/login', {
@@ -48,8 +45,6 @@ export async function signIn(email: string, password: string) {
   });
 
   await persistTokens(result);
-
-  // Store the user data
   await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
 
   return { user: result.user, session: result.session };
@@ -57,20 +52,53 @@ export async function signIn(email: string, password: string) {
 
 /**
  * Registers a new user with email and password.
- * Calls the backend API and stores the session cookie and user data.
  */
 export async function signUp(name: string, email: string, password: string) {
-  const result = await apiFetch<{ user: User; session: Session; token?: string }>('/api/auth/register', {
-    method: 'POST',
-    body: { name: name.trim(), email: email.trim().toLowerCase(), password },
-  });
+  const result = await apiFetch<{ user: User; session: Session; token?: string; verificationEmailSent?: boolean }>(
+    '/api/auth/register',
+    {
+      method: 'POST',
+      body: { name: name.trim(), email: email.trim().toLowerCase(), password },
+    }
+  );
 
   await persistTokens(result);
-
-  // Store the user data
   await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
 
-  return { user: result.user, session: result.session };
+  return {
+    user: result.user,
+    session: result.session,
+    verificationEmailSent: Boolean(result.verificationEmailSent),
+  };
+}
+
+/**
+ * Direct Google OAuth sign-in using the custom backend `/api/auth/google/start`
+ * and `/api/auth/google/callback` flow (no Better Auth).
+ */
+export async function signInWithGoogle(): Promise<{ user: User | null; session: Session | null; cancelled?: boolean }> {
+  const redirectUri = Linking.createURL('auth-callback');
+  const startUrl = `${API_BASE_URL}/api/auth/google/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+  const res = await WebBrowser.openAuthSessionAsync(startUrl, redirectUri);
+  if (res.type !== 'success' || !res.url) {
+    return { user: null, session: null, cancelled: true };
+  }
+
+  const parsed = Linking.parse(res.url);
+  const qp = (parsed.queryParams || {}) as Record<string, string | undefined>;
+  if (qp.error) {
+    throw new Error(String(qp.error));
+  }
+
+  const token = qp.token ? String(qp.token) : '';
+  const sessionToken = qp.sessionToken ? String(qp.sessionToken) : '';
+  if (!token) {
+    throw new Error('Google sign-in did not return a session token.');
+  }
+
+  await persistTokens({ token, session: { token: sessionToken || token } });
+  return refetchSession();
 }
 
 /**
@@ -92,7 +120,6 @@ export async function signOut() {
 
 /**
  * Refreshes the session by calling the backend.
- * Returns the new user and session data, or throws if the session is invalid.
  */
 export async function refetchSession(): Promise<{ user: User | null; session: Session | null }> {
   try {
@@ -100,13 +127,11 @@ export async function refetchSession(): Promise<{ user: User | null; session: Se
       method: 'GET',
     });
 
-    // /api/auth/session returns a freshly minted bearer JWT as session.token.
     await persistTokens({ session: result.session });
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
 
     return { user: result.user, session: result.session };
   } catch {
-    // Session invalid - clear local storage
     await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
     await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY_NAME);
     await SecureStore.deleteItemAsync(COOKIE_KEY);
@@ -117,10 +142,9 @@ export async function refetchSession(): Promise<{ user: User | null; session: Se
 
 /**
  * Triggers a password reset request.
- * The backend sends a time-limited reset link via email.
  */
 export async function requestPasswordReset(email: string) {
-  return apiFetch<{ success: boolean }>('/api/auth/forgot-password', {
+  return apiFetch<{ success: boolean; status?: boolean; resetToken?: string }>('/api/auth/forgot-password', {
     method: 'POST',
     body: { email: email.trim().toLowerCase() },
   });
@@ -128,21 +152,19 @@ export async function requestPasswordReset(email: string) {
 
 /**
  * Resets the password using a time-limited token.
- * This should be called from the deep-link flow with a token from the email.
  */
 export async function resetPassword(token: string, newPassword: string) {
-  return apiFetch<{ success: boolean }>('/api/auth/reset-password', {
+  return apiFetch<{ success: boolean; status?: boolean }>('/api/auth/reset-password', {
     method: 'POST',
-    body: { token, newPassword },
+    body: { token: token.trim(), newPassword },
   });
 }
 
 /**
- * Sends an email verification link.
- * The backend sends a verification email to the user.
+ * Sends or resends an email verification link.
  */
-export async function sendVerificationEmail(email: string, callbackURL: string) {
-  return apiFetch<{ success: boolean }>('/api/auth/verify-email', {
+export async function sendVerificationEmail(email: string, callbackURL = '/verify-email') {
+  return apiFetch<{ success: boolean; status?: boolean; alreadyVerified?: boolean }>('/api/auth/verify-email', {
     method: 'POST',
     body: { email: email.trim().toLowerCase(), callbackURL },
   });
@@ -150,22 +172,18 @@ export async function sendVerificationEmail(email: string, callbackURL: string) 
 
 /**
  * Verifies an email using a token from the verification email.
- * Called from the deep-link flow.
  */
 export async function verifyEmail(token: string) {
-  return apiFetch<{ success: boolean }>('/api/auth/verify-email/confirm', {
+  return apiFetch<{ success: boolean; status?: boolean; alreadyVerified?: boolean }>('/api/auth/verify-email/confirm', {
     method: 'POST',
-    body: { token },
+    body: { token: token.trim() },
   });
 }
 
 /**
  * Gets the current user session from secure storage and the backend.
- * Returns the user and session, or null if not authenticated.
  */
 export async function getSession(): Promise<{ user: User | null; session: Session | null }> {
-  // Try to get the stored bearer JWT (fall back to the legacy key so a session
-  // created by an older build can still be refreshed once).
   let token = '';
   try {
     token =
@@ -177,7 +195,6 @@ export async function getSession(): Promise<{ user: User | null; session: Sessio
   }
 
   if (!token) {
-    // No stored token - try to clear any stale user data
     await SecureStore.deleteItemAsync(USER_KEY);
     return { user: null, session: null };
   }
@@ -187,40 +204,35 @@ export async function getSession(): Promise<{ user: User | null; session: Sessio
       method: 'GET',
     });
 
+    await persistTokens({ session: result.session });
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
     return { user: result.user, session: result.session };
   } catch {
-    // Session invalid - clear local storage
+    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY_NAME);
     await SecureStore.deleteItemAsync(COOKIE_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
     return { user: null, session: null };
   }
 }
 
-/**
- * Checks if there's a current authenticated session.
- */
 export async function isAuthenticated(): Promise<boolean> {
   const { user } = await getSession();
   return user !== null;
 }
 
-/**
- * Gets the current user data.
- */
 export async function getCurrentUser(): Promise<User | null> {
   const { user } = await getSession();
   return user;
 }
 
-/**
- * Updates the user's profile name.
- */
 export async function updateName(name: string) {
-  return apiFetch<{ user: User }>('/api/auth/profile', {
+  const res = await apiFetch<{ user: User }>('/api/auth/profile', {
     method: 'PATCH',
     body: { name: name.trim() },
   });
+  if (res?.user) {
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(res.user));
+  }
+  return res;
 }
-
-export { User, Session };

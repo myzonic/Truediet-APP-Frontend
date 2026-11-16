@@ -1,238 +1,266 @@
 /**
- * Voice meal-note speech-to-text.
+ * Voice Food Log speech recording & Groq server-side transcription client.
  *
- * Uses sherpa-onnx (Whisper base.en) running on-device / in the browser via
- * WebAssembly. No audio leaves the device. The first transcription downloads
- * the model once (~160 MB int8) and it is then cached by the browser / app.
- *
- * Web: microphone is captured with the Web Audio API and transcribed locally.
- * Native: the same sherpa-onnx engine is used after `expo prebuild` + a dev
- * client / store build is produced; until that build exists, native devices
- * fall back to typed entry (see isSpeechSupported()).
+ * Security & architecture:
+ * - No Groq API key is ever stored or referenced in the mobile client.
+ * - Audio is recorded locally with `expo-av` on native iOS/Android (or
+ *   MediaRecorder on web) and uploaded to `POST /api/voice/transcribe`,
+ *   which authenticates the user and forwards the audio to Groq's
+ *   `whisper-large-v3-turbo` model using the server-side `GROQ_API_KEY`.
+ * - Temporary recording files on the device are deleted immediately after
+ *   upload or cancellation.
  */
 import { Platform } from 'react-native';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+import { apiFetch } from './api-client';
 
-const MODEL_BASE_URL =
-  'https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base.en/resolve/main';
-
-let SHERPA_VERSION = '1.3.1';
-try {
-  SHERPA_VERSION = require('@siteed/sherpa-onnx.rn/package.json').version;
-} catch {
-  // keep the pinned fallback
+export interface ProposedFoodItem {
+  id: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  rawText: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  uncertain?: boolean;
 }
 
-const WASM_BASE_PATH =
-  process.env.EXPO_PUBLIC_SHERPA_WASM_BASE ||
-  `https://cdn.jsdelivr.net/npm/@siteed/sherpa-onnx.rn@${SHERPA_VERSION}/wasm/`;
-
-const ASR_CONFIG: any = {
-  modelDir: '/wasm/whisper-base-en',
-  modelType: 'whisper',
-  streaming: false,
-  language: 'en',
-  task: 'transcribe',
-  numThreads: 2,
-  decodingMethod: 'greedy_search',
-  modelBaseUrl: MODEL_BASE_URL,
-  modelFiles: {
-    encoder: 'base.en-encoder.int8.onnx',
-    decoder: 'base.en-decoder.int8.onnx',
-    tokens: 'base.en-tokens.txt',
-  },
-};
+export interface VoiceTranscriptionResponse {
+  text: string;
+  model: string;
+  language: string;
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  items: ProposedFoodItem[];
+}
 
 export type ModelProgress = { loaded: number; total: number; filename: string };
 
-let modPromise: Promise<any> | null = null;
-let asrPromise: Promise<any> | null = null;
-
-let audioContext: any = null;
-let mediaStream: any = null;
-let sourceNode: any = null;
-let processor: any = null;
-let sink: any = null;
-let chunks: Float32Array[] = [];
-let captureRate = 16000;
-
-function loadModule(): Promise<any> {
-  if (!modPromise) {
-    modPromise = import('@siteed/sherpa-onnx.rn').then((m: any) => m);
-  }
-  return modPromise;
-}
-
-function getASR(mod: any): any {
-  return mod?.ASR || mod?.default?.ASR;
-}
+let activeRecording: Audio.Recording | null = null;
+let webMediaRecorder: any = null;
+let webChunks: Blob[] = [];
+let webStream: any = null;
 
 export function isSpeechSupported(): boolean {
-  if (Platform.OS !== 'web') return false;
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    return true;
+  }
   const g: any = globalThis as any;
-  return !!(
-    g.navigator &&
-    g.navigator.mediaDevices &&
-    typeof g.navigator.mediaDevices.getUserMedia === 'function' &&
-    (g.AudioContext || g.webkitAudioContext)
-  );
+  return !!(g.navigator?.mediaDevices?.getUserMedia);
 }
 
-function ensureASR(onProgress?: (p: ModelProgress) => void): Promise<any> {
-  if (!asrPromise) {
-    asrPromise = (async () => {
-      const mod = await loadModule();
-      const ASR = getASR(mod);
-      if (!ASR) throw new Error('Speech engine could not be loaded.');
-      if (Platform.OS === 'web' && typeof mod.configureSherpaOnnx === 'function') {
-        mod.configureSherpaOnnx({ wasmBasePath: WASM_BASE_PATH });
-      }
-      const result = await ASR.initialize({
-        ...ASR_CONFIG,
-        onProgress: onProgress
-          ? (info: any) =>
-              onProgress({
-                loaded: info?.loaded ?? 0,
-                total: info?.total ?? 0,
-                filename: info?.filename ?? '',
-              })
-          : undefined,
-      });
-      if (result && result.success === false) {
-        throw new Error(result.error || 'The speech model could not be loaded.');
-      }
-      return ASR;
-    })().catch((err) => {
-      asrPromise = null;
-      throw err;
-    });
-  }
-  return asrPromise;
-}
-
-export async function prepareSpeech(onProgress?: (p: ModelProgress) => void): Promise<void> {
-  await ensureASR(onProgress);
-}
-
-function resampleTo16k(input: Float32Array, inRate: number): Float32Array {
-  if (inRate === 16000) return input;
-  const ratio = inRate / 16000;
-  const outLen = Math.max(1, Math.round(input.length / ratio));
-  const out = new Float32Array(outLen);
-  for (let i = 0; i < outLen; i++) {
-    const idx = i * ratio;
-    const i0 = Math.floor(idx);
-    const i1 = Math.min(i0 + 1, input.length - 1);
-    const frac = idx - i0;
-    out[i] = input[i0] * (1 - frac) + input[i1] * frac;
-  }
-  return out;
+export async function prepareSpeech(_onProgress?: (p: ModelProgress) => void): Promise<void> {
+  // Server-side Groq transcription requires no local 160MB model download.
+  return;
 }
 
 export async function startSpeechRecording(): Promise<void> {
-  if (!isSpeechSupported()) {
-    throw new Error(
-      'On-device microphone capture needs the native app build. You can type your meal note instead.'
-    );
+  if (Platform.OS === 'web') {
+    const g: any = globalThis as any;
+    if (!g.navigator?.mediaDevices?.getUserMedia) {
+      throw new Error('Microphone capture is not supported in this browser.');
+    }
+    webStream = await g.navigator.mediaDevices.getUserMedia({ audio: true });
+    webChunks = [];
+    const MR = g.MediaRecorder;
+    webMediaRecorder = new MR(webStream);
+    webMediaRecorder.ondataavailable = (e: any) => {
+      if (e.data && e.data.size > 0) webChunks.push(e.data);
+    };
+    webMediaRecorder.start();
+    return;
   }
-  const g: any = globalThis as any;
-  mediaStream = await g.navigator.mediaDevices.getUserMedia({
-    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+
+  // Clean up any leftover recording first
+  if (activeRecording) {
+    try {
+      await activeRecording.stopAndUnloadAsync();
+    } catch {
+      // ignore
+    }
+    activeRecording = null;
+  }
+
+  const perm = await Audio.requestPermissionsAsync();
+  if (!perm.granted) {
+    throw new Error('Microphone permission was denied. Enable microphone access in your device settings to use Voice Food Log.');
+  }
+
+  await Audio.setAudioModeAsync({
+    allowsRecordingIOS: true,
+    playsInSilentModeIOS: true,
   });
-  const Ctx = g.AudioContext || g.webkitAudioContext;
-  try {
-    audioContext = new Ctx({ sampleRate: 16000 });
-  } catch {
-    audioContext = new Ctx();
-  }
-  captureRate = audioContext.sampleRate || 16000;
-  // Chrome can create the context suspended when the tap's gesture task has
-  // already ended (getUserMedia above is awaited). Without resume() the audio
-  // callback never fires: the UI says "recording" but no samples arrive.
-  if (audioContext.state === 'suspended' && typeof audioContext.resume === 'function') {
-    await audioContext.resume();
-  }
-  sourceNode = audioContext.createMediaStreamSource(mediaStream);
-  processor = audioContext.createScriptProcessor(4096, 1, 1);
-  sink = audioContext.createGain();
-  sink.gain.value = 0;
-  chunks = [];
-  processor.onaudioprocess = (event: any) => {
-    const data = event.inputBuffer.getChannelData(0);
-    chunks.push(new Float32Array(data));
-  };
-  sourceNode.connect(processor);
-  processor.connect(sink);
-  sink.connect(audioContext.destination);
+
+  const { recording } = await Audio.Recording.createAsync(
+    Audio.RecordingOptionsPresets.HIGH_QUALITY
+  );
+  activeRecording = recording;
 }
 
-function teardown(): void {
-  try {
-    processor?.disconnect();
-    sourceNode?.disconnect();
-    sink?.disconnect();
-  } catch {
-    // already torn down
+export async function pauseSpeechRecording(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    if (webMediaRecorder && webMediaRecorder.state === 'recording') {
+      webMediaRecorder.pause();
+      return true;
+    }
+    return false;
   }
-  try {
-    mediaStream?.getTracks?.().forEach((track: any) => track.stop());
-  } catch {
-    // ignore
+  if (activeRecording) {
+    await activeRecording.pauseAsync();
+    return true;
   }
-  try {
-    audioContext?.close?.();
-  } catch {
-    // ignore
-  }
-  audioContext = null;
-  mediaStream = null;
-  sourceNode = null;
-  processor = null;
-  sink = null;
+  return false;
 }
 
-function trimSilence(input: Float32Array, rate: number, threshold = 0.008): Float32Array {
-  let start = 0;
-  let end = input.length;
-  while (start < end && Math.abs(input[start]) < threshold) start++;
-  while (end > start && Math.abs(input[end - 1]) < threshold) end--;
-  if (start >= end) return input;
-  const margin = Math.round(rate * 0.12);
-  start = Math.max(0, start - margin);
-  end = Math.min(input.length, end + margin);
-  return input.subarray(start, end);
+export async function resumeSpeechRecording(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    if (webMediaRecorder && webMediaRecorder.state === 'paused') {
+      webMediaRecorder.resume();
+      return true;
+    }
+    return false;
+  }
+  if (activeRecording) {
+    await activeRecording.startAsync();
+    return true;
+  }
+  return false;
 }
 
-export async function stopSpeechAndTranscribe(): Promise<string> {
-  const rate = captureRate;
-  const captured = chunks;
-  chunks = [];
-  teardown();
+export async function stopSpeechAndTranscribeFull(language = 'en'): Promise<VoiceTranscriptionResponse> {
+  if (Platform.OS === 'web') {
+    if (!webMediaRecorder) {
+      throw new Error('No active recording found.');
+    }
+    const blob: Blob = await new Promise((resolve, reject) => {
+      webMediaRecorder.onstop = () => {
+        const b = new Blob(webChunks, { type: webMediaRecorder.mimeType || 'audio/webm' });
+        resolve(b);
+      };
+      webMediaRecorder.onerror = (err: any) => reject(err);
+      webMediaRecorder.stop();
+    });
+    try {
+      webStream?.getTracks?.().forEach((t: any) => t.stop());
+    } catch {}
+    webMediaRecorder = null;
+    webStream = null;
+    webChunks = [];
 
-  const total = captured.reduce((sum, part) => sum + part.length, 0);
-  if (total < rate * 0.2) {
-    throw new Error('That was too short. Tap record and speak for a moment.');
-  }
-  const merged = new Float32Array(total);
-  let offset = 0;
-  for (const part of captured) {
-    merged.set(part, offset);
-    offset += part.length;
-  }
-  const trimmed = trimSilence(merged, rate);
-  if (trimmed.length < rate * 0.2) {
-    throw new Error('We could not hear speech. Try again and speak a little closer to the mic.');
-  }
-  const samples = resampleTo16k(trimmed, rate);
+    if (blob.size < 256) {
+      throw new Error('That recording was too short or silent. Tap record and speak clearly.');
+    }
 
-  const ASR = await ensureASR();
-  const result = await ASR.recognizeFromSamples(16000, Array.from(samples));
-  if (result && result.success === false) {
-    throw new Error(result.error || 'Could not transcribe your note.');
+    const base64: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result || ''));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    return apiFetch<VoiceTranscriptionResponse>('/api/voice/transcribe', {
+      method: 'POST',
+      body: {
+        audioBase64: base64,
+        mimeType: blob.type || 'audio/webm',
+        filename: 'recording.webm',
+        language,
+      },
+    });
   }
-  return String(result?.text || '').trim();
+
+  if (!activeRecording) {
+    throw new Error('No active recording found.');
+  }
+
+  const recording = activeRecording;
+  activeRecording = null;
+
+  let uri: string | null = null;
+  try {
+    const status = await recording.getStatusAsync();
+    await recording.stopAndUnloadAsync();
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => undefined);
+
+    if ((status.durationMillis ?? 0) < 400) {
+      throw new Error('That recording was too short. Tap record and speak for at least a second.');
+    }
+
+    uri = recording.getURI();
+    if (!uri) {
+      throw new Error('Could not read the recorded audio file.');
+    }
+
+    const info = await FileSystem.getInfoAsync(uri);
+    if (!info.exists || (info.size && info.size > 20 * 1024 * 1024)) {
+      throw new Error('Recording file is invalid or exceeds the 20 MB limit.');
+    }
+
+    const audioBase64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const response = await apiFetch<VoiceTranscriptionResponse>('/api/voice/transcribe', {
+      method: 'POST',
+      body: {
+        audioBase64,
+        mimeType: 'audio/m4a',
+        filename: 'recording.m4a',
+        language,
+      },
+    });
+
+    return response;
+  } finally {
+    if (uri) {
+      FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined);
+    }
+  }
+}
+
+export async function stopSpeechAndTranscribe(language = 'en'): Promise<string> {
+  const res = await stopSpeechAndTranscribeFull(language);
+  return res.text;
+}
+
+export async function parseFoodTranscript(text: string): Promise<{
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  items: ProposedFoodItem[];
+}> {
+  return apiFetch('/api/voice/parse', {
+    method: 'POST',
+    body: { text },
+  });
 }
 
 export async function cancelSpeech(): Promise<void> {
-  chunks = [];
-  teardown();
+  if (Platform.OS === 'web') {
+    try {
+      webMediaRecorder?.stop?.();
+    } catch {}
+    try {
+      webStream?.getTracks?.().forEach((t: any) => t.stop());
+    } catch {}
+    webMediaRecorder = null;
+    webStream = null;
+    webChunks = [];
+    return;
+  }
+
+  if (activeRecording) {
+    const rec = activeRecording;
+    activeRecording = null;
+    try {
+      await rec.stopAndUnloadAsync();
+      const uri = rec.getURI();
+      if (uri) {
+        await FileSystem.deleteAsync(uri, { idempotent: true });
+      }
+    } catch {
+      // ignore cleanup failure
+    }
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => undefined);
+  }
 }
