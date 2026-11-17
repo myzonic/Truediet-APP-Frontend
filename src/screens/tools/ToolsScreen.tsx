@@ -3,6 +3,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { colors } from '../../theme/colors';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import {
   Activity,
   BookOpen,
@@ -44,16 +47,13 @@ const tools: Tool[] = [
 
 export default function ToolsScreen({ navigation }: any) {
   const open = (route: string) => {
-    const parent = navigation.getParent?.();
-    if (parent) parent.navigate(route);
-    else navigation.navigate(route);
+    navigation.navigate(route);
   };
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Text style={s.eyebrow}>TRUE DIET TOOLS</Text>
-        <Text style={s.title}>Practical nutrition tools.</Text>
+      <ScreenContainer>
+        <ScreenHeader eyebrow="TRUE DIET TOOLS" title="Practical nutrition tools." />
         <Text style={s.subtitle}>
           Turn nutrition education into practical everyday decisions. All calculators and guides are for educational use, not medical diagnosis.
         </Text>
@@ -75,35 +75,19 @@ export default function ToolsScreen({ navigation }: any) {
             );
           })}
         </View>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: {
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 48,
-  },
   eyebrow: {
     fontFamily: 'Roboto',
     color: colors.green,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.4,
-  },
-  title: {
-    fontFamily: 'Roboto',
-    fontSize: 28,
-    lineHeight: 36,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 6,
   },
   subtitle: {
     fontFamily: 'Roboto',
@@ -113,13 +97,13 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   list: {
-    marginTop: 22,
+    marginTop: spacing.lg,
     gap: 10,
   },
   tool: {
-    minHeight: 84,
+    minHeight: dimensions.buttonHeightSmall,
     backgroundColor: colors.surface,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: 'row',
@@ -129,7 +113,7 @@ const s = StyleSheet.create({
   icon: {
     width: 46,
     height: 46,
-    borderRadius: 14,
+    borderRadius: radius.md,
     backgroundColor: colors.softGreen,
     justifyContent: 'center',
     alignItems: 'center',

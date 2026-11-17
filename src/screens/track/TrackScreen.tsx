@@ -18,6 +18,9 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import {
   addWater,
   loadMeals,
@@ -160,9 +163,8 @@ export default function TrackScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Text style={s.eyebrow}>TRACK & FOOD DIARY</Text>
-        <Text style={s.title}>Your day at a glance.</Text>
+      <ScreenContainer>
+        <ScreenHeader eyebrow="TRACK & FOOD DIARY" title="Your day at a glance." />
         <Text style={s.subtitle}>
           Notice patterns in your eating, hydration, hunger, and energy without turning nutrition into a numbers game.
         </Text>
@@ -201,13 +203,13 @@ export default function TrackScreen({ navigation }: any) {
         </View>
 
         <View style={s.primaryRow}>
-          <Pressable style={[s.primary, { flex: 1 }]} onPress={() => navigation.getParent()?.navigate('MealLog')}>
+          <Pressable style={[s.primary, { flex: 1 }]} onPress={() => navigation.navigate('MealLog')}>
             <Plus size={19} color="#fff" />
             <Text style={s.primaryText}>Log a Meal</Text>
           </Pressable>
           <Pressable
             style={[s.primary, { flex: 1, backgroundColor: colors.green }]}
-            onPress={() => navigation.getParent()?.navigate('VoiceFoodLog')}
+            onPress={() => navigation.navigate('VoiceFoodLog')}
           >
             <Mic size={19} color="#fff" />
             <Text style={s.primaryText}>Voice Log</Text>
@@ -242,7 +244,7 @@ export default function TrackScreen({ navigation }: any) {
             <Pressable
               style={s.row}
               key={type}
-              onPress={() => navigation.getParent()?.navigate('MealLog', { mealType: type })}
+              onPress={() => navigation.navigate('MealLog', { mealType: type })}
             >
               <View style={[s.status, done && s.statusDone]}>
                 <Utensils size={16} color={done ? '#fff' : colors.muted} />
@@ -336,21 +338,21 @@ export default function TrackScreen({ navigation }: any) {
           icon={Mic}
           title="Voice Food Log (Groq Whisper)"
           text="Speak naturally to log a meal with automatic food parsing."
-          onPress={() => navigation.getParent()?.navigate('VoiceFoodLog')}
+          onPress={() => navigation.navigate('VoiceFoodLog')}
         />
         <Action
           icon={Activity}
           title="Hunger & Fullness Check-In"
           text="Notice how your body feels before or after eating."
-          onPress={() => navigation.getParent()?.navigate('HungerFullness')}
+          onPress={() => navigation.navigate('HungerFullness')}
         />
         <Action
           icon={TrendingUp}
           title="Progress, Weight & Weekly Patterns"
           text="Review your weekly charts, weight log, and check-in history."
-          onPress={() => navigation.getParent()?.navigate('ProgressPatterns')}
+          onPress={() => navigation.navigate('ProgressPatterns')}
         />
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
@@ -382,30 +384,21 @@ function Action({
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: {
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    alignSelf: 'center',
-    padding: 20,
-    paddingTop: 16,
-    paddingBottom: 48,
-  },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
-  title: { fontFamily: 'Roboto', fontSize: 28, lineHeight: 36, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 8 },
   dateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 22,
+    marginTop: spacing.md,
     backgroundColor: colors.softBlue,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: radius.md,
+    padding: spacing.md,
   },
   dayNavBtn: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -414,7 +407,7 @@ const s = StyleSheet.create({
   },
   today: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.text },
   small: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 2 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.lg },
   stat: {
     flexBasis: '47%',
     flexGrow: 1,
@@ -422,14 +415,14 @@ const s = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: radius.lg,
+    padding: spacing.cardPadding,
   },
   statValue: { fontFamily: 'Roboto', fontSize: 21, fontWeight: '700', color: colors.deepTeal },
-  primaryRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  primaryRow: { flexDirection: 'row', gap: 10, marginTop: spacing.md },
   primary: {
-    height: 52,
-    borderRadius: 16,
+    height: dimensions.buttonHeight,
+    borderRadius: radius.lg,
     backgroundColor: colors.deepTeal,
     flexDirection: 'row',
     justifyContent: 'center',
@@ -437,19 +430,19 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
   },
   primaryText: { fontFamily: 'Roboto', color: '#fff', fontSize: 14.5, fontWeight: '700', marginLeft: 8 },
-  section: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 26, marginBottom: 12 },
+  section: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.text, marginTop: spacing.xl, marginBottom: spacing.md },
   waterCard: {
     backgroundColor: colors.surface,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
+    padding: spacing.cardPadding,
   },
   waterBarTrack: {
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.softBlue,
-    marginTop: 10,
+    marginTop: spacing.md,
     overflow: 'hidden',
   },
   waterBarFill: {
@@ -459,10 +452,10 @@ const s = StyleSheet.create({
   },
   timeline: {
     backgroundColor: colors.surface,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 14,
+    paddingHorizontal: spacing.cardPadding,
   },
   row: {
     flexDirection: 'row',
@@ -485,9 +478,9 @@ const s = StyleSheet.create({
   rowTitle: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
   tick: { fontFamily: 'Roboto', color: colors.green, fontSize: 16, fontWeight: '700' },
   editCard: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 18,
+    marginTop: spacing.md,
+    padding: spacing.cardPadding,
+    borderRadius: radius.lg,
     borderWidth: 1.5,
     borderColor: colors.deepTeal,
     backgroundColor: colors.surface,
@@ -496,7 +489,7 @@ const s = StyleSheet.create({
     minHeight: 64,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 10,
     fontFamily: 'Roboto',
     fontSize: 14,
@@ -505,27 +498,27 @@ const s = StyleSheet.create({
   },
   cancelBtn: {
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   action: {
-    minHeight: 78,
+    minHeight: dimensions.buttonHeightSmall,
     backgroundColor: colors.surface,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    marginBottom: 10,
+    padding: spacing.cardPadding,
+    marginBottom: spacing.sm,
   },
   actionIcon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: radius.md,
     backgroundColor: colors.softGreen,
     justifyContent: 'center',
     alignItems: 'center',

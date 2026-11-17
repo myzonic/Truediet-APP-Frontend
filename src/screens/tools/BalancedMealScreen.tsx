@@ -5,6 +5,9 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import { addMeal, MealType } from '../../lib/track';
 
 const groups: [string, string, string][] = [
@@ -63,12 +66,8 @@ export default function BalancedMealScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={6}>
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-        <Text style={s.eyebrow}>BALANCED MEAL BUILDER</Text>
-        <Text style={s.title}>Build your meal.</Text>
+      <ScreenContainer keyboardShouldPersistTaps="handled">
+        <ScreenHeader eyebrow="BALANCED MEAL BUILDER" title="Build your meal." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
           Think about variety and balance rather than trying to make every plate perfect.
         </Text>
@@ -130,37 +129,34 @@ export default function BalancedMealScreen({ navigation }: any) {
         >
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryText}>Save This Meal</Text>}
         </Pressable>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', paddingHorizontal: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 20 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, letterSpacing: 1.4, fontWeight: '700', color: colors.green },
-  title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
-  label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 22, marginBottom: 10 },
+  label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm },
   groups: { marginTop: 4 },
-  group: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  group: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.cardPadding, flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   groupActive: { borderColor: colors.green, backgroundColor: colors.softGreen },
   checkbox: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },
   checkboxActive: { backgroundColor: colors.green, borderColor: colors.green },
   groupContent: { flex: 1, marginLeft: 13 },
   groupTitle: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text },
   examples: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 3 },
-  summary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 18, marginTop: 14 },
+  summary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.md },
   summaryLabel: { fontFamily: 'Roboto', fontSize: 10, letterSpacing: 1.1, fontWeight: '700', color: colors.green },
   summaryTitle: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 5 },
-  progress: { height: 8, borderRadius: 10, backgroundColor: '#E6EBE6', overflow: 'hidden', marginTop: 12 },
+  progress: { height: 8, borderRadius: 10, backgroundColor: '#E6EBE6', overflow: 'hidden', marginTop: spacing.sm },
   progressFill: { height: '100%', backgroundColor: colors.green },
-  message: { backgroundColor: colors.softGreen, borderRadius: 18, padding: 18, marginTop: 16 },
+  message: { backgroundColor: colors.softGreen, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.md },
   messageTitle: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text },
   messageText: { fontFamily: 'Roboto', fontSize: 12.5, lineHeight: 19, color: colors.textSecondary, marginTop: 5 },
-  error: { fontFamily: 'Roboto', fontSize: 13, color: '#B91C1C', marginTop: 14 },
-  primary: { height: 54, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  error: { fontFamily: 'Roboto', fontSize: 13, color: '#B91C1C', marginTop: spacing.sm },
+  primary: { height: dimensions.buttonHeight, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
   primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
   disabled: { opacity: 0.45 },
 });

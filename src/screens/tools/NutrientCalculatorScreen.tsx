@@ -5,6 +5,9 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import { addMeal, MealType } from '../../lib/track';
 
 interface FoodEntry {
@@ -113,13 +116,8 @@ export default function NutrientCalculatorScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-
-        <Text style={s.eyebrow}>NUTRIENT CALCULATOR</Text>
-        <Text style={s.title}>Estimate meal nutrients.</Text>
+      <ScreenContainer keyboardShouldPersistTaps="handled">
+        <ScreenHeader eyebrow="NUTRIENT CALCULATOR" title="Estimate meal nutrients." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
           Combine reference foods to see how protein, carbohydrates, and fats work together, then optionally log the meal to your Food Diary.
         </Text>
@@ -237,42 +235,40 @@ export default function NutrientCalculatorScreen({ navigation }: any) {
             Educational estimate only — nutrient values in whole foods vary naturally by preparation and brand.
           </Text>
         </View>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
-  totalsCard: { backgroundColor: colors.softGreen, borderRadius: 20, padding: 18, marginTop: 18 },
+  totalsCard: { backgroundColor: colors.softGreen, borderRadius: radius.xl, padding: spacing.cardPadding, marginTop: spacing.xl },
   totalsLabel: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.green },
   totalsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
-  totalItem: { flex: 1, minWidth: 70, backgroundColor: colors.surface, borderRadius: 14, padding: 12, alignItems: 'center' },
+  totalItem: { flex: 1, minWidth: 70, backgroundColor: colors.surface, borderRadius: radius.md, padding: 12, alignItems: 'center' },
   totalVal: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.deepTeal },
   totalKey: { fontFamily: 'Roboto', fontSize: 11, color: colors.textSecondary, marginTop: 2 },
-  selectedSection: { marginTop: 10 },
-  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 22, marginBottom: 10 },
-  label: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.text, marginTop: 14, marginBottom: 8 },
+  selectedSection: { marginTop: spacing.md },
+  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: spacing.xl, marginBottom: spacing.md },
+  label: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.text, marginTop: spacing.md, marginBottom: spacing.sm },
   selectedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   foodName: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
   foodMeta: { fontFamily: 'Roboto', fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  searchBox: { height: 46, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
+  searchBox: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
   searchInput: { flex: 1, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
-  dbList: { marginTop: 10, gap: 8 },
-  dbRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12 },
+  dbList: { marginTop: spacing.md, gap: 8 },
+  dbRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, padding: 12 },
   plusBadge: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.softBlue, alignItems: 'center', justifyContent: 'center' },
-  customCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.surface, padding: 14, gap: 10 },
+  customCard: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.cardPadding, gap: 10 },
   customGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   input: { height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 13.5, color: colors.text },
   secondaryBtn: { height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
   secondaryBtnText: { fontFamily: 'Roboto', fontSize: 13.5, fontWeight: '700', color: colors.deepTeal },
-  primary: { height: 52, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
+  primary: { height: dimensions.buttonHeight, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
   primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
-  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 20, alignItems: 'flex-start' },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

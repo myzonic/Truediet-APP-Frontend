@@ -4,6 +4,9 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Check, Info, Search, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import { loadProfile, saveProfile } from '../../lib/profile';
 
 interface ConditionEntry {
@@ -100,15 +103,10 @@ export default function HealthConditionsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-
-        <Text style={s.eyebrow}>HEALTH CONDITIONS</Text>
-        <Text style={s.title}>Condition-aware nutrition.</Text>
+      <ScreenContainer keyboardShouldPersistTaps="handled">
+        <ScreenHeader eyebrow="HEALTH CONDITIONS" title="Condition-aware nutrition." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
-          Select any health conditions you want educational context for. Tap “Notes” on any item to read Registered Dietitian guidance.
+          Select any health conditions you want educational context for. Tap "Notes" on any item to read Registered Dietitian guidance.
         </Text>
 
         <View style={s.searchBox}>
@@ -166,33 +164,31 @@ export default function HealthConditionsScreen({ navigation }: any) {
         <Pressable style={[s.primary, saving && { opacity: 0.6 }]} disabled={saving} onPress={handleSave}>
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryText}>Save Selected Conditions</Text>}
         </Pressable>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
-  searchBox: { height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10, marginTop: 18 },
+  searchBox: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10, marginTop: spacing.lg },
   searchInput: { flex: 1, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
-  list: { marginTop: 16, gap: 10 },
-  card: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.surface, padding: 14, gap: 10 },
+  list: { marginTop: spacing.lg, gap: 10 },
+  card: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.cardPadding, gap: 10 },
   cardActive: { borderColor: colors.green, backgroundColor: colors.softGreen },
   cardMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkbox: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   checkboxOn: { backgroundColor: colors.green, borderColor: colors.green },
   cardTitle: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text },
   cardSub: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 2 },
-  notesBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: colors.softBlue },
+  notesBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: radius.sm, backgroundColor: colors.softBlue },
   notesBtnText: { fontFamily: 'Roboto', fontSize: 12, fontWeight: '700', color: colors.deepTeal },
-  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 20, alignItems: 'flex-start' },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
-  saved: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.green, marginTop: 12, textAlign: 'center' },
-  primary: { height: 54, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
+  saved: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.green, marginTop: spacing.sm, textAlign: 'center' },
+  primary: { height: dimensions.buttonHeight, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
   primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
 });

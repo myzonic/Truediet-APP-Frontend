@@ -5,6 +5,9 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, ArrowRightLeft, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 
 interface SwapOption {
   name: string;
@@ -83,13 +86,8 @@ export default function FoodSubstitutionScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-
-        <Text style={s.eyebrow}>FOOD SUBSTITUTION TOOL</Text>
-        <Text style={s.title}>Practical food swaps.</Text>
+      <ScreenContainer>
+        <ScreenHeader eyebrow="FOOD SUBSTITUTION TOOL" title="Practical food swaps." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
           Explore allergy-safe, higher-fiber, or preference-friendly alternatives and compare their nutrition side by side.
         </Text>
@@ -133,30 +131,28 @@ export default function FoodSubstitutionScreen({ navigation }: any) {
             Always check product ingredient labels when managing a diagnosed food allergy or celiac disease.
           </Text>
         </View>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
-  label: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 22, marginBottom: 10 },
-  origCard: { backgroundColor: colors.softBlue, borderRadius: 18, padding: 16, marginTop: 16 },
+  label: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm },
+  origCard: { backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.md },
   origCategory: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.1, color: colors.deepTeal },
   origName: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 4 },
   origNutrition: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: 4 },
   list: { gap: 10 },
-  swapCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 16, gap: 4 },
+  swapCard: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.cardPadding, gap: 4 },
   swapHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   swapTitle: { fontFamily: 'Roboto', fontSize: 15.5, fontWeight: '700', color: colors.text },
   swapReason: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '600', color: colors.green, marginTop: 2 },
   swapMeta: { fontFamily: 'Roboto', fontSize: 12.5, color: colors.textSecondary, marginTop: 2 },
   swapAllergen: { fontFamily: 'Roboto', fontSize: 11.5, color: colors.muted, marginTop: 2 },
-  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softGreen, borderRadius: 16, padding: 14, marginTop: 22, alignItems: 'flex-start' },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softGreen, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

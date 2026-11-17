@@ -4,11 +4,17 @@ import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, Sc
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import { ArrowLeft, Check, CheckCircle2, Eye, EyeOff, LockKeyhole } from 'lucide-react-native';
 import { colors } from '../theme/colors';
+import { radius, spacing, dimensions } from '../theme/tokens';
 import { signIn, signUp, signInWithGoogle, requestPasswordReset, sendVerificationEmail } from '../lib/auth-service';
 import { useAuth } from '../context/AuthContext';
 import { useOnboarding } from '../context/OnboardingContext';
 import { saveProfile } from '../lib/profile';
 import { API_BASE_URL } from '../lib/api-client';
+import { ScreenContainer } from '../components/ScreenContainer';
+import { ScreenHeader } from '../components/ScreenHeader';
+import { BaseInput } from '../components/BaseInput';
+import { BaseButton } from '../components/BaseButton';
+import { Pill } from '../components/Pill';
 
 function friendlyAuthError(message?: string): string {
   const m = (message || '').toLowerCase();
@@ -180,8 +186,8 @@ export default function AccountSetupScreen({ navigation, route }: any) {
         setVerifyMsg('This email is already verified! Tap Continue below.');
       } else if (res?.success || res?.status) {
         setVerifyMsg('Sent again — open the link in that email to verify your account.');
-        setVerifyCooldown(true);
-        setTimeout(() => setVerifyCooldown(false), 60000);
+        setResetCooldown(true);
+        setTimeout(() => setResetCooldown(false), 60000);
       } else {
         setVerifyMsg('Could not send verification email — try again.');
       }
@@ -223,287 +229,223 @@ export default function AccountSetupScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, width: '100%', alignItems: 'center' }}
-      >
-        <ScrollView
-          contentContainerStyle={s.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={s.content}>
-            <Image
-              source={require('../../assets/truediet-logo.png')}
-              style={s.logo}
-              resizeMode="contain"
+      <ScreenContainer keyboardShouldPersistTaps="handled">
+        <ScreenHeader eyebrow="TRUE DIET" title={isSignUp ? 'Create Your Account' : 'Welcome Back'} onBack={() => navigation.goBack()} />
+        <Text style={s.subtitle}>
+          {isSignUp
+            ? 'Create your secure True Diet account to keep your learning, preferences, and progress in one place.'
+            : 'Log in with your existing account to sync your nutrition goals.'}
+        </Text>
+
+        {errorMessage ? (
+          <View style={s.errorBox}>
+            <Text style={s.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
+        {resetMsg ? (
+          <View style={s.successBox}>
+            <Text style={s.successText}>{resetMsg}</Text>
+          </View>
+        ) : null}
+
+        {pendingVerify ? (
+          <View style={s.verifyBox}>
+            <CheckCircle2 size={34} color={colors.green} />
+            <Text style={s.verifyTitle}>Confirm your email</Text>
+            <Text style={s.verifyText}>
+              We sent a verification link to{' '}
+              <Text style={s.verifyEmail}>{pendingVerify}</Text>. Open it to
+              verify your account — check spam if you don't see it.
+            </Text>
+            {verifyMsg ? <Text style={s.verifyMsg}>{verifyMsg}</Text> : null}
+            <BaseButton
+              onPress={continueAfterVerify}
+              disabled={loading}
+              style={s.verifyPrimaryButton}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={s.buttonText}>Continue</Text>
+              )}
+            </BaseButton>
+            <Pressable
+              style={[s.verifySecondaryButton, (verifyBusy || verifyCooldown) && s.verifySecondaryDisabled]}
+              disabled={verifyBusy || verifyCooldown}
+              onPress={resendVerification}
+            >
+              <Text style={s.verifySecondaryText}>
+                {verifyBusy
+                  ? 'Sending…'
+                  : verifyCooldown
+                    ? 'Resend available in a minute'
+                    : 'Resend confirmation email'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setPendingVerify(null);
+                setVerifyMsg('');
+                setErrorMessage('');
+              }}
+              hitSlop={10}
+              style={s.verifyBackLink}
+            >
+              <Text style={s.skip}>Back to form</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={s.formSection}>
+            {isSignUp && (
+              <View style={s.nameField}>
+                <Text style={s.label}>Full name</Text>
+                <BaseInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Your name"
+                  placeholderTextColor={colors.muted}
+                />
+              </View>
+            )}
+
+            <Text style={s.label}>Email address</Text>
+            <BaseInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.muted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
 
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={s.backButton}
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <ArrowLeft size={20} color={colors.deepTeal} />
-              <Text style={s.backText}>Back</Text>
-            </Pressable>
-            <View style={s.tabContainer}>
+            <Text style={s.label}>Password (minimum 8 characters)</Text>
+            <View style={s.passwordRow}>
+              <BaseInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter password"
+                placeholderTextColor={colors.muted}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoComplete="password"
+                textContentType="password"
+                style={s.passwordInput}
+              />
               <Pressable
-                onPress={() => {
-                  setMode('signup');
-                  setErrorMessage('');
-                }}
-                style={[s.tab, isSignUp && s.activeTab]}
+                onPress={() => setShowPassword((v) => !v)}
+                style={s.eyeButton}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               >
-                <Text style={[s.tabText, isSignUp && s.activeTabText]}>Create Account</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  setMode('signin');
-                  setErrorMessage('');
-                }}
-                style={[s.tab, !isSignUp && s.activeTab]}
-              >
-                <Text style={[s.tabText, !isSignUp && s.activeTabText]}>Sign In</Text>
+                {showPassword ? (
+                  <EyeOff size={19} color={colors.muted} />
+                ) : (
+                  <Eye size={19} color={colors.muted} />
+                )}
               </Pressable>
             </View>
 
-            <Text style={s.eyebrow}>
-              {isSignUp ? 'CREATE YOUR ACCOUNT' : 'WELCOME BACK'}
-            </Text>
-            <Text style={s.title}>
-              {isSignUp ? 'Save your personalized plan.' : 'Access your True Diet profile.'}
-            </Text>
-            <Text style={s.copy}>
-              {isSignUp
-                ? 'Create your secure True Diet account to keep your learning, preferences, and progress in one place.'
-                : 'Log in with your existing account to sync your nutrition goals.'}
-            </Text>
-
-            {errorMessage ? (
-              <View style={s.errorBox}>
-                <Text style={s.errorText}>{errorMessage}</Text>
-              </View>
-            ) : null}
-
-            {resetMsg ? (
-              <View style={s.successBox}>
-                <Text style={s.successText}>{resetMsg}</Text>
-              </View>
-            ) : null}
-
-            {pendingVerify ? (
-              <View style={s.verifyBox}>
-                <CheckCircle2 size={34} color={colors.green} />
-                <Text style={s.verifyTitle}>Confirm your email</Text>
-                <Text style={s.verifyText}>
-                  We sent a verification link to{' '}
-                  <Text style={s.verifyEmail}>{pendingVerify}</Text>. Open it to
-                  verify your account — check spam if you don't see it.
-                </Text>
-                {verifyMsg ? <Text style={s.verifyMsg}>{verifyMsg}</Text> : null}
-                <Pressable
-                  style={[s.verifyPrimaryButton, loading && s.disabled]}
-                  disabled={loading}
-                  onPress={continueAfterVerify}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={s.buttonText}>Continue</Text>
-                  )}
-                </Pressable>
-                <Pressable
-                  style={[s.verifySecondaryButton, (verifyBusy || verifyCooldown) && s.verifySecondaryDisabled]}
-                  disabled={verifyBusy || verifyCooldown}
-                  onPress={resendVerification}
-                >
-                  <Text style={s.verifySecondaryText}>
-                    {verifyBusy
-                      ? 'Sending…'
-                      : verifyCooldown
-                        ? 'Resend available in a minute'
-                        : 'Resend confirmation email'}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setPendingVerify(null);
-                    setVerifyMsg('');
-                    setErrorMessage('');
-                  }}
-                  hitSlop={10}
-                  style={s.verifyBackLink}
-                >
-                  <Text style={s.skip}>Back to form</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={s.formSection}>
-                {isSignUp && (
-                  <View style={s.nameField}>
-                    <Text style={s.label}>Full name</Text>
-                    <TextInput
-                      value={name}
-                      onChangeText={setName}
-                      placeholder="Your name"
-                      placeholderTextColor={colors.muted}
-                      style={s.input}
-                    />
-                  </View>
-                )}
-
-                <Text style={s.label}>Email address</Text>
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
+            {isSignUp ? (
+              <>
+                <Text style={s.label}>Confirm password</Text>
+                <BaseInput
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Repeat password"
                   placeholderTextColor={colors.muted}
+                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
-                  keyboardType="email-address"
-                  autoCorrect={false}
-                  style={s.input}
+                  style={!passwordsMatch ? { ...s.input, borderColor: colors.red } : s.input}
                 />
-
-                <Text style={s.label}>Password (minimum 8 characters)</Text>
-                <View style={s.passwordRow}>
-                  <TextInput
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter password"
-                    placeholderTextColor={colors.muted}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoComplete="password"
-                    textContentType="password"
-                    style={s.passwordInput}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword((v) => !v)}
-                    style={s.eyeButton}
-                    hitSlop={6}
-                    accessibilityRole="button"
-                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={19} color={colors.muted} />
-                    ) : (
-                      <Eye size={19} color={colors.muted} />
-                    )}
-                  </Pressable>
-                </View>
-
-                {isSignUp ? (
-                  <>
-                    <Text style={s.label}>Confirm password</Text>
-                    <TextInput
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="Repeat password"
-                      placeholderTextColor={colors.muted}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      style={[s.input, !passwordsMatch && { borderColor: colors.red }]}
-                    />
-                    {!passwordsMatch ? (
-                      <Text style={s.mismatchText}>Passwords do not match.</Text>
-                    ) : null}
-
-                    <Pressable
-                      style={s.termsRow}
-                      onPress={() => setAcceptedTerms((v) => !v)}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: acceptedTerms }}
-                    >
-                      <View style={[s.checkbox, acceptedTerms && s.checkboxOn]}>
-                        {acceptedTerms ? <Check size={14} color="#fff" /> : null}
-                      </View>
-                      <Text style={s.termsText}>
-                        I agree to True Diet’s Terms of Use and Privacy Policy (educational guidance, not medical advice).
-                      </Text>
-                    </Pressable>
-                  </>
-                ) : (
-                  <Pressable onPress={onForgotPassword} disabled={resetBusy} hitSlop={8} style={s.forgotRow}>
-                    <Text style={[s.forgotText, resetCooldown && s.forgotSent]}>
-                      {resetBusy
-                        ? 'Sending reset…'
-                        : resetCooldown
-                          ? 'Reset link sent ✓'
-                          : 'Forgot password?'}
-                    </Text>
-                  </Pressable>
-                )}
-
-                <View style={s.trust}>
-                  <LockKeyhole size={18} color={colors.deepTeal} />
-                  <Text style={s.trustText}>
-                    Your authentication credentials and personal data are safely encrypted and secured.
-                  </Text>
-                </View>
-
-                {isSignUp && (
-                  <View style={s.benefits}>
-                    {[
-                      'Save your personalized nutrition profile',
-                      'Keep your learning and tools together',
-                      'Update your preferences any time',
-                    ].map((item) => (
-                      <View key={item} style={s.benefit}>
-                        <CheckCircle2 size={18} color={colors.green} />
-                        <Text style={s.benefitText}>{item}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                <Pressable
-                  disabled={!ready || loading}
-                  onPress={handleSubmit}
-                  style={[s.button, (!ready || loading) && s.disabled]}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={s.buttonText}>
-                      {isSignUp ? 'Continue to My Profile' : 'Sign In & Continue'}
-                    </Text>
-                  )}
-                </Pressable>
-
-                {serverFlags.google ? (
-                  <View style={s.googleContainer}>
-                    <View style={s.divider}>
-                      <View style={s.dividerLine} />
-                      <Text style={s.dividerText}>or</Text>
-                      <View style={s.dividerLine} />
-                    </View>
-                    <Pressable
-                      onPress={onGoogleSignIn}
-                      disabled={loading}
-                      style={[s.button, s.googleButton, loading && s.disabled]}
-                    >
-                      <Text style={s.googleText}>
-                        {loading
-                          ? 'Opening Google…'
-                          : isSignUp
-                            ? 'Sign up with Google'
-                            : 'Continue with Google'}
-                      </Text>
-                    </Pressable>
-                  </View>
+                {!passwordsMatch ? (
+                  <Text style={s.mismatchText}>Passwords do not match.</Text>
                 ) : null}
 
-                <Pressable onPress={() => navigation.navigate('NutritionProfile')} hitSlop={10}>
-                  <Text style={s.skip}>Skip for now</Text>
+                <Pressable
+                  style={s.termsRow}
+                  onPress={() => setAcceptedTerms((v) => !v)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: acceptedTerms }}
+                >
+                  <View style={[s.checkbox, acceptedTerms && s.checkboxOn]}>
+                    {acceptedTerms ? <Check size={14} color="#fff" /> : null}
+                  </View>
+                  <Text style={s.termsText}>
+                    I agree to True Diet’s Terms of Use and Privacy Policy (educational guidance, not medical advice).
+                  </Text>
                 </Pressable>
+              </>
+            ) : (
+              <Pressable onPress={onForgotPassword} disabled={resetBusy} hitSlop={8} style={s.forgotRow}>
+                <Text style={[s.forgotText, resetCooldown && s.forgotSent]}>
+                  {resetBusy
+                    ? 'Sending reset…'
+                    : resetCooldown
+                      ? 'Reset link sent ✓'
+                      : 'Forgot password?'}
+                </Text>
+              </Pressable>
+            )}
+
+            <View style={s.trust}>
+              <LockKeyhole size={18} color={colors.deepTeal} />
+              <Text style={s.trustText}>
+                Your authentication credentials and personal data are safely encrypted and secured.
+              </Text>
+            </View>
+
+            {isSignUp && (
+              <View style={s.benefits}>
+                {[
+                  'Save your personalized nutrition profile',
+                  'Keep your learning and tools together',
+                  'Update your preferences any time',
+                ].map((item) => (
+                  <View key={item} style={s.benefit}>
+                    <CheckCircle2 size={18} color={colors.green} />
+                    <Text style={s.benefitText}>{item}</Text>
+                  </View>
+                ))}
               </View>
             )}
+
+            <BaseButton onPress={handleSubmit} disabled={!ready || loading} style={s.button}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={s.buttonText}>
+                  {isSignUp ? 'Continue to My Profile' : 'Sign In & Continue'}
+                </Text>
+              )}
+            </BaseButton>
+
+            {serverFlags.google ? (
+              <View style={s.googleContainer}>
+                <View style={s.divider}>
+                  <View style={s.dividerLine} />
+                  <Text style={s.dividerText}>or</Text>
+                  <View style={s.dividerLine} />
+                </View>
+                <BaseButton
+                  onPress={onGoogleSignIn}
+                  disabled={loading}
+                  variant="ghost"
+                  style={s.googleButton}
+                >
+                  {loading ? 'Opening Google…' : isSignUp ? 'Sign up with Google' : 'Continue with Google'}
+                </BaseButton>
+              </View>
+            ) : null}
+
+            <Pressable onPress={() => navigation.navigate('Welcome')} hitSlop={10}>
+              <Text style={s.skip}>Back to welcome</Text>
+            </Pressable>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        )}
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
@@ -511,87 +453,23 @@ export default function AccountSetupScreen({ navigation, route }: any) {
 const s = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.softBlue,
+    backgroundColor: colors.background,
     alignItems: 'center',
   },
-  scrollContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
-    width: '100%',
-  },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', flex: 1, padding: 24, paddingTop: 16 },
-  logo: { width: 92, height: 92, marginBottom: 6, resizeMode: 'contain' },
-  formSection: { width: '100%', alignSelf: 'stretch' },
-  nameField: { width: '100%', marginBottom: 2 },
-  backButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    marginBottom: 10,
-  },
-  backText: {
-    fontFamily: 'Roboto',
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.deepTeal,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.softBlue,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  activeTab: {
-    backgroundColor: colors.surface,
-  },
-  tabText: {
-    fontFamily: 'Roboto',
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  activeTabText: {
-    color: colors.deepTeal,
-    fontWeight: '700',
-  },
-  eyebrow: {
-    fontFamily: 'Roboto',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.4,
-    color: colors.green,
-  },
-  title: {
-    fontFamily: 'Roboto',
-    fontSize: 28,
-    lineHeight: 36,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 8,
-  },
-  copy: {
+  subtitle: {
     fontFamily: 'Roboto',
     fontSize: 14,
     lineHeight: 22,
     color: colors.textSecondary,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   errorBox: {
     backgroundColor: '#FEE2E2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 14,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginTop: spacing.sm,
   },
   errorText: {
     color: '#B91C1C',
@@ -602,9 +480,9 @@ const s = StyleSheet.create({
     backgroundColor: '#E7F6EE',
     borderWidth: 1,
     borderColor: '#BFE6CE',
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 14,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginTop: spacing.sm,
   },
   successText: {
     color: '#136C43',
@@ -617,23 +495,23 @@ const s = StyleSheet.create({
     backgroundColor: colors.softBlue,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.md,
   },
   verifyTitle: {
     fontFamily: 'Roboto',
     fontSize: 19,
     fontWeight: '700',
     color: colors.text,
-    marginTop: 12,
+    marginTop: spacing.sm,
   },
   verifyText: {
     fontFamily: 'Roboto',
     fontSize: 13,
     lineHeight: 20,
     color: colors.textSecondary,
-    marginTop: 8,
+    marginTop: spacing.sm,
     textAlign: 'center',
   },
   verifyEmail: {
@@ -644,28 +522,27 @@ const s = StyleSheet.create({
     fontFamily: 'Roboto',
     fontSize: 12,
     color: '#136C43',
-    marginTop: 10,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
   verifyPrimaryButton: {
-    height: 54,
     width: '100%',
-    borderRadius: 16,
+    borderRadius: radius.lg,
     backgroundColor: colors.deepTeal,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: spacing.lg,
   },
   verifySecondaryButton: {
-    height: 50,
+    height: dimensions.buttonHeightSmall,
     width: '100%',
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.deepTeal,
     backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: spacing.sm,
   },
   verifySecondaryDisabled: {
     opacity: 0.55,
@@ -677,12 +554,12 @@ const s = StyleSheet.create({
     color: colors.deepTeal,
   },
   verifyBackLink: {
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   forgotRow: {
     alignSelf: 'flex-end',
-    marginTop: 8,
-    paddingVertical: 2,
+    marginTop: spacing.xs,
+    paddingVertical: spacing.xs,
   },
   forgotText: {
     fontFamily: 'Roboto',
@@ -697,23 +574,23 @@ const s = StyleSheet.create({
     fontFamily: 'Roboto',
     fontSize: 12,
     color: colors.red,
-    marginTop: 6,
+    marginTop: spacing.xs,
   },
   termsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    marginTop: 16,
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
   checkbox: {
     width: 22,
     height: 22,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     borderWidth: 1.5,
     borderColor: colors.deepTeal,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   checkboxOn: {
     backgroundColor: colors.deepTeal,
@@ -728,8 +605,8 @@ const s = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 18,
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
   dividerLine: {
     flex: 1,
@@ -741,44 +618,24 @@ const s = StyleSheet.create({
     fontSize: 12,
     color: colors.muted,
   },
-  googleButton: {
-    marginTop: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  googleText: {
-    fontFamily: 'Roboto',
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
+  googleContainer: {
+    marginTop: spacing.sm,
   },
   label: {
     fontFamily: 'Roboto',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  input: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 15,
-    fontFamily: 'Roboto',
-    fontSize: 14,
-    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   passwordRow: {
-    height: 52,
+    height: dimensions.inputHeight,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
-    paddingLeft: 15,
+    paddingLeft: 14,
     paddingRight: 6,
     flexDirection: 'row',
     alignItems: 'center',
@@ -798,11 +655,11 @@ const s = StyleSheet.create({
   },
   trust: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
     backgroundColor: colors.softBlue,
-    borderRadius: 16,
-    padding: 14,
-    marginTop: 18,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.md,
     alignItems: 'center',
   },
   trustText: {
@@ -813,12 +670,12 @@ const s = StyleSheet.create({
     flex: 1,
   },
   benefits: {
-    marginTop: 16,
-    gap: 10,
+    marginTop: spacing.md,
+    gap: spacing.sm,
   },
   benefit: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
     alignItems: 'center',
   },
   benefitText: {
@@ -826,16 +683,25 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: colors.text,
   },
+  skip: {
+    fontFamily: 'Roboto',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: colors.deepTeal,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
   button: {
-    height: 54,
-    borderRadius: 16,
+    height: dimensions.buttonHeight,
+    borderRadius: radius.lg,
     backgroundColor: colors.deepTeal,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    justifyContent: 'center',
+    marginTop: spacing.lg,
   },
   disabled: {
-    backgroundColor: colors.muted,
+    opacity: 0.6,
   },
   buttonText: {
     fontFamily: 'Roboto',
@@ -843,16 +709,31 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-  skip: {
-    fontFamily: 'Roboto',
-    fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: colors.deepTeal,
-    marginTop: 16,
-    marginBottom: 20,
+  googleButton: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  googleContainer: {
-    marginTop: 14,
+  content: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    flex: 1,
+    padding: 20,
+    paddingTop: 16,
+  },
+  formSection: { width: '100%', alignSelf: 'stretch' },
+  nameField: { width: '100%', marginBottom: 2 },
+  input: {
+    height: dimensions.inputHeight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+    fontFamily: 'Roboto',
+    fontSize: 14,
+    color: colors.text,
   },
 });

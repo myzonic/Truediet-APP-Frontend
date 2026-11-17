@@ -5,6 +5,9 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, ChevronRight, Heart, Search } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import { recipes as defaultRecipes, Recipe } from '../../lib/recipeContent';
 import { loadRecipes } from '../../lib/contentLibrary';
 
@@ -48,13 +51,8 @@ export default function RecipeFinderScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-
-        <Text style={s.eyebrow}>RECIPE FINDER</Text>
-        <Text style={s.title}>Flexible meal ideas.</Text>
+      <ScreenContainer keyboardShouldPersistTaps="handled">
+        <ScreenHeader eyebrow="RECIPE FINDER" title="Flexible meal ideas." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
           Search by title, ingredient, or meal category. Every recipe is a flexible template you can adapt to your preferences.
         </Text>
@@ -108,27 +106,25 @@ export default function RecipeFinderScreen({ navigation }: any) {
             ))
           )}
         </View>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
-  searchBox: { height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10, marginTop: 18 },
+  searchBox: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10, marginTop: spacing.lg },
   searchInput: { flex: 1, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
-  list: { marginTop: 18, gap: 10 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 14 },
-  art: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.softGreen, alignItems: 'center', justifyContent: 'center' },
+  list: { marginTop: spacing.lg, gap: 10 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.cardPadding },
+  art: { width: 52, height: 52, borderRadius: radius.md, backgroundColor: colors.softGreen, alignItems: 'center', justifyContent: 'center' },
   cardBody: { flex: 1, minWidth: 0 },
   cardTitle: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: colors.text },
   cardMeta: { fontFamily: 'Roboto', fontSize: 11.5, fontWeight: '600', color: colors.green, marginTop: 3 },
   cardDesc: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 4 },
-  empty: { padding: 24, borderRadius: 16, backgroundColor: colors.softBlue, alignItems: 'center' },
+  empty: { padding: spacing.cardPadding, borderRadius: radius.lg, backgroundColor: colors.softBlue, alignItems: 'center' },
   emptyText: { fontFamily: 'Roboto', fontSize: 13, color: colors.deepTeal, textAlign: 'center' },
 });

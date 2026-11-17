@@ -4,7 +4,7 @@ export type MainStackParamList = {
   Article: { articleId: string; title: string };
   Myths: undefined;
   MythDetail: { mythId: string; claim: string };
-  MealLog: undefined;
+  MealLog: { mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack' } | undefined;
   HungerFullness: undefined;
   ProgressPatterns: undefined;
   Tools: undefined;

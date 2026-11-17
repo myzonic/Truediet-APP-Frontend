@@ -5,6 +5,9 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Droplet, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import { addWater, loadTrackingSettings, loadWaterSummary, saveTrackingSettings } from '../../lib/track';
 
 const ACTIVITY_LEVELS: Array<{ key: 'sedentary' | 'light' | 'moderate' | 'very'; label: string; factor: number }> = [
@@ -85,13 +88,8 @@ export default function HydrationCalculatorScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-
-        <Text style={s.eyebrow}>HYDRATION CALCULATOR</Text>
-        <Text style={s.title}>Estimate your fluid needs.</Text>
+      <ScreenContainer keyboardShouldPersistTaps="handled">
+        <ScreenHeader eyebrow="HYDRATION CALCULATOR" title="Estimate your fluid needs." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
           Calculate a practical daily fluid target based on your body weight, movement, and environment, then save it to your Track dashboard.
         </Text>
@@ -144,26 +142,24 @@ export default function HydrationCalculatorScreen({ navigation }: any) {
             Educational estimate: fluid from water, tea, milk, soups, and water-rich fruits and vegetables all contribute to daily hydration. Certain medical conditions require physician-guided fluid limits.
           </Text>
         </View>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
-  label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 20, marginBottom: 8 },
-  input: { height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingHorizontal: 14, fontFamily: 'Roboto', fontSize: 15, color: colors.text },
-  resultCard: { backgroundColor: colors.softGreen, borderRadius: 20, padding: 20, marginTop: 24, alignItems: 'center', gap: 6 },
+  label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm },
+  input: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 14, fontFamily: 'Roboto', fontSize: 15, color: colors.text },
+  resultCard: { backgroundColor: colors.softGreen, borderRadius: radius.xl, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'center', gap: 6 },
   resultVal: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '800', color: colors.deepTeal },
   resultSub: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, textAlign: 'center' },
-  primary: { height: 50, borderRadius: 14, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, marginTop: 10, width: '100%' },
+  primary: { height: dimensions.buttonHeight, borderRadius: radius.md, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, marginTop: spacing.sm, width: '100%' },
   primaryText: { fontFamily: 'Roboto', fontSize: 14.5, fontWeight: '700', color: '#fff' },
-  section: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 24, marginBottom: 10 },
-  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 22, alignItems: 'flex-start' },
+  section: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, marginTop: spacing.xl, marginBottom: spacing.md },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

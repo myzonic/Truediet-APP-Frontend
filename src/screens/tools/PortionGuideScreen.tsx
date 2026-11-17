@@ -4,6 +4,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Hand, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 
 const portionData = [
   {
@@ -59,13 +62,8 @@ const portionData = [
 export default function PortionGuideScreen({ navigation }: any) {
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-
-        <Text style={s.eyebrow}>PORTION GUIDE</Text>
-        <Text style={s.title}>Hand-based portion sizes.</Text>
+      <ScreenContainer>
+        <ScreenHeader eyebrow="PORTION GUIDE" title="Hand-based portion sizes." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
           Your hand is a portable, proportional guide that scales with your body — no scales or measuring cups required.
         </Text>
@@ -98,26 +96,23 @@ export default function PortionGuideScreen({ navigation }: any) {
             Portion guides are starting points, not strict limits. Adjust portions based on your hunger, fullness, and activity level.
           </Text>
         </View>
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
-  title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6, marginBottom: 12 },
-  card: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.surface, padding: 16, marginTop: 12, gap: 10 },
+  card: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.cardPadding, marginTop: spacing.sm, gap: 10 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.softGreen, alignItems: 'center', justifyContent: 'center' },
+  iconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.softGreen, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text },
   cardCue: { fontFamily: 'Roboto', fontSize: 12, fontWeight: '600', color: colors.deepTeal, marginTop: 2 },
   itemRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 8 },
   itemName: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
   itemDesc: { fontFamily: 'Roboto', fontSize: 12.5, color: colors.textSecondary, marginTop: 2 },
-  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 20, alignItems: 'flex-start' },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

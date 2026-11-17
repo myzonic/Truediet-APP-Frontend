@@ -33,6 +33,8 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import { loadProfile, saveProfile } from '../../lib/profile';
 import { loadSavedContent, unsaveContent } from '../../lib/content';
 import { loadPlans, loadSubscription, Plan } from '../../lib/subscription';
@@ -57,12 +59,7 @@ const SEXES = ['Female', 'Male', 'Prefer not to say'];
 function Page({ navigation, children }: { navigation: any; children: React.ReactNode }) {
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <ScreenContainer keyboardShouldPersistTaps="handled">
         <Pressable
           style={s.back}
           onPress={() => navigation.goBack()}
@@ -73,7 +70,7 @@ function Page({ navigation, children }: { navigation: any; children: React.React
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>
         {children}
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
@@ -1169,9 +1166,9 @@ export function ProfileHubScreen({ navigation }: any) {
   }, [user?.id]);
 
   const go = (route: string, params?: any) => {
-    const parent = navigation.getParent?.();
-    if (parent) parent.navigate(route, params);
-    else navigation.navigate(route, params);
+    // React Navigation bubbles unhandled actions to the parent navigator, so
+    // this works whether Profile is mounted as a tab or as a stack screen.
+    navigation.navigate(route, params);
   };
 
   const signOut = () =>
@@ -1213,7 +1210,6 @@ export function ProfileHubScreen({ navigation }: any) {
     <SafeAreaView style={s.safe}>
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
@@ -1415,44 +1411,35 @@ export function ProfileHubScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: 12 },
+  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: spacing.sm },
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
   scroll: { width: '100%' },
-  content: {
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 56,
-    backgroundColor: colors.background,
-  },
   back: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: dimensions.backButtonSize,
+    height: dimensions.backButtonSize,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
-    marginBottom: 20,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xl,
   },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   title: { fontFamily: 'Roboto', fontSize: 26, lineHeight: 34, fontWeight: '700', color: colors.text, marginTop: 6 },
   copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 8 },
-  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 26, marginBottom: 12 },
-  hint: { fontFamily: 'Roboto', fontSize: 13, color: colors.muted, marginTop: 12 },
-  list: { marginTop: 4, gap: 10 },
+  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: spacing.xl, marginBottom: spacing.md },
+  hint: { fontFamily: 'Roboto', fontSize: 13, color: colors.muted, marginTop: spacing.sm },
+  list: { marginTop: spacing.sm, gap: 10 },
   item: {
     minHeight: 72,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -1460,7 +1447,7 @@ const s = StyleSheet.create({
   itemIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.softBlue,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1471,10 +1458,10 @@ const s = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
-    padding: 16,
-    marginTop: 6,
+    padding: spacing.cardPadding,
+    marginTop: spacing.sm,
     gap: 4,
   },
   toggleRow: {
@@ -1482,31 +1469,31 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    paddingVertical: 12,
+    paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  fieldBlock: { marginTop: 4, marginBottom: 8 },
-  fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 },
+  fieldBlock: { marginTop: spacing.sm, marginBottom: spacing.xs },
+  fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },
   fieldCol: { flex: 1, minWidth: 96 },
-  label: { fontFamily: 'Roboto', fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 },
+  label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
   input: {
-    height: 48,
+    height: dimensions.inputHeight,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
     paddingHorizontal: 12,
     fontFamily: 'Roboto',
     fontSize: 14,
     color: colors.text,
   },
-  addRow: { flexDirection: 'row', gap: 10, marginTop: 12, alignItems: 'center' },
+  addRow: { flexDirection: 'row', gap: 10, marginTop: spacing.md, alignItems: 'center' },
   addInput: { flex: 1 },
   addBtn: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.deepTeal,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1516,49 +1503,49 @@ const s = StyleSheet.create({
     gap: 10,
     alignItems: 'flex-start',
     backgroundColor: colors.softBlue,
-    borderRadius: 16,
-    padding: 14,
-    marginTop: 22,
+    borderRadius: radius.lg,
+    padding: spacing.cardPadding,
+    marginTop: spacing.xl,
   },
   noticeText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
-  saved: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.green, marginTop: 14, textAlign: 'center' },
+  saved: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.green, marginTop: spacing.sm, textAlign: 'center' },
   pwPanel: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
-    padding: 16,
-    marginTop: 6,
+    borderRadius: radius.lg,
+    padding: spacing.cardPadding,
+    marginTop: spacing.sm,
     gap: 8,
   },
   cta: {
-    height: 54,
-    borderRadius: 16,
+    height: dimensions.buttonHeight,
+    borderRadius: radius.lg,
     backgroundColor: colors.deepTeal,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: spacing.lg,
     paddingHorizontal: 16,
   },
   ctaDisabled: { opacity: 0.6 },
   ctaText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
   ctaGhost: {
-    height: 52,
-    borderRadius: 16,
+    height: dimensions.buttonHeightSmall,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.deepTeal,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: spacing.sm,
     paddingHorizontal: 16,
   },
   ctaGhostText: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.deepTeal },
-  authActions: { flexDirection: 'row', gap: 10, marginTop: 16, width: '100%' },
+  authActions: { flexDirection: 'row', gap: 10, marginTop: spacing.md, width: '100%' },
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginTop: 20,
+    marginTop: spacing.xl,
     width: '100%',
   },
   quickCard: {
@@ -1567,9 +1554,9 @@ const s = StyleSheet.create({
     minWidth: 140,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
-    padding: 14,
+    padding: spacing.cardPadding,
     gap: 4,
   },
   quickCardTitle: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginTop: 4 },
@@ -1577,9 +1564,9 @@ const s = StyleSheet.create({
   package: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
-    padding: 16,
+    padding: spacing.cardPadding,
   },
   packageTop: {
     flexDirection: 'row',
@@ -1590,21 +1577,21 @@ const s = StyleSheet.create({
   },
   packageName: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, flex: 1, minWidth: 150 },
   packagePrice: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.deepTeal },
-  packageFeature: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: 6 },
-  packageLink: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.deepTeal, marginTop: 12 },
+  packageFeature: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: spacing.sm },
+  packageLink: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.deepTeal, marginTop: spacing.sm },
   priceCard: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     backgroundColor: colors.softBlue,
-    padding: 18,
-    marginTop: 8,
+    padding: spacing.cardPadding,
+    marginTop: spacing.sm,
     alignItems: 'center',
   },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 4 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: spacing.xs },
   checkText: { flex: 1, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
-  empty: { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emptyTitle: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 6 },
+  empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: 8 },
+  emptyTitle: { fontFamily: 'Roboto', fontSize: 16, fontWeight: '700', color: colors.text, marginTop: spacing.sm },
   emptyCopy: {
     fontFamily: 'Roboto',
     fontSize: 13,
@@ -1615,9 +1602,9 @@ const s = StyleSheet.create({
   },
   profileHeader: {
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.softBlue,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1631,10 +1618,10 @@ const s = StyleSheet.create({
     borderColor: colors.green,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   avatarText: { fontFamily: 'Roboto', fontSize: 26, fontWeight: '700', color: colors.deepTeal },
   name: { fontFamily: 'Roboto', fontSize: 22, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  email: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: 3, textAlign: 'center' },
-  version: { fontFamily: 'Roboto', fontSize: 11, color: colors.muted, textAlign: 'center', marginTop: 28 },
+  email: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
+  version: { fontFamily: 'Roboto', fontSize: 11, color: colors.muted, textAlign: 'center', marginTop: spacing.xxl },
 });

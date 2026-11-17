@@ -5,6 +5,9 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, CheckCircle2, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { dimensions, radius, spacing } from '../../theme/tokens';
 import { loadProfile, saveProfile } from '../../lib/profile';
 import { useOnboarding } from '../../context/OnboardingContext';
 
@@ -124,13 +127,8 @@ export default function NutritionAssessmentScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Pressable style={s.back} onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-
-        <Text style={s.eyebrow}>NUTRITION ASSESSMENT</Text>
-        <Text style={s.title}>Personalized nutrition evaluation.</Text>
+      <ScreenContainer keyboardShouldPersistTaps="handled">
+        <ScreenHeader eyebrow="NUTRITION ASSESSMENT" title="Personalized nutrition evaluation." onBack={() => navigation.goBack()} />
         <Text style={s.subtitle}>
           Review and update your goals, personal measurements, activity level, and dietary needs. Responses persist to your True Diet profile.
         </Text>
@@ -238,31 +236,28 @@ export default function NutritionAssessmentScreen({ navigation }: any) {
             </Pressable>
           </>
         )}
-      </ScrollView>
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
-  content: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', padding: 20, paddingBottom: 48 },
-  back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginTop: 6, marginBottom: 18 },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
-  title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
-  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 24, marginBottom: 10 },
+  section: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text, marginTop: spacing.xl, marginBottom: spacing.md },
   fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   fieldCol: { flex: 1, minWidth: 96 },
-  label: { fontFamily: 'Roboto', fontSize: 11, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 },
-  input: { height: 46, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
-  customRow: { flexDirection: 'row', gap: 10, marginTop: 12, alignItems: 'center' },
-  addBtn: { height: 46, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
-  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: 16, padding: 14, marginTop: 22, alignItems: 'flex-start' },
+  label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
+  input: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
+  customRow: { flexDirection: 'row', gap: 10, marginTop: spacing.md, alignItems: 'center' },
+  addBtn: { height: dimensions.buttonHeightSmall, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
+  disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
-  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: 12 },
-  primary: { height: 54, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 20, paddingHorizontal: 20 },
+  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: spacing.sm },
+  primary: { height: dimensions.buttonHeight, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg, paddingHorizontal: 20 },
   primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
-  doneCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 20, backgroundColor: colors.softGreen, padding: 24, marginTop: 24, alignItems: 'center', gap: 10 },
+  doneCard: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.softGreen, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'center', gap: 10 },
   doneTitle: { fontFamily: 'Roboto', fontSize: 20, fontWeight: '700', color: colors.text },
   doneCopy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, textAlign: 'center' },
 });
