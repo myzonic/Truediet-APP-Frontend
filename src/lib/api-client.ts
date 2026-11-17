@@ -42,6 +42,23 @@ export const SESSION_TOKEN_KEY_NAME = SESSION_TOKEN_KEY;
  */
 let unauthorizedHandler: (() => void) | null = null;
 
+/**
+ * Auth endpoints where a 401 is an EXPECTED outcome that the caller handles
+ * locally (wrong password, no/expired session on launch, invalid reset token).
+ * The global "session expired" handler must NOT fire for these, otherwise a
+ * single failed login would sign the user out and reset navigation to the
+ * welcome flow — which is exactly the opposite of what should happen.
+ */
+const AUTH_401_IS_LOCAL = new Set([
+  '/api/auth/login',
+  '/api/auth/session',
+  '/api/auth/refresh',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/verify-email',
+  '/api/auth/verify-email/confirm',
+]);
+
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler;
 }
@@ -69,8 +86,10 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
   const data = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    if (response.status === 401) {
-      // The session is gone (expired or revoked elsewhere).
+    if (response.status === 401 && !AUTH_401_IS_LOCAL.has(path)) {
+      // A protected request was rejected: the session is gone (expired or
+      // revoked elsewhere). Auth endpoints are excluded because their 401s
+      // are expected and handled by the calling screen.
       try {
         unauthorizedHandler?.();
       } catch {

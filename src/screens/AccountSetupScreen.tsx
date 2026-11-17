@@ -14,23 +14,9 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { BaseInput } from '../components/BaseInput';
 import { BaseButton } from '../components/BaseButton';
+import { GoogleIcon } from '../components/GoogleIcon';
 import { Pill } from '../components/Pill';
-
-function friendlyAuthError(message?: string): string {
-  const m = (message || '').toLowerCase();
-  if (!m) return 'Something went wrong — please try again.';
-  if (m.includes('invalid email or password') || m.includes('invalid_credentials'))
-    return 'Email or password is incorrect.';
-  if (m.includes('already exists') || m.includes('user_exists'))
-    return 'An account with this email already exists — switch to Sign In.';
-  if (m.includes('not verified'))
-    return 'Confirm your email first — you can resend the link below.';
-  if (m.includes('rate') || m.includes('too many') || m.includes('429'))
-    return 'Too many attempts — wait a minute and try again.';
-  if (m.includes('fetch') || m.includes('network') || m.includes('load failed'))
-    return 'Could not reach the server — check your connection and try again.';
-  return message as string;
-}
+import { friendlyAuthError } from '../lib/auth-errors';
 
 export default function AccountSetupScreen({ navigation, route }: any) {
   const [mode, setMode] = useState<'signup' | 'signin'>(
@@ -186,8 +172,8 @@ export default function AccountSetupScreen({ navigation, route }: any) {
         setVerifyMsg('This email is already verified! Tap Continue below.');
       } else if (res?.success || res?.status) {
         setVerifyMsg('Sent again — open the link in that email to verify your account.');
-        setResetCooldown(true);
-        setTimeout(() => setResetCooldown(false), 60000);
+        setVerifyCooldown(true);
+        setTimeout(() => setVerifyCooldown(false), 60000);
       } else {
         setVerifyMsg('Could not send verification email — try again.');
       }
@@ -231,6 +217,27 @@ export default function AccountSetupScreen({ navigation, route }: any) {
     <SafeAreaView style={s.safe}>
       <ScreenContainer keyboardShouldPersistTaps="handled">
         <ScreenHeader eyebrow="TRUE DIET" title={isSignUp ? 'Create Your Account' : 'Welcome Back'} onBack={() => navigation.goBack()} />
+
+        {/* Mode switcher */}
+        <View style={s.modeTabs}>
+          <Pressable
+            onPress={() => { setMode('signup'); setErrorMessage(''); }}
+            style={[s.modeTab, isSignUp && s.modeTabActive]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isSignUp }}
+          >
+            <Text style={[s.modeTabText, isSignUp && s.modeTabTextActive]}>Create Account</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => { setMode('signin'); setErrorMessage(''); }}
+            style={[s.modeTab, !isSignUp && s.modeTabActive]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: !isSignUp }}
+          >
+            <Text style={[s.modeTabText, !isSignUp && s.modeTabTextActive]}>Sign In</Text>
+          </Pressable>
+        </View>
+
         <Text style={s.subtitle}>
           {isSignUp
             ? 'Create your secure True Diet account to keep your learning, preferences, and progress in one place.'
@@ -435,7 +442,12 @@ export default function AccountSetupScreen({ navigation, route }: any) {
                   variant="ghost"
                   style={s.googleButton}
                 >
-                  {loading ? 'Opening Google…' : isSignUp ? 'Sign up with Google' : 'Continue with Google'}
+                  <View style={s.googleButtonContent}>
+                    <GoogleIcon size={18} />
+                    <Text style={s.googleButtonText}>
+                      {loading ? 'Opening Google…' : isSignUp ? 'Sign up with Google' : 'Continue with Google'}
+                    </Text>
+                  </View>
                 </BaseButton>
               </View>
             ) : null}
@@ -462,6 +474,43 @@ const s = StyleSheet.create({
     lineHeight: 22,
     color: colors.textSecondary,
     marginTop: spacing.sm,
+  },
+  modeTabs: {
+    flexDirection: 'row',
+    backgroundColor: colors.softBlue,
+    borderRadius: radius.md,
+    padding: 4,
+    marginTop: spacing.md,
+  },
+  modeTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: radius.sm,
+  },
+  modeTabActive: {
+    backgroundColor: colors.surface,
+  },
+  modeTabText: {
+    fontFamily: 'Roboto',
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  modeTabTextActive: {
+    color: colors.deepTeal,
+    fontWeight: '700',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  googleButtonText: {
+    fontFamily: 'Roboto',
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
   },
   errorBox: {
     backgroundColor: '#FEE2E2',

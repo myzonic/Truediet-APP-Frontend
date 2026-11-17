@@ -4,9 +4,11 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, CircleHelp, CreditCard, FileText, Heart, LockKeyhole, MessageSquare, Search, Settings, ShieldCheck, UserRound } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { GoogleIcon } from '../../components/GoogleIcon';
 import { loadContent, loadSavedContent } from '../../lib/content';
 import { loadThreads, loadThread, sendMessage } from '../../lib/messages';
 import { signIn, signUp, signInWithGoogle, requestPasswordReset } from '../../lib/auth-service';
+import { friendlyAuthError } from '../../lib/auth-errors';
 import { useAuth } from '../../context/AuthContext';
 
 type Item = { id?: string; title: string; subtitle: string; route?: string; icon?: any };
@@ -294,7 +296,7 @@ function AuthScreen({
         navigation.navigate('Login');
       }
     } catch (e: any) {
-      setError(e?.message || 'Something went wrong. Please try again.');
+      setError(friendlyAuthError(e?.message));
     } finally {
       setLoading(false);
     }
@@ -314,7 +316,7 @@ function AuthScreen({
         setError('Google sign-in did not complete — please try again.');
       }
     } catch (e: any) {
-      setError(e?.message || 'Google sign-in could not complete.');
+      setError(friendlyAuthError(e?.message));
     } finally {
       setLoading(false);
     }
@@ -359,7 +361,10 @@ function AuthScreen({
           </Pressable>
           {showPassword && (
             <Pressable style={[s.cta, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginTop: 12 }]} disabled={loading} onPress={onGoogle}>
-              <Text style={[s.ctaText, { color: colors.text }]}>{name === 'CreateAccount' ? 'Sign up with Google' : 'Continue with Google'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <GoogleIcon size={18} />
+                <Text style={[s.ctaText, { color: colors.text }]}>{name === 'CreateAccount' ? 'Sign up with Google' : 'Continue with Google'}</Text>
+              </View>
             </Pressable>
           )}
           {name === 'Login' && (
