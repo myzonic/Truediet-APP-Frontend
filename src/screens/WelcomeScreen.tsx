@@ -18,7 +18,7 @@ export default function WelcomeScreen({ navigation }: { navigation: any }) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScreenContainer>
+      <ScreenContainer fill>
         <View style={s.wrap}>
           <View style={s.trust}>
             <ShieldCheck size={13} color={colors.green} />
@@ -36,10 +36,7 @@ export default function WelcomeScreen({ navigation }: { navigation: any }) {
               <Text style={s.orange}>Real Results.</Text>
             </Text>
             <Text style={s.copy}>
-              Cut through nutrition confusion with{'\n'}
-              evidence-based guidance, practical tools,{'\n'}
-              and personalized support from a Registered{'\n'}
-              Dietitian.
+              Cut through nutrition confusion with evidence-based guidance, practical tools, and personalized support from a Registered Dietitian.
             </Text>
             <View style={s.line}>
               <View style={s.green} />
@@ -72,12 +69,11 @@ export default function WelcomeScreen({ navigation }: { navigation: any }) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
   wrap: {
-    flex: 1,
+    flexGrow: 1,
     width: '100%',
     maxWidth: CONTENT_MAX_WIDTH,
-    maxHeight: 915,
-    paddingHorizontal: spacing.md,
     alignItems: 'center',
+    justifyContent: 'flex-start',
     backgroundColor: colors.surface,
   },
   trust: {
@@ -189,7 +185,9 @@ const s = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   start: {
-    height: dimensions.buttonHeight,
+    minHeight: dimensions.buttonHeight,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: radius.lg,
     backgroundColor: colors.deepTeal,
     alignItems: 'center',
@@ -200,6 +198,8 @@ const s = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
+    flexShrink: 1,
+    textAlign: 'center',
   },
   login: {
     fontFamily: typography.uiItalic,

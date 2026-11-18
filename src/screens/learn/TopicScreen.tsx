@@ -30,7 +30,7 @@ export default function TopicScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <Pressable style={s.back} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>

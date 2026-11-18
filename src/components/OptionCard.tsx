@@ -24,8 +24,9 @@ export default function OptionCard({ label, selected, onPress }: { label: string
 
 const styles = StyleSheet.create({
   card: {
-    height: 58,
+    minHeight: 58,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     marginBottom: spacing.sm,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minWidth: 120,
+    gap: spacing.sm,
   },
   selected: {
     borderColor: colors.deepTeal,

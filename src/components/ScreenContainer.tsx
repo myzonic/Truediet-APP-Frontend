@@ -1,6 +1,6 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
-import { CONTENT_MAX_WIDTH } from '../theme/layout';
+import { ScrollView, StyleSheet, ViewStyle } from 'react-native';
+import { useLayoutMetrics } from '../theme/responsive';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/tokens';
 
@@ -10,6 +10,8 @@ export interface ScreenContainerProps {
   showsVerticalScrollIndicator?: boolean;
   contentContainerStyle?: ViewStyle;
   style?: ViewStyle;
+  /** Stretch the content to at least the full screen height (for footers). */
+  fill?: boolean;
 }
 
 export function ScreenContainer({
@@ -18,17 +20,30 @@ export function ScreenContainer({
   showsVerticalScrollIndicator = false,
   contentContainerStyle,
   style,
+  fill = false,
 }: ScreenContainerProps) {
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
+
   return (
     <ScrollView
-      style={{ width: '100%', ...style }}
+      style={[s.scroll, style]}
       contentContainerStyle={[
         s.content,
-        { maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+        {
+          width: '100%',
+          maxWidth: contentWidth,
+          alignSelf: 'center',
+          paddingHorizontal: horizontalPadding,
+        },
+        fill && s.fill,
         contentContainerStyle,
       ]}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
       keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+      keyboardDismissMode="on-drag"
+      automaticallyAdjustKeyboardInsets
+      contentInsetAdjustmentBehavior="never"
+      bounces
     >
       {children}
     </ScrollView>
@@ -36,10 +51,17 @@ export function ScreenContainer({
 }
 
 const s = StyleSheet.create({
+  scroll: {
+    width: '100%',
+    flex: 1,
+  },
   content: {
-    paddingHorizontal: spacing.screenHorizontal,
     paddingBottom: spacing.screenBottom,
     paddingTop: spacing.lg,
     backgroundColor: colors.background,
+    flexGrow: 0,
+  },
+  fill: {
+    flexGrow: 1,
   },
 });

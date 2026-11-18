@@ -144,7 +144,7 @@ export default function NutritionAssessmentScreen({ navigation }: any) {
             <Text style={s.doneCopy}>
               Your personalized nutrition profile has been updated. Your Home dashboard and recommendations now reflect these answers.
             </Text>
-            <Pressable style={s.primary} onPress={() => navigation.goBack()}>
+            <Pressable style={[s.primary, { alignSelf: 'stretch' }]} onPress={() => navigation.goBack()}>
               <Text style={s.primaryText}>Done</Text>
             </Pressable>
           </View>
@@ -251,12 +251,12 @@ const s = StyleSheet.create({
   label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
   input: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   customRow: { flexDirection: 'row', gap: 10, marginTop: spacing.md, alignItems: 'center' },
-  addBtn: { height: dimensions.buttonHeightSmall, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { minHeight: dimensions.buttonHeightSmall, paddingVertical: 10, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
   disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
   error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: spacing.sm },
-  primary: { height: dimensions.buttonHeight, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg, paddingHorizontal: 20 },
-  primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
+  primary: { minHeight: dimensions.buttonHeight, paddingVertical: 12, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg, paddingHorizontal: 20 },
+  primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff', flexShrink: 1, textAlign: 'center' },
   doneCard: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.softGreen, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'center', gap: 10 },
   doneTitle: { fontFamily: 'Roboto', fontSize: 20, fontWeight: '700', color: colors.text },
   doneCopy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, textAlign: 'center' },

@@ -56,9 +56,12 @@ export function BaseButton({
       ] as ViewStyle[]}
     >
       {loading ? (
-        <ActivityIndicator color="#fff" size="small" />
+        <ActivityIndicator color={variant === 'ghost' ? colors.deepTeal : '#fff'} size="small" />
       ) : (
-        <Text style={[s.primaryText, variant === 'ghost' && s.ghostText, variant === 'danger' && s.dangerText, isDisabled && s.disabledText, textStyle]}>
+        <Text
+          style={[s.primaryText, variant === 'ghost' && s.ghostText, variant === 'danger' && s.dangerText, isDisabled && s.disabledText, textStyle]}
+          maxFontSizeMultiplier={1.3}
+        >
           {children}
         </Text>
       )}
@@ -68,12 +71,15 @@ export function BaseButton({
 
 const s = StyleSheet.create({
   button: {
-    height: dimensions.buttonHeight,
+    minHeight: dimensions.buttonHeight,
     borderRadius: radius.lg,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
   },
   primary: {
     backgroundColor: colors.deepTeal,

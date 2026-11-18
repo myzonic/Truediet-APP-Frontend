@@ -189,6 +189,6 @@ const s = StyleSheet.create({
   disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
   saved: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.green, marginTop: spacing.sm, textAlign: 'center' },
-  primary: { height: dimensions.buttonHeight, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
-  primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
+  primary: { minHeight: dimensions.buttonHeight, paddingVertical: 12, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
+  primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff', flexShrink: 1, textAlign: 'center' },
 });

@@ -19,11 +19,11 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { radius, spacing } from '../../theme/tokens';
+import { useLayoutMetrics } from '../../theme/responsive';
 import { Pill, PillGroup } from '../../components/Pill';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { BaseCard } from '../../components/BaseCard';
-import { BaseButton } from '../../components/BaseButton';
 import { useAuth } from '../../context/AuthContext';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { findArticle } from '../../lib/learnContent';
@@ -43,6 +43,7 @@ interface Insight {
 export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { data, updateData } = useOnboarding();
+  const { gridItemWidth, gutter } = useLayoutMetrics();
   const hour = new Date().getHours();
   const baseGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const firstName = user?.name ? user.name.trim().split(/\s+/)[0] : '';
@@ -146,18 +147,24 @@ export default function HomeScreen({ navigation }: any) {
     title,
     subtitle,
     onPress,
+    width,
   }: {
     icon: any;
     title: string;
     subtitle: string;
     onPress: () => void;
+    width: number;
   }) => (
-    <Pressable style={s.tool} onPress={onPress}>
+    <Pressable style={[s.tool, { width }]} onPress={onPress}>
       <View style={s.toolIcon}>
         <Icon size={21} color={colors.deepTeal} />
       </View>
-      <Text style={s.toolTitle}>{title}</Text>
-      <Text style={s.toolSub}>{subtitle}</Text>
+      <Text style={s.toolTitle} numberOfLines={2}>
+        {title}
+      </Text>
+      <Text style={s.toolSub} numberOfLines={2}>
+        {subtitle}
+      </Text>
     </Pressable>
   );
 
@@ -191,22 +198,24 @@ export default function HomeScreen({ navigation }: any) {
               ))}
             </PillGroup>
           ) : null}
-          <BaseButton
+          <Pressable
             onPress={() => open('NutritionProfileSettings')}
-            style={s.inline}
+            style={s.inlineLink}
+            accessibilityRole="button"
           >
-            <Text style={s.inlineText}>Edit goal & preferences</Text>
+            <Text style={s.inlineText}>Edit goal &amp; preferences</Text>
             <ChevronRight size={17} color={colors.deepTeal} />
-          </BaseButton>
+          </Pressable>
         </BaseCard>
 
         {/* Daily Summary & Recent Activity */}
         <ScreenHeader
+          size="section"
           title="Daily Summary"
           actionText="Open Track"
           onAction={() => navigation.navigate('Track')}
         />
-        <View style={s.summaryRow}>
+        <View style={[s.summaryRow, { gap: gutter }]}>
           <Pressable style={s.summaryCard} onPress={() => open('MealLog')}>
             <Text style={s.summaryValue}>{progress?.today.meals ?? recentMeals.length}</Text>
             <Text style={s.summaryLabel}>Meals today</Text>
@@ -238,6 +247,7 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* Today's Insight */}
         <ScreenHeader
+          size="section"
           title="Today's Insight"
           actionText="See all"
           onAction={() => navigation.navigate('Learn')}
@@ -268,24 +278,26 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* Quick Tools & Personalized Actions */}
         <ScreenHeader
+          size="section"
           title="Quick Tools & Guidance"
           actionText="All tools"
           onAction={() => navigation.navigate('Tools')}
         />
-        <View style={s.grid}>
-          <Tool icon={Mic} title="Voice Food Log" subtitle="Speak your meal" onPress={() => open('VoiceFoodLog')} />
-          <Tool icon={Utensils} title="Balanced Meal" subtitle="Build your plate" onPress={() => open('BalancedMeal')} />
-          <Tool icon={ScanLine} title="Label Reading" subtitle="Understand labels" onPress={() => open('LabelReading')} />
-          <Tool icon={ShieldCheck} title="Health Conditions" subtitle="Condition guidance" onPress={() => open('HealthConditions')} />
-          <Tool icon={Activity} title="Hunger Scale" subtitle="Body check-in" onPress={() => open('HungerFullness')} />
-          <Tool icon={Brain} title="Myths & Facts" subtitle="Check evidence" onPress={() => open('Myths')} />
-          <Tool icon={Heart} title="Resources Hub" subtitle="Plans, lists & guides" onPress={() => open('Resources')} />
-          <Tool icon={MessageCircle} title="Ask Dietitian" subtitle="Secure support" onPress={() => open('Dietitian')} />
-          <Tool icon={CalendarDays} title="Telehealth" subtitle="Book a visit" onPress={() => open('Telehealth')} />
+        <View style={[s.grid, { gap: gutter }]}>
+          <Tool width={gridItemWidth(2)} icon={Mic} title="Voice Food Log" subtitle="Speak your meal" onPress={() => open('VoiceFoodLog')} />
+          <Tool width={gridItemWidth(2)} icon={Utensils} title="Balanced Meal" subtitle="Build your plate" onPress={() => open('BalancedMeal')} />
+          <Tool width={gridItemWidth(2)} icon={ScanLine} title="Label Reading" subtitle="Understand labels" onPress={() => open('LabelReading')} />
+          <Tool width={gridItemWidth(2)} icon={ShieldCheck} title="Health Conditions" subtitle="Condition guidance" onPress={() => open('HealthConditions')} />
+          <Tool width={gridItemWidth(2)} icon={Activity} title="Hunger Scale" subtitle="Body check-in" onPress={() => open('HungerFullness')} />
+          <Tool width={gridItemWidth(2)} icon={Brain} title="Myths & Facts" subtitle="Check evidence" onPress={() => open('Myths')} />
+          <Tool width={gridItemWidth(2)} icon={Heart} title="Resources Hub" subtitle="Plans, lists & guides" onPress={() => open('Resources')} />
+          <Tool width={gridItemWidth(2)} icon={MessageCircle} title="Ask Dietitian" subtitle="Secure support" onPress={() => open('Dietitian')} />
+          <Tool width={gridItemWidth(2)} icon={CalendarDays} title="Telehealth" subtitle="Book a visit" onPress={() => open('Telehealth')} />
         </View>
 
         {/* Recommended Recipes */}
         <ScreenHeader
+          size="section"
           title="Recommended Recipes"
           actionText="Browse all"
           onAction={() => open('Recipes')}
@@ -326,18 +338,19 @@ const s = StyleSheet.create({
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.1, color: colors.green, marginBottom: 6 },
   focusTitle: { fontFamily: 'Roboto', fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 6 },
   copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary },
-  inline: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md },
+  inlineLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md, alignSelf: 'flex-start', paddingVertical: 4 },
   inlineText: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.deepTeal },
-  summaryRow: { flexDirection: 'row', gap: 10, marginBottom: spacing.lg },
+  summaryRow: { flexDirection: 'row', marginBottom: spacing.lg },
   summaryCard: {
     flex: 1,
-    minWidth: 92,
+    minWidth: 0,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     padding: spacing.cardPadding,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   summaryValue: { fontFamily: 'Roboto', fontSize: 22, fontWeight: '700', color: colors.deepTeal },
   summaryLabel: { fontFamily: 'Roboto', fontSize: 11.5, color: colors.textSecondary, marginTop: 3, textAlign: 'center' },
@@ -360,11 +373,8 @@ const s = StyleSheet.create({
   insightTitle: { fontFamily: 'Roboto', fontSize: 19, lineHeight: 26, fontWeight: '700', color: colors.text, marginBottom: 8 },
   read: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
   meta: { fontFamily: 'Roboto', fontSize: 12, color: colors.muted },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: spacing.xl },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xl },
   tool: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    minWidth: 140,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.cardPadding,

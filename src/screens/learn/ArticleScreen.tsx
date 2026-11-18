@@ -84,7 +84,7 @@ export default function ArticleScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content}>
         <Pressable style={s.back} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>

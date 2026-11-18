@@ -215,8 +215,13 @@ export default function AccountSetupScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScreenContainer keyboardShouldPersistTaps="handled">
-        <ScreenHeader eyebrow="TRUE DIET" title={isSignUp ? 'Create Your Account' : 'Welcome Back'} onBack={() => navigation.goBack()} />
+      <KeyboardAvoidingView
+        style={s.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+      >
+        <ScreenContainer keyboardShouldPersistTaps="handled">
+          <ScreenHeader eyebrow="TRUE DIET" title={isSignUp ? 'Create Your Account' : 'Welcome Back'} onBack={() => navigation.goBack()} />
 
         {/* Mode switcher */}
         <View style={s.modeTabs}>
@@ -329,7 +334,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
 
             <Text style={s.label}>Password (minimum 8 characters)</Text>
             <View style={s.passwordRow}>
-              <BaseInput
+              <TextInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter password"
@@ -457,7 +462,8 @@ export default function AccountSetupScreen({ navigation, route }: any) {
             </Pressable>
           </View>
         )}
-      </ScreenContainer>
+        </ScreenContainer>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -467,6 +473,10 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     alignItems: 'center',
+  },
+  kav: {
+    flex: 1,
+    width: '100%',
   },
   subtitle: {
     fontFamily: 'Roboto',
@@ -679,7 +689,7 @@ const s = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   passwordRow: {
-    height: dimensions.inputHeight,
+    minHeight: dimensions.inputHeight,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -691,7 +701,9 @@ const s = StyleSheet.create({
   },
   passwordInput: {
     flex: 1,
-    height: '100%',
+    minWidth: 0,
+    height: dimensions.inputHeight - 2,
+    paddingVertical: 0,
     fontFamily: 'Roboto',
     fontSize: 14,
     color: colors.text,

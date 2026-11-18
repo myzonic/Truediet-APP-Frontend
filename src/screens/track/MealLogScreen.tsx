@@ -79,7 +79,7 @@ export default function MealLogScreen({ navigation, route }: any) {
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView style={{ flex: 1, width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Pressable style={s.back} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}>
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>
@@ -191,11 +191,12 @@ const s = StyleSheet.create({
     paddingVertical: 11,
     marginTop: 14,
   },
-  voiceShortcutText: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.deepTeal },
+  voiceShortcutText: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.deepTeal, flex: 1 },
   label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 8, marginTop: 18 },
   labelSmall: { fontFamily: 'Roboto', fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 },
   searchBox: {
-    height: 46,
+    minHeight: 46,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 14,
@@ -208,13 +209,13 @@ const s = StyleSheet.create({
   searchInput: { flex: 1, fontFamily: 'Roboto', fontSize: 13.5, color: colors.text },
   area: { minHeight: 90, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlignVertical: 'top', fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   servingRow: { flexDirection: 'row', gap: 12, marginTop: 14, alignItems: 'flex-start' },
-  smallInput: { height: 42, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
+  smallInput: { minHeight: 42, paddingVertical: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   small: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.textSecondary, marginTop: 3 },
   notes: { minHeight: 76, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, textAlignVertical: 'top', fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   checkin: { backgroundColor: colors.softGreen, borderRadius: 16, padding: 16, marginTop: 18 },
   checkinTitle: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
   error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: 14 },
-  save: { height: 54, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 22 },
+  save: { minHeight: 54, paddingVertical: 14, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 22 },
   saveDisabled: { opacity: 0.5 },
   saveText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
 });

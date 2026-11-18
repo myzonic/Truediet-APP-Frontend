@@ -36,7 +36,8 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    height: 48,
+    minHeight: 48,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,

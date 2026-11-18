@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import {
   Activity,
@@ -35,6 +35,7 @@ import { colors } from '../../theme/colors';
 import { Pill, PillGroup } from '../../components/Pill';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { dimensions, radius, spacing } from '../../theme/tokens';
+import { useLayoutMetrics } from '../../theme/responsive';
 import { loadProfile, saveProfile } from '../../lib/profile';
 import { loadSavedContent, unsaveContent } from '../../lib/content';
 import { loadPlans, loadSubscription, Plan } from '../../lib/subscription';
@@ -59,18 +60,23 @@ const SEXES = ['Female', 'Male', 'Prefer not to say'];
 function Page({ navigation, children }: { navigation: any; children: React.ReactNode }) {
   return (
     <SafeAreaView style={s.safe}>
-      <ScreenContainer keyboardShouldPersistTaps="handled">
-        <Pressable
-          style={s.back}
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={8}
-        >
-          <ArrowLeft size={22} color={colors.text} />
-        </Pressable>
-        {children}
-      </ScreenContainer>
+      <KeyboardAvoidingView
+        style={s.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScreenContainer keyboardShouldPersistTaps="handled">
+          <Pressable
+            style={s.back}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+          >
+            <ArrowLeft size={22} color={colors.text} />
+          </Pressable>
+          {children}
+        </ScreenContainer>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -1140,6 +1146,7 @@ export function SavedContentScreen({ navigation }: any) {
 
 export function ProfileHubScreen({ navigation }: any) {
   const { user, signOutUser } = useAuth();
+  const { horizontalPadding, gutter, gridItemWidth } = useLayoutMetrics();
   const [goal, setGoal] = useState<string>('');
   const name = user?.name || 'Guest Member';
   const email = user?.email || 'Not signed in';
@@ -1210,7 +1217,9 @@ export function ProfileHubScreen({ navigation }: any) {
     <SafeAreaView style={s.safe}>
       <ScrollView
         style={s.scroll}
+        contentContainerStyle={[s.profileContent, { paddingHorizontal: horizontalPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Profile Header */}
         <View style={s.profileHeader}>
@@ -1245,23 +1254,23 @@ export function ProfileHubScreen({ navigation }: any) {
         ) : null}
 
         {/* Quick Stats / Shortcuts */}
-        <View style={s.quickGrid}>
-          <Pressable style={s.quickCard} onPress={() => go('ProgressPatterns')}>
+        <View style={[s.quickGrid, { gap: gutter }]}>
+          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('ProgressPatterns')}>
             <TrendingUp size={20} color={colors.deepTeal} />
             <Text style={s.quickCardTitle}>My Progress</Text>
             <Text style={s.quickCardSub}>Weekly patterns & weight</Text>
           </Pressable>
-          <Pressable style={s.quickCard} onPress={() => go('SavedContent')}>
+          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('SavedContent')}>
             <Heart size={20} color={colors.green} />
             <Text style={s.quickCardTitle}>Saved Library</Text>
             <Text style={s.quickCardSub}>Articles, recipes & guides</Text>
           </Pressable>
-          <Pressable style={s.quickCard} onPress={() => go('MealPlans')}>
+          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('MealPlans')}>
             <CalendarDays size={20} color={colors.deepTeal} />
             <Text style={s.quickCardTitle}>My Meal Plans</Text>
             <Text style={s.quickCardSub}>Weekly plans & groceries</Text>
           </Pressable>
-          <Pressable style={s.quickCard} onPress={() => go('MealLog')}>
+          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('MealLog')}>
             <Utensils size={20} color={colors.orange} />
             <Text style={s.quickCardTitle}>My Food Diary</Text>
             <Text style={s.quickCardSub}>Log meals & check-ins</Text>
@@ -1413,7 +1422,15 @@ export function ProfileHubScreen({ navigation }: any) {
 const s = StyleSheet.create({
   error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: spacing.sm },
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
+  kav: { flex: 1, width: '100%' },
   scroll: { width: '100%' },
+  profileContent: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxl,
+  },
   back: {
     width: dimensions.backButtonSize,
     height: dimensions.backButtonSize,
@@ -1544,14 +1561,10 @@ const s = StyleSheet.create({
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
     marginTop: spacing.xl,
     width: '100%',
   },
   quickCard: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    minWidth: 140,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,

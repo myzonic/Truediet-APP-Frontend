@@ -219,10 +219,10 @@ export default function NutrientCalculatorScreen({ navigation }: any) {
             style={s.input}
           />
           <View style={s.customGrid}>
-            <TextInput value={customCalories} onChangeText={setCustomCalories} keyboardType="numeric" placeholder="kcal" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
-            <TextInput value={customProtein} onChangeText={setCustomProtein} keyboardType="numeric" placeholder="Protein (g)" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
-            <TextInput value={customCarbs} onChangeText={setCustomCarbs} keyboardType="numeric" placeholder="Carbs (g)" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
-            <TextInput value={customFat} onChangeText={setCustomFat} keyboardType="numeric" placeholder="Fat (g)" placeholderTextColor={colors.muted} style={[s.input, { flex: 1, minWidth: 70 }]} />
+            <TextInput value={customCalories} onChangeText={setCustomCalories} keyboardType="numeric" placeholder="kcal" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
+            <TextInput value={customProtein} onChangeText={setCustomProtein} keyboardType="numeric" placeholder="Protein (g)" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
+            <TextInput value={customCarbs} onChangeText={setCustomCarbs} keyboardType="numeric" placeholder="Carbs (g)" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
+            <TextInput value={customFat} onChangeText={setCustomFat} keyboardType="numeric" placeholder="Fat (g)" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
           </View>
           <Pressable style={s.secondaryBtn} onPress={addCustomFood}>
             <Text style={s.secondaryBtnText}>+ Add Custom Item</Text>
@@ -248,7 +248,7 @@ const s = StyleSheet.create({
   totalsCard: { backgroundColor: colors.softGreen, borderRadius: radius.xl, padding: spacing.cardPadding, marginTop: spacing.xl },
   totalsLabel: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.green },
   totalsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
-  totalItem: { flex: 1, minWidth: 70, backgroundColor: colors.surface, borderRadius: radius.md, padding: 12, alignItems: 'center' },
+  totalItem: { flexBasis: '47%', flexGrow: 1, minWidth: 0, backgroundColor: colors.surface, borderRadius: radius.md, padding: 12, alignItems: 'center' },
   totalVal: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.deepTeal },
   totalKey: { fontFamily: 'Roboto', fontSize: 11, color: colors.textSecondary, marginTop: 2 },
   selectedSection: { marginTop: spacing.md },
@@ -264,11 +264,11 @@ const s = StyleSheet.create({
   plusBadge: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.softBlue, alignItems: 'center', justifyContent: 'center' },
   customCard: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, padding: spacing.cardPadding, gap: 10 },
   customGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  input: { height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 13.5, color: colors.text },
-  secondaryBtn: { height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
+  input: { minHeight: 44, paddingVertical: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.background, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 13.5, color: colors.text },
+  secondaryBtn: { minHeight: 44, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
   secondaryBtnText: { fontFamily: 'Roboto', fontSize: 13.5, fontWeight: '700', color: colors.deepTeal },
-  primary: { height: dimensions.buttonHeight, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
-  primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
+  primary: { minHeight: dimensions.buttonHeight, paddingVertical: 12, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
+  primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff', flexShrink: 1, textAlign: 'center' },
   disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
 });

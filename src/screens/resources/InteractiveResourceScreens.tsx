@@ -8,7 +8,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, CalendarDays, Check, ChevronRight, FileText, ListChecks, Plus, ShoppingCart, Sparkles, Trash2 } from 'lucide-react-native';
@@ -32,7 +32,8 @@ const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 function Shell({ navigation, children, title }: { navigation: any; children: React.ReactNode; title: string }) {
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={s.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Pressable style={s.back} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>
@@ -40,6 +41,7 @@ function Shell({ navigation, children, title }: { navigation: any; children: Rea
         <Text style={s.title}>{title}</Text>
         {children}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -185,6 +187,19 @@ export function MealPlanDetailScreen({ navigation, route }: { navigation: any; r
             <Pressable style={s.secondary} onPress={makeGroceryList}><ShoppingCart size={16} color={colors.deepTeal} /><Text style={s.secondaryText}>Make Grocery List</Text></Pressable>
             <Pressable style={s.danger} onPress={remove}><Trash2 size={16} color={colors.red} /><Text style={s.dangerText}>Delete Plan</Text></Pressable>
           </View>
+          {slot && (
+            <View style={s.editPanel}>
+              <Text style={s.label}>{slot.mealType} - day {slot.dayIndex + 1}</Text>
+              <Text style={s.label}>Meal</Text>
+              <TextInput value={titleText} onChangeText={setTitleText} placeholder="e.g. Oats, yogurt and berries" placeholderTextColor={colors.muted} style={s.input} />
+              <Text style={s.label}>Ingredients (comma separated - feeds the grocery list)</Text>
+              <TextInput value={itemsText} onChangeText={setItemsText} placeholder="e.g. oats, greek yogurt, berries" placeholderTextColor={colors.muted} style={s.input} multiline />
+              <Pressable style={[s.primary, (!titleText.trim() || savingSlot) && s.primaryDisabled]} disabled={!titleText.trim() || savingSlot} onPress={saveSlot}>
+                {savingSlot ? <ActivityIndicator color="#fff" /> : <><Check size={18} color="#fff" /><Text style={s.primaryText}>Save Meal</Text></>}
+              </Pressable>
+              <Pressable style={s.textButton} onPress={() => setSlot(null)}><Text style={s.textButtonText}>Cancel</Text></Pressable>
+            </View>
+          )}
           {Array.from({ length: plan.durationDays }).map((_, dayIndex) => (
             <View key={dayIndex} style={s.dayBlock}>
               <Text style={s.dayTitle}>Day {dayIndex + 1}{dayIndex < 7 ? ` - ${DAY_LABELS[dayIndex]}` : ''}</Text>
@@ -203,19 +218,6 @@ export function MealPlanDetailScreen({ navigation, route }: { navigation: any; r
               })}
             </View>
           ))}
-          {slot && (
-            <View style={s.editPanel}>
-              <Text style={s.label}>{slot.mealType} - day {slot.dayIndex + 1}</Text>
-              <Text style={s.label}>Meal</Text>
-              <TextInput value={titleText} onChangeText={setTitleText} placeholder="e.g. Oats, yogurt and berries" placeholderTextColor={colors.muted} style={s.input} />
-              <Text style={s.label}>Ingredients (comma separated - feeds the grocery list)</Text>
-              <TextInput value={itemsText} onChangeText={setItemsText} placeholder="e.g. oats, greek yogurt, berries" placeholderTextColor={colors.muted} style={s.input} multiline />
-              <Pressable style={[s.primary, (!titleText.trim() || savingSlot) && s.primaryDisabled]} disabled={!titleText.trim() || savingSlot} onPress={saveSlot}>
-                {savingSlot ? <ActivityIndicator color="#fff" /> : <><Check size={18} color="#fff" /><Text style={s.primaryText}>Save Meal</Text></>}
-              </Pressable>
-              <Pressable style={s.textButton} onPress={() => setSlot(null)}><Text style={s.textButtonText}>Cancel</Text></Pressable>
-            </View>
-          )}
         </>
       )}
     </Shell>
@@ -330,7 +332,7 @@ export function GroceryListDetailScreen({ navigation, route }: { navigation: any
               <Pressable style={[s.checkbox, item.purchased && s.checkboxOn]} onPress={() => toggle(item.id, !item.purchased)} accessibilityRole="checkbox" accessibilityState={{ checked: item.purchased }}>
                 {item.purchased ? <Check size={14} color="#fff" /> : null}
               </Pressable>
-              <Text style={[s.checkLabel, item.purchased && s.checkLabelDone]} numberOfLines={2}>{item.name}</Text>
+              <Text style={[s.checkLabel, item.purchased && s.checkLabelDone]}>{item.name}</Text>
               <Pressable onPress={() => removeItem(item.id)} hitSlop={8} accessibilityLabel={`Remove ${item.name}`}><Trash2 size={16} color={colors.muted} /></Pressable>
             </View>
           ))}
@@ -658,6 +660,7 @@ export function MyResourcesScreen({ navigation }: { navigation: any }) {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  kav: { flex: 1, width: '100%' },
   content: { padding: 20, paddingBottom: 48, maxWidth: CONTENT_MAX_WIDTH, width: '100%', alignSelf: 'center' },
   back: { alignSelf: 'flex-start', padding: 4, marginLeft: -4, marginBottom: 8 },
   eyebrow: { color: colors.muted, fontSize: 11, letterSpacing: 1.2, fontWeight: '700', marginBottom: 4 },
@@ -676,7 +679,7 @@ const s = StyleSheet.create({
   danger: { flexDirection: 'row', gap: 6, alignItems: 'center' },
   dangerWide: { alignSelf: 'flex-start', flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: 18 },
   dangerText: { color: colors.red, fontWeight: '700', fontSize: 13 },
-  rowActions: { flexDirection: 'row', gap: 14, alignItems: 'center', marginVertical: 10 },
+  rowActions: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 10, gap: 14, alignItems: 'center', marginVertical: 10 },
   textButton: { alignSelf: 'center', paddingVertical: 10, marginTop: 6 },
   textButtonText: { color: colors.deepTeal, fontWeight: '700', fontSize: 13 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 14, marginTop: 10 },

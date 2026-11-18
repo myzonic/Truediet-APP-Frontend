@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, ChevronRight, Search } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
@@ -39,7 +39,8 @@ export default function MythsScreen({ navigation }: any) {
   }, [items, query]);
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={s.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Pressable style={s.back} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>
@@ -78,7 +79,8 @@ export default function MythsScreen({ navigation }: any) {
           ))
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-const s = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.softBlue, alignItems: 'center' }, content: { width: '100%', maxWidth:CONTENT_MAX_WIDTH, padding: 24, paddingBottom: 40, backgroundColor: colors.background }, back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginBottom: 25 }, eyebrow: { fontFamily: 'Roboto', color: colors.green, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }, title: { fontFamily: 'Roboto', fontSize: 30, lineHeight: 38, fontWeight: '700', color: colors.text, marginTop: 8 }, copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 9 }, search: { height: 52, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, marginTop: 24 }, input: { flex: 1, marginLeft: 10, fontFamily: 'Roboto', fontSize: 14, color: colors.text }, section: { fontFamily: 'Roboto', fontSize: 19, fontWeight: '700', color: colors.text, marginTop: 28, marginBottom: 14 }, empty: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 20, color: colors.textSecondary }, card: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 18, marginBottom: 12 }, label: { fontFamily: 'Roboto', color: colors.orange, fontSize: 9, letterSpacing: 1.1, fontWeight: '700' }, claimRow: { flexDirection: 'row', alignItems: 'center', marginTop: 9 }, claim: { fontFamily: 'Roboto', flex: 1, paddingRight: 15, fontSize: 17, lineHeight: 24, fontWeight: '700', color: colors.text }, read: { fontFamily: 'Roboto', color: colors.deepTeal, fontSize: 12, fontWeight: '700', marginTop: 13 } });
+const s = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.softBlue, alignItems: 'center' }, kav: { flex: 1, width: '100%' }, content: { width: '100%', maxWidth:CONTENT_MAX_WIDTH, padding: 24, paddingBottom: 40, backgroundColor: colors.background }, back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginBottom: 25 }, eyebrow: { fontFamily: 'Roboto', color: colors.green, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 }, title: { fontFamily: 'Roboto', fontSize: 30, lineHeight: 38, fontWeight: '700', color: colors.text, marginTop: 8 }, copy: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 9 }, search: { minHeight: 52, paddingVertical: 12, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, marginTop: 24 }, input: { flex: 1, marginLeft: 10, fontFamily: 'Roboto', fontSize: 14, color: colors.text }, section: { fontFamily: 'Roboto', fontSize: 19, fontWeight: '700', color: colors.text, marginTop: 28, marginBottom: 14 }, empty: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 20, color: colors.textSecondary }, card: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 18, marginBottom: 12 }, label: { fontFamily: 'Roboto', color: colors.orange, fontSize: 9, letterSpacing: 1.1, fontWeight: '700' }, claimRow: { flexDirection: 'row', alignItems: 'center', marginTop: 9 }, claim: { fontFamily: 'Roboto', flex: 1, paddingRight: 15, fontSize: 17, lineHeight: 24, fontWeight: '700', color: colors.text }, read: { fontFamily: 'Roboto', color: colors.deepTeal, fontSize: 12, fontWeight: '700', marginTop: 13 } });

@@ -23,6 +23,7 @@ import { colors } from '../../theme/colors';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { dimensions, radius, spacing } from '../../theme/tokens';
+import { useLayoutMetrics } from '../../theme/responsive';
 import { loadTopics, loadLibrary, LibraryItem } from '../../lib/contentLibrary';
 
 interface LibraryCategory {
@@ -53,6 +54,9 @@ export default function LearnScreen({ navigation }: any) {
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<LibraryCategory | null>(CATEGORIES[0]);
   const [loading, setLoading] = useState(true);
+  const { gutter, columnsFor, gridItemWidth } = useLayoutMetrics();
+  const mediaColumns = columnsFor(3, 104);
+  const categoryColumns = columnsFor(2, 132);
 
   const open = (route: string, params?: any) => {
     navigation.navigate(route, params);
@@ -119,28 +123,28 @@ export default function LearnScreen({ navigation }: any) {
         </Pressable>
 
         {/* Media & Live Learning Shortcuts */}
-        <View style={s.mediaGrid}>
-          <Pressable style={s.mediaTile} onPress={() => open('Blog')}>
+        <View style={[s.mediaGrid, { gap: gutter }]}>
+          <Pressable style={[s.mediaTile, { width: gridItemWidth(mediaColumns) }]} onPress={() => open('Blog')}>
             <BookOpen size={19} color={colors.deepTeal} />
             <Text style={s.mediaTileTitle}>Articles</Text>
           </Pressable>
-          <Pressable style={s.mediaTile} onPress={() => open('Webinars')}>
+          <Pressable style={[s.mediaTile, { width: gridItemWidth(mediaColumns) }]} onPress={() => open('Webinars')}>
             <Play size={19} color={colors.green} />
             <Text style={s.mediaTileTitle}>Webinars</Text>
           </Pressable>
-          <Pressable style={s.mediaTile} onPress={() => open('RecordedClasses')}>
+          <Pressable style={[s.mediaTile, { width: gridItemWidth(mediaColumns) }]} onPress={() => open('RecordedClasses')}>
             <Play size={19} color={colors.orange} />
             <Text style={s.mediaTileTitle}>Classes</Text>
           </Pressable>
-          <Pressable style={s.mediaTile} onPress={() => open('Podcast')}>
+          <Pressable style={[s.mediaTile, { width: gridItemWidth(mediaColumns) }]} onPress={() => open('Podcast')}>
             <Headphones size={19} color={colors.deepTeal} />
             <Text style={s.mediaTileTitle}>Podcast</Text>
           </Pressable>
-          <Pressable style={s.mediaTile} onPress={() => open('SavedContent')}>
+          <Pressable style={[s.mediaTile, { width: gridItemWidth(mediaColumns) }]} onPress={() => open('SavedContent')}>
             <Heart size={19} color={colors.green} />
             <Text style={s.mediaTileTitle}>Saved</Text>
           </Pressable>
-          <Pressable style={s.mediaTile} onPress={() => open('MyResources')}>
+          <Pressable style={[s.mediaTile, { width: gridItemWidth(mediaColumns) }]} onPress={() => open('MyResources')}>
             <Calendar size={19} color={colors.deepTeal} />
             <Text style={s.mediaTileTitle}>History</Text>
           </Pressable>
@@ -182,14 +186,18 @@ export default function LearnScreen({ navigation }: any) {
           <ActivityIndicator size="large" color={colors.deepTeal} style={{ marginTop: 18 }} />
         ) : (
           <>
-            <View style={s.categoryGrid}>
+            <View style={[s.categoryGrid, { gap: gutter }]}>
               {CATEGORIES.map((category) => {
                 const Icon = category.icon;
                 const active = selectedCategory?.key === category.key;
                 return (
                   <Pressable
                     key={category.key}
-                    style={[s.categoryCard, active && s.categoryCardActive]}
+                    style={[
+                      s.categoryCard,
+                      { width: gridItemWidth(categoryColumns) },
+                      active && s.categoryCardActive,
+                    ]}
                     onPress={() => setSelectedCategory(category)}
                   >
                     <View style={s.categoryCardIcon}>
@@ -287,25 +295,21 @@ const s = StyleSheet.create({
   mediaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
     marginTop: spacing.md,
   },
   mediaTile: {
-    flexBasis: '31%',
-    flexGrow: 1,
-    minWidth: 94,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 10,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
-  mediaTileTitle: { fontFamily: 'Roboto', fontSize: 12.5, fontWeight: '700', color: colors.text },
+  mediaTileTitle: { fontFamily: 'Roboto', fontSize: 12, fontWeight: '700', color: colors.text, flexShrink: 1 },
   sectionLabel: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.text, marginTop: spacing.xl, marginBottom: spacing.md },
   categoryRow: {
     minHeight: 74,
@@ -335,11 +339,8 @@ const s = StyleSheet.create({
   bannerCopy: { fontFamily: 'Roboto', fontSize: 13.5, lineHeight: 20, color: colors.textSecondary, marginTop: spacing.sm },
   bannerAction: { fontFamily: 'Roboto', fontSize: 13, fontWeight: '700', color: colors.deepTeal, marginTop: spacing.sm },
   libraryIntro: { fontFamily: 'Roboto', fontSize: 13.5, lineHeight: 20, color: colors.textSecondary, marginTop: spacing.sm },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md },
   categoryCard: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    minWidth: 136,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
     backgroundColor: colors.surface,

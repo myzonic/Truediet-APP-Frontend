@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { dimensions, radius, spacing } from '../theme/tokens';
+import { useLayoutMetrics } from '../theme/responsive';
 
 export interface ScreenHeaderProps {
   title: string;
@@ -11,6 +12,11 @@ export interface ScreenHeaderProps {
   eyebrow?: string;
   actionText?: string;
   onAction?: () => void;
+  /**
+   * 'hero' is the large screen title (default). 'section' is a compact
+   * section heading used for in-page sections such as "Daily Summary".
+   */
+  size?: 'hero' | 'section';
 }
 
 export function ScreenHeader({
@@ -20,9 +26,14 @@ export function ScreenHeader({
   eyebrow,
   actionText,
   onAction,
+  size = 'hero',
 }: ScreenHeaderProps) {
+  const { isCompact, isTablet } = useLayoutMetrics();
+  const heroSize = isCompact ? 24 : isTablet ? 30 : 28;
+  const heroLine = isCompact ? 31 : isTablet ? 38 : 36;
+
   return (
-    <View style={s.container}>
+    <View style={[s.container, size === 'section' && s.containerSection]}>
       {onBack ? (
         <Pressable
           onPress={onBack}
@@ -36,7 +47,15 @@ export function ScreenHeader({
       ) : null}
       <View style={s.headerContent}>
         {eyebrow ? <Text style={s.eyebrow}>{eyebrow}</Text> : null}
-        <Text style={s.title}>{title}</Text>
+        <Text
+          style={[
+            s.title,
+            { fontSize: heroSize, lineHeight: heroLine },
+            size === 'section' && s.titleSection,
+          ]}
+        >
+          {title}
+        </Text>
         {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
       </View>
       {actionText && onAction ? (
@@ -56,6 +75,12 @@ const s = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.md,
     gap: spacing.sm,
+    width: '100%',
+  },
+  containerSection: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+    alignItems: 'center',
   },
   back: {
     width: dimensions.backButtonSize,
@@ -67,9 +92,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: -4,
+    flexShrink: 0,
   },
   headerContent: {
     flex: 1,
+    minWidth: 0,
     marginRight: 8,
   },
   eyebrow: {
@@ -82,10 +109,14 @@ const s = StyleSheet.create({
   },
   title: {
     fontFamily: 'Roboto',
-    fontSize: 28,
-    lineHeight: 36,
     fontWeight: '700' as const,
     color: colors.text,
+    flexShrink: 1,
+  },
+  titleSection: {
+    fontSize: 18,
+    lineHeight: 24,
+    flexShrink: 1,
   },
   subtitle: {
     fontFamily: 'Roboto',
@@ -93,14 +124,18 @@ const s = StyleSheet.create({
     lineHeight: 21,
     color: colors.textSecondary,
     marginTop: 4,
+    flexShrink: 1,
   },
   action: {
-    marginTop: -4,
+    marginTop: 2,
+    flexShrink: 0,
+    maxWidth: '42%',
   },
   actionText: {
     fontFamily: 'Roboto',
     fontSize: 13,
     fontWeight: '700' as const,
     color: colors.deepTeal,
+    textAlign: 'right',
   },
 });

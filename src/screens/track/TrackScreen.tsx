@@ -21,6 +21,7 @@ import { Pill, PillGroup } from '../../components/Pill';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { dimensions, radius, spacing } from '../../theme/tokens';
+import { useLayoutMetrics } from '../../theme/responsive';
 import {
   addWater,
   loadMeals,
@@ -49,6 +50,7 @@ function formatDateKey(date: Date): string {
 
 export default function TrackScreen({ navigation }: any) {
   const [dayOffset, setDayOffset] = useState(0);
+  const { gridItemWidth, gutter } = useLayoutMetrics();
   const [progress, setProgress] = useState<Progress | null>(null);
   const [meals, setMeals] = useState<MealLog[]>([]);
   const [water, setWater] = useState<{ dailyGoalMl: number; totalMl: number }>({
@@ -174,13 +176,13 @@ export default function TrackScreen({ navigation }: any) {
           <Pressable style={s.dayNavBtn} onPress={() => setDayOffset((d) => d - 1)} hitSlop={8} accessibilityLabel="Previous day">
             <ChevronLeft size={20} color={colors.deepTeal} />
           </Pressable>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={s.today}>
+          <View style={{ alignItems: 'center', flex: 1, minWidth: 0, paddingHorizontal: 8 }}>
+            <Text style={s.today} numberOfLines={1}>
               {isToday
                 ? 'Today'
                 : selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </Text>
-            <Text style={s.small}>{selectedKey} · Food Diary</Text>
+            <Text style={s.small} numberOfLines={1}>{selectedKey} · Food Diary</Text>
           </View>
           <Pressable
             style={[s.dayNavBtn, isToday && { opacity: 0.35 }]}
@@ -193,10 +195,10 @@ export default function TrackScreen({ navigation }: any) {
           </Pressable>
         </View>
 
-        <View style={s.grid}>
+        <View style={[s.grid, { gap: gutter }]}>
           {stats.map(([value, label]) => (
-            <View key={label} style={s.stat}>
-              <Text style={s.statValue}>{value}</Text>
+            <View key={label} style={[s.stat, { width: gridItemWidth(2) }]}>
+              <Text style={s.statValue} numberOfLines={2}>{value}</Text>
               <Text style={s.small}>{label}</Text>
             </View>
           ))}
@@ -320,11 +322,11 @@ export default function TrackScreen({ navigation }: any) {
               style={[s.editInput, { minHeight: 44, marginTop: 8 }]}
             />
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-              <Pressable style={[s.primary, { flex: 1, marginTop: 0, height: 46 }]} onPress={saveEdit} disabled={savingEdit}>
+              <Pressable style={[s.primary, { flex: 1, marginTop: 0, minHeight: 46 }]} onPress={saveEdit} disabled={savingEdit}>
                 <Text style={s.primaryText}>{savingEdit ? 'Saving…' : 'Save Changes'}</Text>
               </Pressable>
               <Pressable
-                style={[s.cancelBtn, { height: 46 }]}
+                style={[s.cancelBtn, { minHeight: 46 }]}
                 onPress={() => setEditingMeal(null)}
               >
                 <Text style={{ fontFamily: 'Roboto', fontWeight: '700', color: colors.textSecondary }}>Cancel</Text>
@@ -407,11 +409,8 @@ const s = StyleSheet.create({
   },
   today: { fontFamily: 'Roboto', fontSize: 18, fontWeight: '700', color: colors.text },
   small: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 17, color: colors.textSecondary, marginTop: 2 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.lg },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.lg },
   stat: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    minWidth: 130,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,

@@ -36,7 +36,7 @@ export default function MainTabNavigator() {
         tabBarStyle: {
           height: 64 + insets.bottom,
           paddingTop: 6,
-          paddingBottom: Math.max(6, insets.bottom),
+          paddingBottom: Math.max(8, insets.bottom),
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
@@ -44,20 +44,24 @@ export default function MainTabNavigator() {
           maxWidth: TAB_BAR_MAX_WIDTH,
           alignSelf: 'center',
         },
+        tabBarAllowFontScaling: false,
+        tabBarHideOnKeyboard: true,
         tabBarItemStyle: {
           flex: 1,
           minWidth: 0,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingVertical: 2,
+          paddingVertical: 0,
         },
         tabBarLabelStyle: {
           fontFamily: 'Roboto',
           fontSize: 11,
+          lineHeight: 14,
           fontWeight: '600',
           marginTop: 2,
+          textAlign: 'center',
         },
-        tabBarIconStyle: { marginTop: 0 },
+        tabBarIconStyle: { marginTop: 0, marginBottom: -1 },
         tabBarIcon: ({ color, focused }) => {
           const Icon = icons[route.name as keyof typeof icons];
           return <Icon color={color} size={focused ? 24 : 22} />;
