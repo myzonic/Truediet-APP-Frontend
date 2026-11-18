@@ -262,7 +262,8 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 8 },
   searchBar: {
-    height: dimensions.inputHeight,
+    minHeight: dimensions.inputHeight,
+    paddingVertical: 8,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,

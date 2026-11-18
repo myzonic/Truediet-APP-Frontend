@@ -1495,7 +1495,8 @@ const s = StyleSheet.create({
   fieldCol: { flex: 1, minWidth: 96 },
   label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
   input: {
-    height: dimensions.inputHeight,
+    minHeight: dimensions.inputHeight,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -1536,7 +1537,8 @@ const s = StyleSheet.create({
     gap: 8,
   },
   cta: {
-    height: dimensions.buttonHeight,
+    minHeight: dimensions.buttonHeight,
+    paddingVertical: 14,
     borderRadius: radius.lg,
     backgroundColor: colors.deepTeal,
     alignItems: 'center',
@@ -1547,7 +1549,8 @@ const s = StyleSheet.create({
   ctaDisabled: { opacity: 0.6 },
   ctaText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },
   ctaGhost: {
-    height: dimensions.buttonHeightSmall,
+    minHeight: dimensions.buttonHeightSmall,
+    paddingVertical: 12,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.deepTeal,

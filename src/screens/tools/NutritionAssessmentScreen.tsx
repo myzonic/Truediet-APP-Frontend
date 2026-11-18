@@ -249,7 +249,7 @@ const s = StyleSheet.create({
   fieldRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   fieldCol: { flex: 1, minWidth: 96 },
   label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
-  input: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
+  input: { minHeight: dimensions.inputHeight, paddingVertical: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 12, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   customRow: { flexDirection: 'row', gap: 10, marginTop: spacing.md, alignItems: 'center' },
   addBtn: { minHeight: dimensions.buttonHeightSmall, paddingVertical: 10, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
   disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },

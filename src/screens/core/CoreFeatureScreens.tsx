@@ -15,8 +15,8 @@ import { cancelAppointment, loadAppointment, saveAppointment } from '../../lib/a
 
 
 function Shell({children,navigation}:{children:React.ReactNode;navigation:any}){return <SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag"><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>}
-export function RecipesScreen({navigation}:any){const [items,setItems]=useState<Recipe[]>(recipes);useEffect(()=>{let active=true;loadRecipes().then(r=>{if(active&&r.length)setItems(r);}).catch(()=>undefined);return()=>{active=false;};},[]);return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPES</Text><Text style={s.title}>Food ideas with flexibility.</Text><Text style={s.copy}>Practical recipes built around balance, variety, preferences and real life.</Text><View style={s.list}>{items.map(r=><Pressable key={r.id} style={s.card} onPress={()=>navigation.navigate('RecipeDetail',{recipeId:r.id,title:r.title})}><View style={s.recipeArt}><Heart size={24} color={colors.green}/></View><View style={s.cardCopy}><Text style={s.cardTitle}>{r.title}</Text><Text style={s.meta}>{r.time} � {r.category}</Text><Text style={s.desc}>{r.whyItWorks}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>)}</View></Shell>}
-export function RecipeDetailScreen({navigation,route}:any){const [recipe,setRecipe]=useState<Recipe|null>(null);useEffect(()=>{let active=true;const fallback=()=>{const byId=recipes.find(r=>r.id===route.params?.recipeId);return byId||findRecipe(route.params?.title||route.params?.recipeId);};loadRecipes().then(list=>{if(!active)return;const match=list.find(r=>r.id===route.params?.recipeId)||list.find(r=>r.title===route.params?.title);setRecipe(match||fallback());}).catch(()=>{if(active)setRecipe(fallback());});return()=>{active=false;};},[route.params?.recipeId,route.params?.title]);const [saving,setSaving]=useState(false);if(!recipe)return <Shell navigation={navigation}><ActivityIndicator color={colors.deepTeal} style={{marginTop:40}}/></Shell>;const onSave=async()=>{if(saving)return;setSaving(true);try{await saveContent(`recipe-${recipe.id}`,{title:recipe.title,subtitle:`${recipe.time} � ${recipe.category}`,route:'RecipeDetail',type:'recipe'});Alert.alert('Saved','This recipe was added to your saved content.');}catch(e:any){Alert.alert('Could not save',e?.message||'Please try again.');}finally{setSaving(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPE</Text><Text style={s.title}>{recipe.title}</Text><Text style={s.meta}>{recipe.time} � {recipe.category}</Text><View style={s.hero}><Heart size={38} color={colors.green}/></View><Text style={s.section}>Why it works</Text><Text style={s.copy}>{recipe.whyItWorks} This is a flexible template - not a prescription. Adapt ingredients to what you enjoy, need, and have available.</Text><Text style={s.section}>Ingredients</Text>{recipe.ingredients.map(x=><View key={x} style={s.step}><Text style={s.stepText}>� {x}</Text></View>)}<Text style={s.section}>Method</Text>{recipe.steps.map((x,i)=><View key={x} style={s.step}><Text style={s.stepNumber}>{i+1}</Text><Text style={s.stepText}>{x}</Text></View>)}<View style={{backgroundColor:colors.softGreen,borderRadius:16,padding:16,marginTop:20}}><Text style={{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.2,color:colors.green}}>TIP</Text><Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.text,marginTop:6}}>{recipe.tip}</Text></View><Pressable style={s.primary} onPress={onSave} disabled={saving}>{saving?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Save Recipe</Text>}</Pressable></Shell>}
+export function RecipesScreen({navigation}:any){const [items,setItems]=useState<Recipe[]>(recipes);useEffect(()=>{let active=true;loadRecipes().then(r=>{if(active&&r.length)setItems(r);}).catch(()=>undefined);return()=>{active=false;};},[]);return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPES</Text><Text style={s.title}>Food ideas with flexibility.</Text><Text style={s.copy}>Practical recipes built around balance, variety, preferences and real life.</Text><View style={s.list}>{items.map(r=><Pressable key={r.id} style={s.card} onPress={()=>navigation.navigate('RecipeDetail',{recipeId:r.id,title:r.title})}><View style={s.recipeArt}><Heart size={24} color={colors.green}/></View><View style={s.cardCopy}><Text style={s.cardTitle}>{r.title}</Text><Text style={s.meta}>{r.time} · {r.category}</Text><Text style={s.desc}>{r.whyItWorks}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>)}</View></Shell>}
+export function RecipeDetailScreen({navigation,route}:any){const [recipe,setRecipe]=useState<Recipe|null>(null);useEffect(()=>{let active=true;const fallback=()=>{const byId=recipes.find(r=>r.id===route.params?.recipeId);return byId||findRecipe(route.params?.title||route.params?.recipeId);};loadRecipes().then(list=>{if(!active)return;const match=list.find(r=>r.id===route.params?.recipeId)||list.find(r=>r.title===route.params?.title);setRecipe(match||fallback());}).catch(()=>{if(active)setRecipe(fallback());});return()=>{active=false;};},[route.params?.recipeId,route.params?.title]);const [saving,setSaving]=useState(false);if(!recipe)return <Shell navigation={navigation}><ActivityIndicator color={colors.deepTeal} style={{marginTop:40}}/></Shell>;const onSave=async()=>{if(saving)return;setSaving(true);try{await saveContent(`recipe-${recipe.id}`,{title:recipe.title,subtitle:`${recipe.time} · ${recipe.category}`,route:'RecipeDetail',type:'recipe'});Alert.alert('Saved','This recipe was added to your saved content.');}catch(e:any){Alert.alert('Could not save',e?.message||'Please try again.');}finally{setSaving(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>RECIPE</Text><Text style={s.title}>{recipe.title}</Text><Text style={s.meta}>{recipe.time} · {recipe.category}</Text><View style={s.hero}><Heart size={38} color={colors.green}/></View><Text style={s.section}>Why it works</Text><Text style={s.copy}>{recipe.whyItWorks} This is a flexible template - not a prescription. Adapt ingredients to what you enjoy, need, and have available.</Text><Text style={s.section}>Ingredients</Text>{recipe.ingredients.map(x=><View key={x} style={s.step}><Text style={s.stepText}>• {x}</Text></View>)}<Text style={s.section}>Method</Text>{recipe.steps.map((x,i)=><View key={x} style={s.step}><Text style={s.stepNumber}>{i+1}</Text><Text style={s.stepText}>{x}</Text></View>)}<View style={{backgroundColor:colors.softGreen,borderRadius:16,padding:16,marginTop:20}}><Text style={{fontFamily:'Roboto',fontSize:10,fontWeight:'700',letterSpacing:1.2,color:colors.green}}>TIP</Text><Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:20,color:colors.text,marginTop:6}}>{recipe.tip}</Text></View><Pressable style={s.primary} onPress={onSave} disabled={saving}>{saving?<ActivityIndicator color="#fff"/>:<Text style={s.primaryText}>Save Recipe</Text>}</Pressable></Shell>}
 export function VoiceFoodLogScreen({navigation}:any){
   const [status,setStatus]=useState<'idle'|'recording'|'paused'|'transcribing'|'reviewing'>('idle');
   const [transcript,setTranscript]=useState('');
@@ -156,13 +156,13 @@ export function VoiceFoodLogScreen({navigation}:any){
   };
 
   const mealOptions:[MealType,string][]=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack']];
-  const langOptions:[typeof language,string][]=[['en','English'],['es','Espa�ol'],['fr','Fran�ais'],['de','Deutsch'],['auto','Auto']];
-  const micLabel=status==='recording'?'Tap to finish & transcribe':status==='paused'?'Recording paused':status==='transcribing'?'Transcribing with Groq Whisper�':'Tap microphone to start recording';
+  const langOptions:[typeof language,string][]=[['en','English'],['es','Español'],['fr','Français'],['de','Deutsch'],['auto','Auto']];
+  const micLabel=status==='recording'?'Tap to finish & transcribe':status==='paused'?'Recording paused':status==='transcribing'?'Transcribing with Groq Whisper…':'Tap microphone to start recording';
 
   return <Shell navigation={navigation}>
-    <Text style={s.eyebrow}>VOICE FOOD LOG � GROQ WHISPER</Text>
+    <Text style={s.eyebrow}>VOICE FOOD LOG · GROQ WHISPER</Text>
     <Text style={s.title}>Tell us about your meal.</Text>
-    <Text style={s.copy}>Speak naturally (e.g., �I had two boiled eggs, two slices of whole wheat toast and one cup of milk for breakfast�). Review and edit before saving to your Food Diary.</Text>
+    <Text style={s.copy}>Speak naturally (e.g., “I had two boiled eggs, two slices of whole wheat toast and one cup of milk for breakfast”). Review and edit before saving to your Food Diary.</Text>
 
     <Text style={[s.label,{marginTop:16,marginBottom:8}]}>Language</Text>
     <View style={s.chips}>
@@ -191,7 +191,7 @@ export function VoiceFoodLogScreen({navigation}:any){
 
       {(status==='recording'||status==='paused')?(
         <View style={{alignItems:'center',marginTop:10,gap:10}}>
-          <Text style={s.recTimer}>? {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} {status==='paused'?'(Paused)':'recording'}</Text>
+          <Text style={s.recTimer}>● {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} {status==='paused'?'(Paused)':'recording'}</Text>
           <View style={{flexDirection:'row',gap:10}}>
             <Pressable onPress={handlePauseResume} style={[s.slot,{paddingHorizontal:14,paddingVertical:8}]}>
               {status==='recording'?<Pause size={15} color={colors.deepTeal}/>:<Play size={15} color={colors.deepTeal}/>}
@@ -220,7 +220,7 @@ export function VoiceFoodLogScreen({navigation}:any){
         <Text style={[s.transcriptLabel,{flex:1,minWidth:0,marginRight:8}]}>TRANSCRIPTION REVIEW (EDITABLE)</Text>
         {transcript.trim().length>0?(
           <Pressable onPress={reparseTranscript} hitSlop={8} style={{flexShrink:0}}>
-            <Text style={{fontFamily:'Roboto',fontSize:12,fontWeight:'700',color:colors.deepTeal}}>Analyze Items ?</Text>
+            <Text style={{fontFamily:'Roboto',fontSize:12,fontWeight:'700',color:colors.deepTeal}}>Analyze Items →</Text>
           </Pressable>
         ):null}
       </View>
@@ -228,7 +228,7 @@ export function VoiceFoodLogScreen({navigation}:any){
         value={transcript}
         onChangeText={setTranscript}
         multiline
-        placeholder="Speak above or type what you ate here � then review recognized items before saving."
+        placeholder="Speak above or type what you ate here — then review recognized items before saving."
         placeholderTextColor={colors.muted}
         style={[s.transcriptText,{minHeight:74,padding:0}]}
       />
@@ -264,11 +264,11 @@ export function VoiceFoodLogScreen({navigation}:any){
             </View>
             {it.calories!=null?(
               <Text style={{fontFamily:'Roboto',fontSize:11.5,color:colors.green}}>
-                Reference nutrition: {it.calories} kcal � {it.protein}g protein � {it.carbs}g carbs � {it.fat}g fat
+                Reference nutrition: {it.calories} kcal · {it.protein}g protein · {it.carbs}g carbs · {it.fat}g fat
               </Text>
             ):(
               <Text style={{fontFamily:'Roboto',fontSize:11.5,color:colors.orange}}>
-                Uncertain nutrition match � verify item name & quantity above (no fabricated nutrition values added).
+                Uncertain nutrition match — verify item name & quantity above (no fabricated nutrition values added).
               </Text>
             )}
           </View>
@@ -281,7 +281,7 @@ export function VoiceFoodLogScreen({navigation}:any){
             placeholder="Add missing item (e.g. 1 cup berries)"
             placeholderTextColor={colors.muted}
             onSubmitEditing={addManualItem}
-            style={{flex:1,height:42,borderWidth:1,borderColor:colors.border,borderRadius:10,paddingHorizontal:12,fontSize:13,color:colors.text}}
+            style={{flex:1,minHeight:42,paddingVertical:8,borderWidth:1,borderColor:colors.border,borderRadius:10,paddingHorizontal:12,fontSize:13,color:colors.text}}
           />
           <Pressable onPress={addManualItem} style={{width:42,height:42,borderRadius:10,backgroundColor:colors.deepTeal,alignItems:'center',justifyContent:'center'}}>
             <Plus size={18} color="#fff"/>
@@ -298,7 +298,7 @@ export function VoiceFoodLogScreen({navigation}:any){
     {error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}
 
     <Pressable style={[s.primary,(!transcript.trim()&&items.length===0||saving)&&s.disabled]} disabled={(!transcript.trim()&&items.length===0)||saving} onPress={save}>
-      <Text style={s.primaryText}>{saving?'Saving to Food Diary�':'Confirm & Save to Food Diary'}</Text>
+      <Text style={s.primaryText}>{saving?'Saving to Food Diary…':'Confirm & Save to Food Diary'}</Text>
     </Pressable>
 
     {history.length>0?(
@@ -316,7 +316,7 @@ export function VoiceFoodLogScreen({navigation}:any){
     ):null}
   </Shell>;
 }
-export function DietitianScreen({navigation}:any){const [message,setMessage]=useState('');const [sent,setSent]=useState(false);const [sending,setSending]=useState(false);const [error,setError]=useState('');const submit=async()=>{const body=message.trim();if(!body||sending)return;setSending(true);setError('');try{await sendMessage(body);setSent(true);setMessage('');}catch(e:any){setError(e?.message||'Could not send your message. Please try again.');}finally{setSending(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>ASK THE DIETITIAN</Text><Text style={s.title}>Guidance with context.</Text><Text style={s.copy}>Send a non-urgent nutrition education question to your Registered Dietitian.</Text><View style={s.secure}><ShieldCheck size={22} color={colors.green}/><View><Text style={s.cardTitle}>Secure messaging</Text><Text style={s.desc}>For education and support�not urgent or emergency care.</Text></View></View><Text style={s.label}>Your question</Text><TextInput value={message} onChangeText={(value)=>{setMessage(value);if(sent)setSent(false);}} multiline placeholder="What would you like to understand?" placeholderTextColor={colors.muted} style={s.textArea}/>{sent&&<Text style={s.sent}>Message saved for secure delivery.</Text>}{error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}<Pressable style={[s.primary,(!message.trim()||sending)&&s.disabled]} disabled={!message.trim()||sending} onPress={submit}><Send size={18} color="#fff"/><Text style={s.primaryText}>{sending?'Sending�':'Send Secure Message'}</Text></Pressable><Pressable onPress={()=>navigation.navigate('MessageDetail')} hitSlop={8}><Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>View my conversation ?</Text></Pressable></Shell>}
+export function DietitianScreen({navigation}:any){const [message,setMessage]=useState('');const [sent,setSent]=useState(false);const [sending,setSending]=useState(false);const [error,setError]=useState('');const submit=async()=>{const body=message.trim();if(!body||sending)return;setSending(true);setError('');try{await sendMessage(body);setSent(true);setMessage('');}catch(e:any){setError(e?.message||'Could not send your message. Please try again.');}finally{setSending(false);}};return <Shell navigation={navigation}><Text style={s.eyebrow}>ASK THE DIETITIAN</Text><Text style={s.title}>Guidance with context.</Text><Text style={s.copy}>Send a non-urgent nutrition education question to your Registered Dietitian.</Text><View style={s.secure}><ShieldCheck size={22} color={colors.green}/><View><Text style={s.cardTitle}>Secure messaging</Text><Text style={s.desc}>For education and support—not urgent or emergency care.</Text></View></View><Text style={s.label}>Your question</Text><TextInput value={message} onChangeText={(value)=>{setMessage(value);if(sent)setSent(false);}} multiline placeholder="What would you like to understand?" placeholderTextColor={colors.muted} style={s.textArea}/>{sent&&<Text style={s.sent}>Message saved for secure delivery.</Text>}{error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}<Pressable style={[s.primary,(!message.trim()||sending)&&s.disabled]} disabled={!message.trim()||sending} onPress={submit}><Send size={18} color="#fff"/><Text style={s.primaryText}>{sending?'Sending…':'Send Secure Message'}</Text></Pressable><Pressable onPress={()=>navigation.navigate('MessageDetail')} hitSlop={8}><Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>View my conversation →</Text></Pressable></Shell>}
 export function TelehealthScreen({navigation}:any){
   const [visitType, setVisitType] = useState<'video'|'phone'>('video');
   const [calConfig, setCalConfig] = useState<CalConfig|null>(null);
@@ -418,7 +418,7 @@ const request=async()=>{
       }
 
       const appointment={
-        slot:selected?`${selected.label} � ${new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:choice,
+        slot:selected?`${selected.label} · ${new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:choice,
         visitType,
         isoStart:start,
         bookingId:calBooking?.id,
@@ -496,7 +496,7 @@ const request=async()=>{
         {visitType==='video'?<Video size={24} color={colors.deepTeal}/>:<Phone size={24} color={colors.deepTeal}/>}
         <View style={{flex:1}}>
           <Text style={s.cardTitle}>{visitType==='video'?'Virtual Nutrition Consultation':'Phone Nutrition Consultation'}</Text>
-          <Text style={s.desc}>15 minutes � One-on-one with Maureen, Registered Dietitian</Text>
+          <Text style={s.desc}>15 minutes · One-on-one with Maureen, Registered Dietitian</Text>
         </View>
       </View>
 
@@ -505,7 +505,7 @@ const request=async()=>{
       {loadingSlots?(
         <View style={{paddingVertical:24,alignItems:'center'}}>
           <ActivityIndicator color={colors.deepTeal}/>
-          <Text style={[s.desc,{marginTop:8}]}>Retrieving live availability�</Text>
+          <Text style={[s.desc,{marginTop:8}]}>Retrieving live availability…</Text>
         </View>
       ):slotsError?(
         <View style={s.notice}>
@@ -534,7 +534,7 @@ const request=async()=>{
 
       {slotOptions.length>0?(
         <Text style={[s.desc,{marginTop:12}]}>
-          {slotOptions.length} time{slotOptions.length===1?'':'s'} available over the next 14 days � times shown in your device time zone ({deviceTz}).
+          {slotOptions.length} time{slotOptions.length===1?'':'s'} available over the next 14 days · times shown in your device time zone ({deviceTz}).
         </Text>
       ):null}
 
@@ -548,12 +548,12 @@ const request=async()=>{
       </View>
 
       <Pressable style={[s.primary,(booking||!choice)&&{opacity:0.5}]} disabled={booking||!choice} onPress={request}>
-        <Text style={s.primaryText}>{booking?'Confirming Appointment�':'Confirm Appointment'}</Text>
+        <Text style={s.primaryText}>{booking?'Confirming Appointment…':'Confirm Appointment'}</Text>
       </Pressable>
 
       <Pressable onPress={()=>navigation.navigate('AppointmentDetail',{slot:(slotOptions.find((option)=>option.key===choice)?.label)||choice,visitType})}>
         <Text style={[s.desc,{color:colors.deepTeal,fontWeight:'700',marginTop:14,textAlign:'center'}]}>
-          View appointment details ?
+          View appointment details →
         </Text>
       </Pressable>
     </Shell>

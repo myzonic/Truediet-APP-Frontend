@@ -702,8 +702,8 @@ const s = StyleSheet.create({
   passwordInput: {
     flex: 1,
     minWidth: 0,
-    height: dimensions.inputHeight - 2,
-    paddingVertical: 0,
+    minHeight: dimensions.inputHeight - 2,
+    paddingVertical: 6,
     fontFamily: 'Roboto',
     fontSize: 14,
     color: colors.text,

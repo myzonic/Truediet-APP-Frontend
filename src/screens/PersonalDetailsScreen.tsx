@@ -55,7 +55,8 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
   input: {
-    height: dimensions.inputHeight,
+    minHeight: dimensions.inputHeight,
+    paddingVertical: 12,
     marginBottom: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderWidth: 1,

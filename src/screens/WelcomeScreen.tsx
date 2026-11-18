@@ -90,7 +90,8 @@ const s = StyleSheet.create({
   },
   badge: {
     marginTop: spacing.md,
-    height: dimensions.inputHeight,
+    minHeight: dimensions.inputHeight,
+    paddingVertical: 10,
     paddingHorizontal: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,

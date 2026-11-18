@@ -420,7 +420,8 @@ const s = StyleSheet.create({
   statValue: { fontFamily: 'Roboto', fontSize: 21, fontWeight: '700', color: colors.deepTeal },
   primaryRow: { flexDirection: 'row', gap: 10, marginTop: spacing.md },
   primary: {
-    height: dimensions.buttonHeight,
+    minHeight: dimensions.buttonHeight,
+    paddingVertical: 14,
     borderRadius: radius.lg,
     backgroundColor: colors.deepTeal,
     flexDirection: 'row',

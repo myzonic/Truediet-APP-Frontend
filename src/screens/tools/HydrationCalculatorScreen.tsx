@@ -153,7 +153,7 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '700', color: colors.text, marginTop: 6 },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
   label: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm },
-  input: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 14, fontFamily: 'Roboto', fontSize: 15, color: colors.text },
+  input: { minHeight: dimensions.inputHeight, paddingVertical: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, paddingHorizontal: 14, fontFamily: 'Roboto', fontSize: 15, color: colors.text },
   resultCard: { backgroundColor: colors.softGreen, borderRadius: radius.xl, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'center', gap: 6 },
   resultVal: { fontFamily: 'Roboto', fontSize: 28, fontWeight: '800', color: colors.deepTeal },
   resultSub: { fontFamily: 'Roboto', fontSize: 13, color: colors.textSecondary, textAlign: 'center' },

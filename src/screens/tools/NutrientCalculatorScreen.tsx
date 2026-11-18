@@ -257,7 +257,7 @@ const s = StyleSheet.create({
   selectedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   foodName: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
   foodMeta: { fontFamily: 'Roboto', fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  searchBox: { height: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
+  searchBox: { minHeight: dimensions.inputHeight, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
   searchInput: { flex: 1, fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   dbList: { marginTop: spacing.md, gap: 8 },
   dbRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface, padding: 12 },
