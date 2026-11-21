@@ -131,13 +131,23 @@ export async function refetchSession(): Promise<{ user: User | null; session: Se
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
 
     return { user: result.user, session: result.session };
-  } catch {
-    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY_NAME);
-    await SecureStore.deleteItemAsync(COOKIE_KEY);
-    await SecureStore.deleteItemAsync(USER_KEY);
-    return { user: null, session: null };
+  } catch (e: any) {
+    return handleSessionError(e);
   }
+}
+
+/**
+ * Only a real auth rejection invalidates the stored credentials. A network
+ * outage or a server error must leave them intact so the app can keep the
+ * cached identity until the next successful check.
+ */
+async function handleSessionError(error: any): Promise<{ user: null; session: null }> {
+  if (error?.status !== 401 && error?.status !== 403) throw error;
+  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+  await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY_NAME);
+  await SecureStore.deleteItemAsync(COOKIE_KEY);
+  await SecureStore.deleteItemAsync(USER_KEY);
+  return { user: null, session: null };
 }
 
 /**
@@ -207,23 +217,37 @@ export async function getSession(): Promise<{ user: User | null; session: Sessio
     await persistTokens({ session: result.session });
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(result.user));
     return { user: result.user, session: result.session };
-  } catch {
-    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY_NAME);
-    await SecureStore.deleteItemAsync(COOKIE_KEY);
-    await SecureStore.deleteItemAsync(USER_KEY);
-    return { user: null, session: null };
+  } catch (e: any) {
+    return handleSessionError(e);
   }
 }
 
 export async function isAuthenticated(): Promise<boolean> {
-  const { user } = await getSession();
-  return user !== null;
+  try {
+    const { user } = await getSession();
+    return user !== null;
+  } catch {
+    // Still signed in locally while the server is unreachable.
+    try {
+      return Boolean(await SecureStore.getItemAsync(USER_KEY));
+    } catch {
+      return false;
+    }
+  }
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const { user } = await getSession();
-  return user;
+  try {
+    const { user } = await getSession();
+    return user;
+  } catch {
+    try {
+      const cached = await SecureStore.getItemAsync(USER_KEY);
+      return cached ? (JSON.parse(cached) as User) : null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export async function updateName(name: string) {

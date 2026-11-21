@@ -161,10 +161,10 @@ export function VoiceFoodLogScreen({navigation}:any){
 
   const mealOptions:[MealType,string][]=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack']];
   const langOptions:[typeof language,string][]=[['en','English'],['es','Español'],['fr','Français'],['de','Deutsch'],['auto','Auto']];
-  const micLabel=status==='recording'?'Tap to finish & transcribe':status==='paused'?'Recording paused':status==='transcribing'?'Transcribing with Groq Whisper…':'Tap microphone to start recording';
+  const micLabel=status==='recording'?'Tap to finish & transcribe':status==='paused'?'Recording paused':status==='transcribing'?'Transcribing your audio…':'Tap microphone to start recording';
 
   return <Shell navigation={navigation}>
-    <Text style={s.eyebrow}>VOICE FOOD LOG · GROQ WHISPER</Text>
+    <Text style={s.eyebrow}>VOICE FOOD LOG</Text>
     <Text style={s.title}>Tell us about your meal.</Text>
     <Text style={s.copy}>Speak naturally (e.g., “I had two boiled eggs, two slices of whole wheat toast and one cup of milk for breakfast”). Review and edit before saving to your Food Diary.</Text>
 
@@ -296,7 +296,7 @@ export function VoiceFoodLogScreen({navigation}:any){
 
     <View style={s.apiNote}>
       <ShieldCheck size={19} color={colors.deepTeal}/>
-      <Text style={s.apiCopy}>Audio is securely transcribed via Groq Whisper (`whisper-large-v3-turbo`) on the True Diet backend and immediately discarded. Nothing is saved to your Food Diary until you review and confirm.</Text>
+      <Text style={s.apiCopy}>Audio is transcribed on the True Diet backend. Nothing is added to your Food Diary until you review and confirm the recognized items.</Text>
     </View>
 
     {error?<Text style={[s.desc,{color:'#B91C1C',marginTop:10}]}>{error}</Text>:null}
@@ -348,7 +348,7 @@ const [slotOptions, setSlotOptions] = useState<{key:string;label:string;iso:stri
   useEffect(()=>{
     if(!calConfig) return;
     if(!calConfig.configured){
-      setSlotsError('Live availability is unavailable because scheduling is not configured on this server yet.');
+      setSlotsError('We could not load available times. Please try again.');
       return;
     }
     let active=true;
@@ -547,7 +547,7 @@ const request=async()=>{
         <Text style={s.apiCopy}>
           {calConfig?.configured
             ? 'Times come from your scheduling calendar.'
-            : 'Online booking is not available right now. Please contact us and we will arrange a time.'}
+            : 'To arrange a visit, contact True Diet and we will find a time that works.'}
         </Text>
       </View>
 

@@ -16,7 +16,7 @@ export function friendlyAuthError(message?: string): string {
   if (m.includes('fetch') || m.includes('network') || m.includes('load failed'))
     return 'Could not reach the server — check your connection and try again.';
   if (m.includes('google_not_configured'))
-    return 'Google Sign-In is not configured on the server yet. Please use email and password.';
+    return 'Google Sign-In is unavailable right now. Please use email and password.';
   if (m.includes('invalid_client') || m.includes('redirect_uri') || m.includes('redirect uri'))
     return 'Google Sign-In is misconfigured (redirect URI). Please contact support or use email and password.';
   if (m.includes('access_denied') || m.includes('cancelled'))
@@ -24,7 +24,7 @@ export function friendlyAuthError(message?: string): string {
   if (m.includes('google') && m.includes('email'))
     return 'Google did not return an email address. Try a different Google account or use email and password.';
   if (m.includes('email_not_configured'))
-    return 'Email delivery is not configured on the server yet. Please contact support.';
+    return 'We could not send that email. Please try again or contact support.';
   if (m.includes('email_failed'))
     return 'The email could not be sent right now. Please try again later or contact support.';
   return message as string;

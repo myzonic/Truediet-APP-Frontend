@@ -349,7 +349,7 @@ export default function TrackScreen({ navigation }: any) {
         <Text style={s.section}>Check-Ins & Reports</Text>
         <Action
           icon={Mic}
-          title="Voice Food Log (Groq Whisper)"
+          title="Voice Food Log"
           text="Speak naturally to log a meal with automatic food parsing."
           onPress={() => navigation.navigate('VoiceFoodLog')}
         />

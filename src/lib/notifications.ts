@@ -197,7 +197,7 @@ async function registerDevice(): Promise<PushResult> {
   try {
     const projectId = getProjectId();
     if (!projectId) {
-      return { needsProjectId: true, error: 'Push is not configured for this build.' };
+      return { needsProjectId: true, error: 'Notifications cannot be enabled in this build.' };
     }
 
     const result = await Notifications.getExpoPushTokenAsync({ projectId });

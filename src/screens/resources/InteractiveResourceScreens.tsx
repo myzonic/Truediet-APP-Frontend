@@ -667,7 +667,7 @@ const s = StyleSheet.create({
   title: { color: colors.text, fontSize: 24, fontWeight: '800', marginBottom: 6 },
   copy: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, marginBottom: 14 },
   centered: { paddingVertical: 24, alignItems: 'center' },
-  error: { color: colors.red, fontSize: 13, marginVertical: 10 },
+  error: { color: colors.red, fontSize: 13, lineHeight: 19, marginVertical: 10 },
   empty: { backgroundColor: colors.softGreen, borderRadius: 12, padding: 16, marginVertical: 8 },
   emptyText: { color: colors.deepTeal, fontSize: 13 },
   primary: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.deepTeal, borderRadius: 12, paddingVertical: 13, marginTop: 10 },

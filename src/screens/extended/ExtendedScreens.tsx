@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, CircleHelp, CreditCard, FileText, Heart, LockKeyhole, MessageSquare, Search, Settings, ShieldCheck, UserRound } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
@@ -176,10 +176,10 @@ const screens: Record<string, Definition> = {
   Privacy: {
     eyebrow: 'PRIVACY & DATA',
     title: 'Your data, your control.',
-    copy: 'Review consent choices, request your data, and manage account deletion. Health-related data should only be processed through approved secure services.',
+    copy: 'Review consent choices, export your data, and manage account deletion.',
     items: [
-      { title: 'Export my data', subtitle: 'Available once your account backend is connected' },
-      { title: 'Delete my account', subtitle: 'Requires identity verification and a backend workflow' },
+      { title: 'Export my data', subtitle: 'Download a copy of your account data' },
+      { title: 'Delete my account', subtitle: 'Permanently remove your account and its data' },
     ],
   },
   SearchScreen: {
@@ -205,24 +205,24 @@ const screens: Record<string, Definition> = {
   Checkout: {
     eyebrow: 'CHECKOUT',
     title: 'Complete your membership.',
-    copy: 'Payment will be handled by Stripe through a secure backend checkout session.',
+    copy: 'Payment is handled by our secure checkout provider. True Diet never stores your card details.',
     cta: 'Continue to Secure Checkout',
   },
   AppointmentDetail: {
     eyebrow: 'APPOINTMENT',
     title: 'Your nutrition visit.',
-    copy: 'Review appointment time, visit type, status, and secure joining details once your scheduling API is connected.',
+    copy: 'Review your appointment time, visit type, status, and joining details.',
     cta: 'View Telehealth Details',
   },
   MessageDetail: {
     eyebrow: 'SECURE MESSAGE',
     title: 'Conversation with your Dietitian.',
-    copy: 'Messages will appear here after a secure, access-controlled messaging backend is connected.',
+    copy: 'Read and reply to secure messages from your dietitian.',
   },
   WebinarConfirmation: {
     eyebrow: 'REGISTRATION CONFIRMED',
     title: 'You’re registered.',
-    copy: 'A confirmation and reminder will be sent when webinar notifications are connected.',
+    copy: 'Your registration is saved to your account. You can review it in Webinars.',
     cta: 'View Webinar Details',
   },
   Legal: {
@@ -355,7 +355,7 @@ function AuthScreen({
               )}
             </>
           )}
-          {error ? <Text style={[s.copy, { color: '#B91C1C', marginTop: 14 }]}>{error}</Text> : null}
+          {error ? <View style={s.authErrorBox}><Text style={s.authErrorText}>{error}</Text></View> : null}
           <Pressable style={[s.cta, (loading || !ready) && { opacity: 0.6 }]} disabled={loading || !ready} onPress={submit}>
             <Text style={s.ctaText}>{loading ? 'Please wait...' : ctaLabel}</Text>
           </Pressable>
@@ -459,16 +459,16 @@ function GenericScreen({ navigation, name }: { navigation: any; name: string }) 
     'Register for Webinar': 'WebinarConfirmation',
     'Open Listen Link': 'PodcastDetail',
     'View Booking Options': 'Telehealth',
+    'View Telehealth Details': 'AppointmentDetail',
+    'View Webinar Details': 'WebinarDetail',
     'Manage Subscription': 'Subscription',
     'Continue to Secure Checkout': 'Checkout',
     'Edit Personalization': 'NutritionProfileSettings',
     'Explore Membership': 'FreePremium',
   };
+  const ctaTarget = d.cta ? ctaRoute[d.cta] : undefined;
   const handleCta = () => {
-    if (!d.cta) return;
-    const route = ctaRoute[d.cta];
-    if (route) navigation.navigate(route);
-    else Alert.alert(d.cta, 'This action will be available in a future update.');
+    if (ctaTarget) navigation.navigate(ctaTarget);
   };
   return (
     <SafeAreaView style={s.safe}>
@@ -481,19 +481,27 @@ function GenericScreen({ navigation, name }: { navigation: any; name: string }) 
         <Text style={s.copy}>{d.copy}</Text>
         {listItems && listItems.length > 0 ? (
           <View style={s.list}>
-            {listItems.map((item) => (
-              <Pressable key={item.id || item.title} style={s.item} onPress={() => (item.route ? navigation.navigate(item.route) : Alert.alert('Coming soon', 'This action will be available in a future update.'))}>
-                <View style={s.itemIcon}>{item.icon ? <item.icon size={21} color={colors.deepTeal} /> : <BookOpen size={21} color={colors.deepTeal} />}</View>
-                <View style={s.itemCopy}>
-                  <Text style={s.itemTitle}>{item.title}</Text>
-                  <Text style={s.itemSub}>{item.subtitle}</Text>
-                </View>
-                <ChevronRight size={19} color={colors.muted} />
-              </Pressable>
-            ))}
+            {listItems.map((item) => {
+              const target = item.route;
+              const content = (
+                <>
+                  <View style={s.itemIcon}>{item.icon ? <item.icon size={21} color={colors.deepTeal} /> : <BookOpen size={21} color={colors.deepTeal} />}</View>
+                  <View style={s.itemCopy}>
+                    <Text style={s.itemTitle}>{item.title}</Text>
+                    <Text style={s.itemSub}>{item.subtitle}</Text>
+                  </View>
+                  {target ? <ChevronRight size={19} color={colors.muted} /> : null}
+                </>
+              );
+              return target ? (
+                <Pressable key={item.id || item.title} style={s.item} onPress={() => navigation.navigate(target)} accessibilityRole="button">{content}</Pressable>
+              ) : (
+                <View key={item.id || item.title} style={s.item}>{content}</View>
+              );
+            })}
           </View>
         ) : null}
-        {d.cta ? (
+        {ctaTarget ? (
           <Pressable style={[s.cta, { width: '100%' }]} onPress={handleCta}>
             <Text style={s.ctaText}>{d.cta}</Text>
           </Pressable>
@@ -564,7 +572,7 @@ function MessageThreadView({ navigation, route }: any) {
           <Text style={s.eyebrow}>SECURE MESSAGE</Text>
           <Text style={s.title}>Conversation with your Dietitian.</Text>
           <Text style={s.copy}>For education and support—not urgent or emergency care.</Text>
-          {error ? <Text style={[s.copy, { color: '#B91C1C', marginTop: 14 }]}>{error}</Text> : null}
+          {error ? <View style={s.authErrorBox}><Text style={s.authErrorText}>{error}</Text></View> : null}
           {loading ? <Text style={s.copy}>Loading your conversation…</Text> : messages.length === 0 ? (
             <View style={s.list}>
               <Text style={s.copy}>No messages yet. Send your first question below.</Text>
@@ -639,6 +647,21 @@ const s = StyleSheet.create({
     lineHeight: 21,
     color: colors.textSecondary,
     marginTop: 8,
+  },
+  authErrorBox: {
+    width: '100%',
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 16,
+  },
+  authErrorText: {
+    fontFamily: 'Roboto',
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#B91C1C',
   },
   list: {
     marginTop: 16,

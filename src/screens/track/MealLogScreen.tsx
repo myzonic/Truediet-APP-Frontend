@@ -89,7 +89,7 @@ export default function MealLogScreen({ navigation, route }: any) {
 
           <Pressable style={s.voiceShortcut} onPress={() => navigation.navigate('VoiceFoodLog')}>
             <Mic size={18} color={colors.deepTeal} />
-            <Text style={s.voiceShortcutText}>Prefer to speak? Use Groq Voice Food Log →</Text>
+            <Text style={s.voiceShortcutText}>Prefer to speak? Use Voice Food Log →</Text>
           </Pressable>
 
           <Text style={s.label}>Meal Type</Text>
@@ -214,7 +214,7 @@ const s = StyleSheet.create({
   notes: { minHeight: 76, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, textAlignVertical: 'top', fontFamily: 'Roboto', fontSize: 14, color: colors.text },
   checkin: { backgroundColor: colors.softGreen, borderRadius: 16, padding: 16, marginTop: 18 },
   checkinTitle: { fontFamily: 'Roboto', fontSize: 14, fontWeight: '700', color: colors.text },
-  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: 14 },
+  error: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 19, color: colors.red, marginTop: 14 },
   save: { minHeight: 54, paddingVertical: 14, borderRadius: 16, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: 22 },
   saveDisabled: { opacity: 0.5 },
   saveText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff' },

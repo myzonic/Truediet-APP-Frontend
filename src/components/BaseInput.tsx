@@ -50,6 +50,7 @@ const s = StyleSheet.create({
   error: {
     fontFamily: 'Roboto',
     fontSize: 12,
+    lineHeight: 17,
     color: colors.red,
     marginTop: 4,
   },

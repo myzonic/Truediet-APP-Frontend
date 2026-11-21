@@ -57,13 +57,17 @@ export function BaseButton({
     >
       {loading ? (
         <ActivityIndicator color={variant === 'ghost' ? colors.deepTeal : '#fff'} size="small" />
-      ) : (
+      ) : typeof children === 'string' || typeof children === 'number' ? (
         <Text
           style={[s.primaryText, variant === 'ghost' && s.ghostText, variant === 'danger' && s.dangerText, isDisabled && s.disabledText, textStyle]}
           maxFontSizeMultiplier={1.3}
         >
           {children}
         </Text>
+      ) : (
+        // Composite children (icon rows, custom Text) keep their own layout
+        // instead of being nested inside a Text node, which misaligns them.
+        children
       )}
     </Pressable>
   );

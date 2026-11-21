@@ -1004,7 +1004,7 @@ export function SubscriptionScreen({ navigation }: any) {
         <View style={s.notice}>
           <ShieldCheck size={18} color={colors.deepTeal} />
           <Text style={s.noticeText}>
-            Membership changes are arranged with your dietitian while online checkout is unavailable.
+            To change your membership, contact True Diet and we will help you with the available options.
           </Text>
         </View>
       ) : null}
@@ -1440,7 +1440,7 @@ export function ProfileHubScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: spacing.sm },
+  error: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 19, color: colors.red, marginTop: spacing.sm },
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
   kav: { flex: 1, width: '100%' },
   scroll: { width: '100%' },

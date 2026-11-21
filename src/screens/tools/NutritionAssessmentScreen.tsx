@@ -254,7 +254,7 @@ const s = StyleSheet.create({
   addBtn: { minHeight: dimensions.buttonHeightSmall, paddingVertical: 10, paddingHorizontal: 16, borderRadius: radius.md, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center' },
   disclaimer: { flexDirection: 'row', gap: 10, backgroundColor: colors.softBlue, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'flex-start' },
   disclaimerText: { flex: 1, fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.deepTeal },
-  error: { fontFamily: 'Roboto', fontSize: 13, color: colors.red, marginTop: spacing.sm },
+  error: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 19, color: colors.red, marginTop: spacing.sm },
   primary: { minHeight: dimensions.buttonHeight, paddingVertical: 12, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg, paddingHorizontal: 20 },
   primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff', flexShrink: 1, textAlign: 'center' },
   doneCard: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.softGreen, padding: spacing.cardPadding, marginTop: spacing.xl, alignItems: 'center', gap: 10 },

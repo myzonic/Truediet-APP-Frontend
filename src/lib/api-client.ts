@@ -98,7 +98,11 @@ export async function apiFetch<T = any>(path: string, options: ApiOptions = {}):
     }
     const message =
       (data && (data.error || data.message)) || `Request failed with status ${response.status}`;
-    throw new Error(message);
+    // Attach the status so callers can tell a genuinely expired session (401)
+    // from a transient network/server failure and keep credentials in the latter.
+    const error = new Error(message) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
   return data as T;

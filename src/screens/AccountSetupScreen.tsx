@@ -26,7 +26,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [acceptedTerms, setAcceptedTerms] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -405,7 +405,7 @@ export default function AccountSetupScreen({ navigation, route }: any) {
             <View style={s.trust}>
               <LockKeyhole size={18} color={colors.deepTeal} />
               <Text style={s.trustText}>
-                Your authentication credentials and personal data are safely encrypted and secured.
+                Your password is hashed before storage and your sign-in stays on this device.
               </Text>
             </View>
 
@@ -533,6 +533,7 @@ const s = StyleSheet.create({
   errorText: {
     color: '#B91C1C',
     fontSize: 13,
+    lineHeight: 19,
     fontFamily: 'Roboto',
   },
   successBox: {
@@ -580,6 +581,7 @@ const s = StyleSheet.create({
   verifyMsg: {
     fontFamily: 'Roboto',
     fontSize: 12,
+    lineHeight: 18,
     color: '#136C43',
     marginTop: spacing.xs,
     textAlign: 'center',

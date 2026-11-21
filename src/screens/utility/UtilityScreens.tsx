@@ -25,10 +25,15 @@ export function SupportScreen({navigation}:any){
   return <Shell navigation={navigation}><Text style={s.eyebrow}>HELP & SUPPORT</Text><Text style={s.title}>How can we help?</Text><Text style={s.copy}>Find answers or contact the True Diet team for account and app support.</Text><View style={s.infoRow}><View style={s.infoIcon}><CircleHelp size={22} color={colors.deepTeal}/></View><View style={s.infoCopy}><Text style={s.infoTitle}>Frequently asked questions</Text><Text style={s.infoSub}>Account, content, membership, and app support</Text></View></View><View style={s.list}>{faqs.map(([q,a])=><Accordion key={q} q={q} a={a}/>)}</View><Pressable style={s.cta} onPress={()=>navigation.navigate('Dietitian')}><MessageSquare size={18} color="#fff"/><Text style={s.ctaText}>Contact True Diet</Text></Pressable><Text style={s.note}>For medical emergencies, contact your local emergency services. True Diet is not for urgent care.</Text></Shell>;
 }
 
-const legal=[['Terms of Use','These terms describe how you may use True Diet, including account responsibilities and acceptable use. Final wording is pending legal review.'],['Privacy Policy','This policy explains what information True Diet collects, how it is used, and the choices you have. Health-related data is processed only through approved secure services.'],['Educational Disclaimer','True Diet provides general nutrition education. It does not provide medical diagnosis, treatment, or a substitute for care from a qualified professional.'],['Data Processing','Personal and health-related information is stored on secure infrastructure, with access limited to those who need it. Data handling terms will be finalized before launch.']];
+const legal:[string,string][]=[
+  ['Terms of Use','True Diet provides general nutrition education for your personal use. Keep your sign-in details private and use the app for its intended educational purpose. For medical decisions, speak with a qualified healthcare professional.'],
+  ['Privacy Policy','Your account details, nutrition profile, food logs and saved content are stored on True Diet’s servers and linked to your sign-in. In Privacy & Data Controls you can review consent choices, export your data, and delete your account.'],
+  ['Educational Disclaimer','True Diet provides general nutrition education. It does not provide medical diagnosis, treatment, or a substitute for care from a qualified professional.'],
+  ['Data Handling','The information you enter is used to deliver the app’s features, including your profile, tracking and saved content. You can manage your data and delete your account at any time from Privacy & Data Controls.'],
+];
 
 export function LegalScreen({navigation}:any){
-  return <Shell navigation={navigation}><Text style={s.eyebrow}>LEGAL</Text><Text style={s.title}>Terms, privacy, and disclaimers.</Text><Text style={s.copy}>Read True Diet’s Terms of Use, Privacy Policy, educational disclaimer, and data-processing information.</Text><View style={s.banner}><ShieldCheck size={20} color={colors.orange}/><Text style={s.bannerText}>Draft — final legal copy will be supplied by True Diet and reviewed before release.</Text></View><View style={s.list}>{legal.map(([q,a])=><Accordion key={q} q={q} a={a}/>)}</View></Shell>;
+  return <Shell navigation={navigation}><Text style={s.eyebrow}>LEGAL</Text><Text style={s.title}>Terms, privacy, and disclaimers.</Text><Text style={s.copy}>Read True Diet’s Terms of Use, Privacy Policy, educational disclaimer, and data-processing information.</Text><View style={s.banner}><ShieldCheck size={20} color={colors.orange}/><Text style={s.bannerText}>True Diet offers nutrition education, not medical care. For personal medical advice, speak with your healthcare professional.</Text></View><View style={s.list}>{legal.map(([q,a])=><Accordion key={q} q={q} a={a}/>)}</View></Shell>;
 }
 
 export function NotificationsScreen({navigation}:any){
@@ -89,7 +94,7 @@ export function NotificationsScreen({navigation}:any){
       </Text>
       {error?<Text style={s.pushError}>{error}</Text>:null}
       {permission==='denied'&&!token?<Text style={s.pushHint}>Notifications are off for True Diet in your device settings. Open Settings to allow them, then come back.</Text>:null}
-      {needsProject?<Text style={s.pushHint}>This build has no push project id configured.</Text>:null}
+      {needsProject?<Text style={s.pushHint}>Notifications cannot be enabled in this build.</Text>:null}
       {!isPushSupported()?<Text style={s.pushHint}>Push registration requires the iOS or Android build.</Text>:null}
       {token?<View style={s.pushBtns}><Pressable style={s.secondary} onPress={copy}><Text style={s.secondaryText}>Copy token</Text></Pressable><Pressable style={s.secondary} onPress={disable} disabled={busy}><Text style={[s.secondaryText,{color:colors.red}]}>{busy?'Removing…':'Disable on this device'}</Text></Pressable></View>:<Pressable style={[s.cta,!isPushSupported()&&s.ctaOff]} disabled={busy||!isPushSupported()} onPress={enable}>{busy?<ActivityIndicator color="#fff"/>:<><Bell size={18} color="#fff"/><Text style={s.ctaText}>Turn on notifications</Text></>}</Pressable>}
     </View>
@@ -120,7 +125,7 @@ export function FreePremiumScreen({navigation}:any){
       .catch(()=>undefined);
     return ()=>{active=false;};
   },[]);
-  return <Shell navigation={navigation}><Text style={s.eyebrow}>MEMBERSHIP</Text><Text style={s.title}>Choose your level of support.</Text><Text style={s.copy}>Start with trusted education for free, then upgrade when you want expanded tools and experiences.</Text><View style={s.tier}><View style={s.tierHead}><Text style={s.tierName}>Free</Text><Star size={18} color={colors.muted}/></View>{freeFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}</View><View style={[s.tier,s.tierPremium]}><View style={s.tierHead}><Text style={s.tierName}>Premium</Text><Sparkles size={18} color={colors.green}/></View>{premiumFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}<Text style={s.priceNote}>{premiumPrice?`Premium is ${premiumPrice}. Final pricing is confirmed at checkout.`:'Pricing is shown at checkout once payment options are connected.'}</Text></View><Pressable style={s.cta} onPress={()=>navigation.navigate('Packages')}><Text style={s.ctaText}>Explore Membership Options</Text></Pressable></Shell>;
+  return <Shell navigation={navigation}><Text style={s.eyebrow}>MEMBERSHIP</Text><Text style={s.title}>Choose your level of support.</Text><Text style={s.copy}>Start with trusted education for free, then upgrade when you want expanded tools and experiences.</Text><View style={s.tier}><View style={s.tierHead}><Text style={s.tierName}>Free</Text><Star size={18} color={colors.muted}/></View>{freeFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}</View><View style={[s.tier,s.tierPremium]}><View style={s.tierHead}><Text style={s.tierName}>Premium</Text><Sparkles size={18} color={colors.green}/></View>{premiumFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}<Text style={s.priceNote}>{premiumPrice?`Premium is ${premiumPrice}.`:'Premium pricing is shown at checkout.'}</Text></View><Pressable style={s.cta} onPress={()=>navigation.navigate('Packages')}><Text style={s.ctaText}>Explore Membership Options</Text></Pressable></Shell>;
 }
 
 export function CheckoutScreen({navigation,route}:any){
@@ -131,7 +136,7 @@ export function CheckoutScreen({navigation,route}:any){
     try{
       const res=await startCheckout(plan?.id||'');
       if(res?.url){await Linking.openURL(res.url);}
-      else{Alert.alert('Checkout unavailable','Secure checkout is not available right now. Please try again later.');}
+      else{Alert.alert('Checkout unavailable','We could not start secure checkout. Please try again.');}
     }catch(e:any){
       Alert.alert('Checkout unavailable',e?.message||'Secure checkout could not be started. Please try again later.');
     }finally{setLoading(false);}
@@ -141,7 +146,7 @@ export function CheckoutScreen({navigation,route}:any){
 
 export function WebinarConfirmationScreen({navigation,route}:any){
   const title=route.params?.title||'Your webinar';
-  return <Shell navigation={navigation}><View style={s.confirmIcon}><CheckCircle2 size={40} color={colors.green}/></View><Text style={s.eyebrow}>REGISTRATION CONFIRMED</Text><Text style={s.title}>You’re registered.</Text><Text style={s.copy}>We've saved your spot for {title}. We will remind you before it starts.</Text><View style={s.list}><View style={s.infoRow}><View style={s.infoIcon}><CalendarDays size={20} color={colors.deepTeal}/></View><View style={s.infoCopy}><Text style={s.infoTitle}>Add to calendar</Text><Text style={s.infoSub}>Calendar invites will be available soon</Text></View></View><View style={s.infoRow}><View style={s.infoIcon}><Clock3 size={20} color={colors.deepTeal}/></View><View style={s.infoCopy}><Text style={s.infoTitle}>Join link</Text><Text style={s.infoSub}>A secure link will appear before the session</Text></View></View></View><Pressable style={s.cta} onPress={()=>navigation.goBack()}><Text style={s.ctaText}>Done</Text></Pressable></Shell>;
+  return <Shell navigation={navigation}><View style={s.confirmIcon}><CheckCircle2 size={40} color={colors.green}/></View><Text style={s.eyebrow}>REGISTRATION CONFIRMED</Text><Text style={s.title}>You’re registered.</Text><Text style={s.copy}>Your spot for {title} is saved. You can review or remove your registration in Webinars.</Text><View style={s.list}><View style={s.infoRow}><View style={s.infoIcon}><CalendarDays size={20} color={colors.deepTeal}/></View><View style={s.infoCopy}><Text style={s.infoTitle}>{title}</Text><Text style={s.infoSub}>Registration saved to your account</Text></View></View></View><Pressable style={s.cta} onPress={()=>navigation.goBack()}><Text style={s.ctaText}>Done</Text></Pressable></Shell>;
 }
 
 export function AppointmentDetailScreen({navigation,route}:any){

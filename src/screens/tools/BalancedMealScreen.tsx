@@ -155,7 +155,7 @@ const s = StyleSheet.create({
   message: { backgroundColor: colors.softGreen, borderRadius: radius.lg, padding: spacing.cardPadding, marginTop: spacing.md },
   messageTitle: { fontFamily: 'Roboto', fontSize: 17, fontWeight: '700', color: colors.text },
   messageText: { fontFamily: 'Roboto', fontSize: 12.5, lineHeight: 19, color: colors.textSecondary, marginTop: 5 },
-  error: { fontFamily: 'Roboto', fontSize: 13, color: '#B91C1C', marginTop: spacing.sm },
+  error: { fontFamily: 'Roboto', fontSize: 13, lineHeight: 19, color: '#B91C1C', marginTop: spacing.sm },
   primary: { minHeight: dimensions.buttonHeight, paddingVertical: 12, borderRadius: radius.lg, backgroundColor: colors.deepTeal, alignItems: 'center', justifyContent: 'center', marginTop: spacing.lg },
   primaryText: { fontFamily: 'Roboto', fontSize: 15, fontWeight: '700', color: '#fff', flexShrink: 1, textAlign: 'center' },
   disabled: { opacity: 0.45 },
