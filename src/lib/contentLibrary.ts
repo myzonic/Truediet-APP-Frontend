@@ -1,5 +1,5 @@
 import { loadContent, ContentSummary } from './content';
-import { API_BASE_URL } from './api-client';
+import { API_BASE_URL, apiFetch } from './api-client';
 import { learnTopics, LearnArticle, LearnTopic } from './learnContent';
 import { myths, Myth } from './mythContent';
 import { recipes, Recipe } from './recipeContent';
@@ -28,11 +28,13 @@ async function fetchAll(): Promise<ContentDetail[]> {
     items.map(async (item) => {
       if (!item.isPremium || item.body) return item as ContentDetail;
       try {
-        const res = await fetch(
-          `${API_BASE_URL}/api/content/${encodeURIComponent(item.slug)}`
+        // Premium detail is subscription-gated, so it must carry the bearer
+        // token. A raw fetch here always answered 401, so premium bodies never
+        // loaded even for entitled members.
+        const data = await apiFetch<{ item?: ContentDetail }>(
+          `/api/content/${encodeURIComponent(item.slug)}`,
+          { method: 'GET' }
         );
-        if (!res.ok) return item as ContentDetail;
-        const data = await res.json();
         return { ...item, ...(data?.item || {}) } as ContentDetail;
       } catch {
         return item as ContentDetail;
@@ -219,6 +221,10 @@ export interface LibraryItem {
   slug: string;
   durationMinutes?: number;
   isPremium: boolean;
+  /** Direct video URL for a recorded class/webinar, when it has been published. */
+  mediaUrl?: string;
+  /** Direct audio URL for a podcast episode, when it has been published. */
+  listenUrl?: string;
 }
 
 export async function loadLibrary(type: string): Promise<LibraryItem[]> {
@@ -233,6 +239,8 @@ export async function loadLibrary(type: string): Promise<LibraryItem[]> {
       category: item.category,
       durationMinutes: item.durationMinutes,
       isPremium: item.isPremium,
+      mediaUrl: item.mediaUrl,
+      listenUrl: item.listenUrl,
     }));
   } catch {
     return [];
@@ -261,8 +269,15 @@ export async function loadResourceCategories(): Promise<ResourceCategory[]> {
 }
 
 export async function loadResourceBySlug(slug: string): Promise<LibraryItem & { body?: string } | null> {
-  const res = await fetch(`${API_BASE_URL}/api/content/${encodeURIComponent(slug)}`);
-  const data = (await res.json()) as { item?: any };
+  // Sent through apiFetch so the bearer token reaches the subscription-gated
+  // detail endpoint; without it premium resources always 401'd and rendered
+  // with no body.
+  let data: { item?: any };
+  try {
+    data = await apiFetch<{ item?: any }>(`/api/content/${encodeURIComponent(slug)}`, { method: 'GET' });
+  } catch {
+    return null;
+  }
   const item = data?.item;
   if (!item) return null;
   return {
@@ -274,6 +289,8 @@ export async function loadResourceBySlug(slug: string): Promise<LibraryItem & { 
     durationMinutes: item.durationMinutes,
     isPremium: item.isPremium,
     body: item.body,
+    mediaUrl: item.mediaUrl,
+    listenUrl: item.listenUrl,
   };
 }
 

@@ -64,7 +64,12 @@ export function useLayoutMetrics(): LayoutMetrics {
 
   const gridItemWidth = (columns: number) => {
     const count = Math.max(1, columns);
-    return Math.max(0, (innerWidth - gutter * (count - 1)) / count);
+    // Exact-fit widths (row width === innerWidth) are fragile: sub-pixel
+    // rounding of the container or item on either platform makes the last item
+    // of a row overflow by a fraction and wrap to the next line, collapsing the
+    // grid into a single column. Leave a hair of slack so rows always fit.
+    const raw = (innerWidth - gutter * (count - 1)) / count;
+    return Math.max(0, raw - 0.5);
   };
 
   return {

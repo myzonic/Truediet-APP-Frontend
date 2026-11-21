@@ -392,8 +392,14 @@ export function ExtendedScreen({ navigation, route }: any) {
   const name = route.name;
   if (authNames.has(name)) return <AuthScreen navigation={navigation} name={name} route={route} />;
   if (name === 'MessageDetail') return <MessageThreadView navigation={navigation} route={route} />;
+  // The generic branch owns its own hooks, so it lives in a dedicated
+  // component. Calling them inline here would run a different number of hooks
+  // depending on which route name rendered (a rules-of-hooks violation).
+  return <GenericScreen navigation={navigation} name={name} />;
+}
+
+function GenericScreen({ navigation, name }: { navigation: any; name: string }) {
   const d = screens[name] || screens.Resources;
-  const { signOutUser } = useAuth();
   const [query, setQuery] = useState('');
   const [remoteItems, setRemoteItems] = useState<Item[] | null>(null);
   const [searchResults, setSearchResults] = useState<Item[] | null>(null);

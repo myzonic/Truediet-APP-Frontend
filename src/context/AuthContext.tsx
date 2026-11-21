@@ -3,6 +3,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { getSession, signOut, updateName } from '../lib/auth-service';
 import { setUnauthorizedHandler } from '../lib/api-client';
+import { ensurePushRegistered, unregisterDevice } from '../lib/notifications';
 import { navigationRef } from '../navigation/ref';
 
 interface User {
@@ -63,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fire-and-forget: registers this device for push on every signed-in
         // launch so members receive dietitian replies without visiting
         // Settings. Never blocks or fails the session itself.
-        // ensurePushRegistered(); // TODO: re-enable when push logic is updated
+        void ensurePushRegistered();
       } else {
         // No valid session
         everSignedIn.current = false;
@@ -134,6 +135,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOutUser = async () => {
+    // Detach this device first, while the session is still valid, so the next
+    // member on a shared phone never receives the previous member's alerts.
+    try {
+      await unregisterDevice();
+    } catch {
+      // A failed unregister must never block sign-out.
+    }
     try {
       await signOut();
     } catch {

@@ -475,28 +475,6 @@ export async function deleteWaterEntry(id: string): Promise<void> {
   }
 }
 
-/** Save a voice transcription record */
-export async function saveVoiceTranscription(transcription: {
-  text: string;
-  foodCandidates: { id: string; name: string; calories: number }[];
-}): Promise<{ id: string; status: string }> {
-  try {
-    const res = await apiFetch<{ id: string }>('/api/voice-transcription', {
-      method: 'POST',
-      body: transcription,
-    });
-    return { id: res?.id ?? localId(), status: 'pending' };
-  } catch (error) {
-    if (!isOfflineError(error)) throw error;
-    const now = new Date().toISOString();
-    const tv = { id: localId(), status: 'pending' };
-    const items = await readLocal<{ id: string; status: string }>('truediet.voice.v1');
-    items.unshift(tv);
-    await writeLocal('truediet.voice.v1', items);
-    return tv;
-  }
-}
-
 /** Load voice transcriptions */
 export async function loadVoiceTranscriptions(): Promise<{ id: string; text: string; status: string }[]> {
   try {
@@ -570,7 +548,6 @@ export default {
   addWater,
   editWaterEntry,
   deleteWaterEntry,
-  saveVoiceTranscription,
   loadVoiceTranscriptions,
   removeVoiceTranscription,
   loadTrackingSettings,

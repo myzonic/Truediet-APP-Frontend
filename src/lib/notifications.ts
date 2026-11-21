@@ -258,16 +258,30 @@ export function resolveNotificationTarget(
   data: Record<string, any> | null | undefined
 ): NotificationTarget | null {
   if (!data) return null;
+
+  // Collect the ids the backend may attach so an explicit `screen` does not
+  // drop them. Without this, a tap carried `screen: "AppointmentDetail"` but
+  // lost the appointmentId, so it always opened the *current* visit.
+  const params: Record<string, unknown> = {};
+  if (data.params && typeof data.params === 'object') Object.assign(params, data.params);
+  if (data.threadId) params.threadId = data.threadId;
+  if (data.appointmentId) params.appointmentId = data.appointmentId;
+  if (data.slug) {
+    params.articleId = data.slug;
+    if (data.title) params.title = data.title;
+  }
+  const withParams = Object.keys(params).length ? params : undefined;
+
   if (typeof data.screen === 'string' && data.screen) {
-    return { screen: data.screen, params: data.params };
+    return { screen: data.screen, params: withParams };
   }
   switch (data.type) {
     case 'message':
-      return { screen: 'MessageDetail', params: data.threadId ? { threadId: data.threadId } : undefined };
+      return { screen: 'MessageDetail', params: withParams };
     case 'appointment':
-      return { screen: 'AppointmentDetail', params: data.appointmentId ? { appointmentId: data.appointmentId } : undefined };
+      return { screen: 'AppointmentDetail', params: withParams };
     case 'content':
-      return data.slug ? { screen: 'Article', params: { articleId: data.slug, title: data.title } } : null;
+      return data.slug ? { screen: 'Article', params: withParams } : null;
     default:
       return null;
   }

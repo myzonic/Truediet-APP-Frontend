@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Sha
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, CircleHelp, Clock3, CreditCard, LockKeyhole, MessageSquare, Phone, ShieldCheck, Sparkles, Star, Video } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
-import { startCheckout } from '../../lib/subscription';
+import { loadPlans, startCheckout } from '../../lib/subscription';
 import { cancelAppointment, clearAppointment, listAppointments, loadAppointment } from '../../lib/appointments';
 import { disablePushNotifications, getPermissionState, isPushSupported, readStoredPushToken, requestPushPermissionAndRegister } from '../../lib/notifications';
 import { apiFetch } from '../../lib/api-client';
@@ -103,7 +103,24 @@ const freeFeatures=['Learning hub and topics','Selected resources and articles',
 const premiumFeatures=['Everything in Free','Expanded article and resource library','Live and recorded classes','Podcast episodes and notes','Saved-content library'];
 
 export function FreePremiumScreen({navigation}:any){
-  return <Shell navigation={navigation}><Text style={s.eyebrow}>MEMBERSHIP</Text><Text style={s.title}>Choose your level of support.</Text><Text style={s.copy}>Start with trusted education for free, then upgrade when you want expanded tools and experiences.</Text><View style={s.tier}><View style={s.tierHead}><Text style={s.tierName}>Free</Text><Star size={18} color={colors.muted}/></View>{freeFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}</View><View style={[s.tier,s.tierPremium]}><View style={s.tierHead}><Text style={s.tierName}>Premium</Text><Sparkles size={18} color={colors.green}/></View>{premiumFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}<Text style={s.priceNote}>Pricing is shown at checkout once payment options are connected.</Text></View><Pressable style={s.cta} onPress={()=>navigation.navigate('Packages')}><Text style={s.ctaText}>Explore Membership Options</Text></Pressable></Shell>;
+  const [premiumPrice,setPremiumPrice]=useState<string|null>(null);
+  useEffect(()=>{
+    let active=true;
+    // Show the real Premium price when the backend has one configured; until
+    // then keep the honest "shown at checkout" note rather than inventing one.
+    loadPlans()
+      .then(r=>{
+        if(!active)return;
+        const premium=r?.plans?.find(p=>p.code==='premium')||r?.plans?.[r.plans.length-1];
+        if(premium&&premium.priceCents!=null){
+          const amount=(premium.priceCents/100).toFixed(2).replace(/\.00$/,'');
+          setPremiumPrice(`$${amount}${premium.interval?` / ${premium.interval}`:''}`);
+        }
+      })
+      .catch(()=>undefined);
+    return ()=>{active=false;};
+  },[]);
+  return <Shell navigation={navigation}><Text style={s.eyebrow}>MEMBERSHIP</Text><Text style={s.title}>Choose your level of support.</Text><Text style={s.copy}>Start with trusted education for free, then upgrade when you want expanded tools and experiences.</Text><View style={s.tier}><View style={s.tierHead}><Text style={s.tierName}>Free</Text><Star size={18} color={colors.muted}/></View>{freeFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}</View><View style={[s.tier,s.tierPremium]}><View style={s.tierHead}><Text style={s.tierName}>Premium</Text><Sparkles size={18} color={colors.green}/></View>{premiumFeatures.map(f=><Text key={f} style={s.feature}>• {f}</Text>)}<Text style={s.priceNote}>{premiumPrice?`Premium is ${premiumPrice}. Final pricing is confirmed at checkout.`:'Pricing is shown at checkout once payment options are connected.'}</Text></View><Pressable style={s.cta} onPress={()=>navigation.navigate('Packages')}><Text style={s.ctaText}>Explore Membership Options</Text></Pressable></Shell>;
 }
 
 export function CheckoutScreen({navigation,route}:any){
@@ -132,16 +149,32 @@ export function AppointmentDetailScreen({navigation,route}:any){
   const [stored,setStored]=useState<any>(null);
   const [history,setHistory]=useState<any[]>([]);
   const [busy,setBusy]=useState(false);
+  const [loadError,setLoadError]=useState('');
   const refresh=async()=>{
     try{
+      setLoadError('');
       const [current,list]=await Promise.all([loadAppointment(),listAppointments()]);
       setStored(current);
       setHistory((list||[]).filter((a:any)=>a.id&&a.id!==current?.id));
-    }catch{}
+    }catch(e:any){
+      // Surface the failure instead of silently showing an empty appointment.
+      setLoadError(e?.message||'Could not load your appointment details. Please try again.');
+    }
   };
   useEffect(()=>{refresh();},[]);
+  // Route params win, but any field they omit falls back to the appointment saved
+  // at booking time — that is where the video room id lives, so joining from
+  // "View appointment details" still lands in the same room.
+  // A notification tap names a specific appointment, so prefer that row even
+  // when it is no longer the "current" one (e.g. a reminder for a past visit).
+  const namedId=params.appointmentId;
+  const named=namedId?(stored?.id===namedId?stored:(history.find((a:any)=>a.id===namedId)||null)):null;
+  const savedStored=named||((stored&&(!params.slot||params.slot===stored.slot))?stored:null);
+  // The appointment the member is looking at is the one Cancel must act on,
+  // whether it is the current visit or one opened from a notification.
+  const shownId=named?.id||stored?.id;
   const onCancel=()=>{
-    const id=stored?.id;
+    const id=shownId;
     if(!id||busy)return;
     Alert.alert('Cancel this visit','Your appointment will be cancelled. You can book another time from Telehealth.',[
       {text:'Keep Visit',style:'cancel'},
@@ -149,7 +182,7 @@ export function AppointmentDetailScreen({navigation,route}:any){
         setBusy(true);
         try{
           await cancelAppointment(id);
-          await clearAppointment();
+          if(id===stored?.id){ await clearAppointment(); }
           await refresh();
           Alert.alert('Visit cancelled','Your appointment has been cancelled.');
         }catch(e:any){
@@ -158,12 +191,8 @@ export function AppointmentDetailScreen({navigation,route}:any){
       }},
     ]);
   };
-  // Route params win, but any field they omit falls back to the appointment saved
-  // at booking time — that is where the video room id lives, so joining from
-  // "View appointment details" still lands in the same room.
-  const savedStored=(stored&&(!params.slot||params.slot===stored.slot))?stored:null;
   const pick=(key:string)=>params[key]??savedStored?.[key];
-  const slot=pick('slot')||'Tue · 10:00 AM';
+  const slot=pick('slot');
   const meetingUrl=pick('meetingUrl');
   const bookingId=pick('bookingId');
   const visitType=pick('visitType')||'video';
@@ -192,6 +221,7 @@ export function AppointmentDetailScreen({navigation,route}:any){
       <Text style={s.copy}>
         Review your consultation details below. Your session is scheduled directly with Maureen Ashbarry, MS, RD.
       </Text>
+      {loadError?<Text style={{fontFamily:'Roboto',fontSize:13,lineHeight:19,color:colors.red,marginTop:12}}>{loadError}</Text>:null}
       
       {/* Consultation Card */}
       <View style={s.infoRow}>
@@ -216,7 +246,7 @@ export function AppointmentDetailScreen({navigation,route}:any){
       <View style={s.summary}>
         <View style={s.summaryRow}>
           <Text style={s.summaryLabel}>Scheduled Time</Text>
-          <Text style={s.summaryValue}>{slot}</Text>
+          <Text style={s.summaryValue}>{slot||'Not scheduled'}</Text>
         </View>
         <View style={s.summaryRow}>
           <Text style={s.summaryLabel}>Consultation Format</Text>
@@ -282,7 +312,7 @@ export function AppointmentDetailScreen({navigation,route}:any){
       </Pressable>
 
       {/* Cancel action - only when the visit is persisted server-side */}
-      {stored?.id?(
+      {shownId?(
         <Pressable style={s.link} onPress={onCancel} disabled={busy}>
           <Text style={[s.linkText,{color:colors.red}]}>{busy?'Cancelling…':'Cancel this visit →'}</Text>
         </Pressable>

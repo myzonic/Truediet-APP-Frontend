@@ -97,7 +97,6 @@ const s = StyleSheet.create({
   headerContent: {
     flex: 1,
     minWidth: 0,
-    marginRight: 8,
   },
   eyebrow: {
     fontFamily: 'Roboto',

@@ -240,8 +240,17 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
     try {
       await saveProfile(payload);
       if (displayName.trim() && displayName.trim() !== user?.name) {
-        await updateName(displayName.trim()).catch(() => undefined);
-        await refetchSession();
+        try {
+          await updateName(displayName.trim());
+          await refetchSession();
+        } catch (e: any) {
+          // The profile itself saved, but the name did not change on the
+          // account. Say so instead of reporting a full success.
+          setErrorStatus(
+            e?.message || 'Your profile was saved, but your display name could not be updated.'
+          );
+          return;
+        }
       }
       setStatus('Your profile and nutrition preferences have been saved.');
     } catch (e: any) {
@@ -396,6 +405,9 @@ export function SettingsScreen({ navigation, route }: any) {
   const [notif, setNotif] = useState<Record<string, boolean>>(DEFAULT_NOTIF);
   const [access, setAccess] = useState<Record<string, boolean>>(DEFAULT_ACCESS);
   const [note, setNote] = useState('');
+  // Distinguishes a success message from a failure so failures are never
+  // rendered with the green "saved" styling.
+  const [noteError, setNoteError] = useState(false);
   const [pwOpen, setPwOpen] = useState(Boolean(route?.params?.openPassword));
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
@@ -415,8 +427,10 @@ export function SettingsScreen({ navigation, route }: any) {
       await updateName(trimmed);
       await refetchSession();
       setEditNameOpen(false);
+      setNoteError(false);
       setNote('Account name updated.');
     } catch (e: any) {
+      setNoteError(true);
       setNote(e?.message || 'Could not update name.');
     } finally {
       setNameBusy(false);
@@ -478,8 +492,10 @@ export function SettingsScreen({ navigation, route }: any) {
   const persist = async (nextNotif: Record<string, boolean>, nextAccess: Record<string, boolean>) => {
     try {
       await savePreferences({ notifications: nextNotif, accessibility: nextAccess });
+      setNoteError(false);
       setNote('Preferences saved.');
     } catch (e: any) {
+      setNoteError(true);
       setNote(e?.message || 'Could not save your preferences. Please try again.');
     }
   };
@@ -634,7 +650,7 @@ export function SettingsScreen({ navigation, route }: any) {
         <Toggle label="Larger text" subtitle="Increase base text size" value={!!access.largerText} onChange={setA('largerText')} />
         <Toggle label="Reduce motion" subtitle="Minimize animations" value={!!access.reduceMotion} onChange={setA('reduceMotion')} />
       </View>
-      {note ? <Text style={s.saved}>{note}</Text> : null}
+      {note ? <Text style={noteError ? s.error : s.saved}>{note}</Text> : null}
 
       <Text style={s.section}>Privacy & Support</Text>
       <View style={s.list}>
@@ -653,6 +669,8 @@ export function PrivacyScreen({ navigation }: any) {
   const [consent, setConsent] = useState<Record<string, boolean>>(DEFAULT_CONSENT);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  // Failure messages must not render with the green "saved" styling.
+  const [noteError, setNoteError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -672,8 +690,10 @@ export function PrivacyScreen({ navigation }: any) {
   const persist = async (next: Record<string, boolean>) => {
     try {
       await savePreferences({ consents: next });
+      setNoteError(false);
       setNote('Consent preferences updated.');
     } catch (e: any) {
+      setNoteError(true);
       setNote(e?.message || 'Could not save your consent preferences. Please try again.');
     }
   };
@@ -758,7 +778,7 @@ export function PrivacyScreen({ navigation }: any) {
           onChange={setC('analytics')}
         />
       </View>
-      {note ? <Text style={s.saved}>{note}</Text> : null}
+      {note ? <Text style={noteError ? s.error : s.saved}>{note}</Text> : null}
 
       <Text style={s.section}>Your Data & Account</Text>
       <View style={s.list}>

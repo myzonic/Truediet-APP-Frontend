@@ -62,6 +62,7 @@ export default function TrackScreen({ navigation }: any) {
   const [editNotes, setEditNotes] = useState('');
   const [editType, setEditType] = useState<MealType>('breakfast');
   const [savingEdit, setSavingEdit] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const selectedDate = (() => {
     const d = new Date();
@@ -72,16 +73,21 @@ export default function TrackScreen({ navigation }: any) {
   const isToday = dayOffset === 0;
 
   const refresh = useCallback(async () => {
-    try {
-      const [p, m, w] = await Promise.all([
-        loadProgress().catch(() => null),
-        loadMeals(selectedKey).catch(() => []),
-        loadWaterSummary().catch(() => ({ dailyGoalMl: 2000, totalMl: 0, remainingMl: 2000 })),
-      ]);
-      setProgress(p);
-      setMeals(m);
-      setWater({ dailyGoalMl: w.dailyGoalMl, totalMl: w.totalMl });
-    } catch {}
+    // allSettled so one failed call does not hide the others, and so a failure
+    // can be reported instead of silently rendering empty stats.
+    const [p, m, w] = await Promise.allSettled([
+      loadProgress(),
+      loadMeals(selectedKey),
+      loadWaterSummary(),
+    ]);
+    setProgress(p.status === 'fulfilled' ? p.value : null);
+    setMeals(m.status === 'fulfilled' ? m.value : []);
+    setWater(
+      w.status === 'fulfilled'
+        ? { dailyGoalMl: w.value.dailyGoalMl, totalMl: w.value.totalMl }
+        : { dailyGoalMl: 2000, totalMl: 0 }
+    );
+    setLoadFailed([p, m, w].some((r) => r.status === 'rejected'));
   }, [selectedKey]);
 
   useFocusEffect(
@@ -170,6 +176,11 @@ export default function TrackScreen({ navigation }: any) {
         <Text style={s.subtitle}>
           Notice patterns in your eating, hydration, hunger, and energy without turning nutrition into a numbers game.
         </Text>
+        {loadFailed ? (
+          <Text style={s.loadError}>
+            Some of your tracking data could not be loaded. Switch to another day and back to try again.
+          </Text>
+        ) : null}
 
         {/* Day selector for Meal History */}
         <View style={s.dateRow}>
@@ -388,6 +399,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
   eyebrow: { fontFamily: 'Roboto', fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: colors.green },
   subtitle: { fontFamily: 'Roboto', fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginTop: 8 },
+  loadError: { fontFamily: 'Roboto', fontSize: 12, lineHeight: 18, color: colors.red, marginTop: 10 },
   dateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

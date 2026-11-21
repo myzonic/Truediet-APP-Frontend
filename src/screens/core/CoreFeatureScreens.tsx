@@ -152,7 +152,11 @@ export function VoiceFoodLogScreen({navigation}:any){
     try{
       await removeVoiceTranscription(id);
       setHistory(prev=>prev.filter(h=>h.id!==id));
-    }catch{}
+    }catch(e:any){
+      // Tell the member the row is still there instead of removing it locally
+      // while it remains on the server.
+      Alert.alert('Could not delete',e?.message||'Please try again.');
+    }
   };
 
   const mealOptions:[MealType,string][]=[['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['snack','Snack']];
