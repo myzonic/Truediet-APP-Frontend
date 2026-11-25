@@ -1,14 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import { CheckCircle2, ClipboardCheck } from 'lucide-react-native';
 import { AppNavigation } from '../navigation/AppNavigator';
 import { colors } from '../theme/colors';
+import { useLayoutMetrics } from '../theme/responsive';
 import { radius, spacing } from '../theme/tokens';
 
 export default function BuildingProfileScreen({ navigation }: { navigation: AppNavigation }) {
   const progress = useRef(new Animated.Value(0)).current;
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
   useEffect(() => {
     const animation = Animated.timing(progress, { toValue: 1, duration: 1800, useNativeDriver: false });
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -23,26 +25,33 @@ export default function BuildingProfileScreen({ navigation }: { navigation: AppN
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.phone}>
-        <Image source={require('../../assets/truediet-logo.png')} style={s.logo} />
-        <View style={s.wrap}>
-          <View style={s.icon}>
-            <ClipboardCheck size={34} color={colors.teal} />
+      <View style={[s.phone, { maxWidth: contentWidth }]}>
+        <ScrollView
+          style={{ width: '100%' }}
+          contentContainerStyle={[s.scrollContent, { paddingHorizontal: horizontalPadding }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Image source={require('../../assets/truediet-logo.png')} style={s.logo} />
+          <View style={s.wrap}>
+            <View style={s.icon}>
+              <ClipboardCheck size={34} color={colors.teal} />
+            </View>
+            <Text style={s.title}>Building your nutrition profile</Text>
+            <Text style={s.copy}>We’re organizing your answers to personalize your True Diet experience.</Text>
+            <View style={s.track}>
+              <Animated.View style={[s.fill, { width }]} />
+            </View>
+            <View style={s.list}>
+              {['Nutrition goals', 'Personal details', 'Food allergies & intolerances', 'Dietary preferences'].map(x => (
+                <View key={x} style={s.row}>
+                  <CheckCircle2 size={19} color={colors.green} />
+                  <Text style={s.rowText}>{x}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <Text style={s.title}>Building your nutrition profile</Text>
-          <Text style={s.copy}>We’re organizing your answers to personalize your True Diet experience.</Text>
-          <View style={s.track}>
-            <Animated.View style={[s.fill, { width }]} />
-          </View>
-          <View style={s.list}>
-            {['Nutrition goals', 'Personal details', 'Food allergies & intolerances', 'Dietary preferences'].map(x => (
-              <View key={x} style={s.row}>
-                <CheckCircle2 size={19} color={colors.green} />
-                <Text style={s.rowText}>{x}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -52,7 +61,8 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
   phone: { width: '100%', maxWidth: CONTENT_MAX_WIDTH, maxHeight: 915, flex: 1, backgroundColor: colors.surface },
   logo: { width: 94, height: 40, alignSelf: 'center', marginTop: spacing.lg, resizeMode: 'contain' },
-  wrap: { flex: 1, paddingHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center' },
+  scrollContent: { flexGrow: 1, width: '100%', alignItems: 'center' },
+  wrap: { flexGrow: 1, width: '100%', alignItems: 'center', justifyContent: 'center' },
   icon: { width: 78, height: 78, borderRadius: 39, backgroundColor: colors.softGreen, alignItems: 'center', justifyContent: 'center' },
   title: { marginTop: spacing.xl, color: colors.deepTeal, fontSize: 27, lineHeight: 34, fontWeight: '800', textAlign: 'center' },
   copy: { marginTop: spacing.sm, maxWidth: 320, color: colors.muted, fontSize: 15, lineHeight: 23, textAlign: 'center' },

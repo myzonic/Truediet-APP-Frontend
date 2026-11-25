@@ -232,14 +232,14 @@ export default function TrackScreen({ navigation }: any) {
         {/* Water Tracking */}
         <Text style={s.section}>Hydration Tracking</Text>
         <View style={s.waterCard}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
               <Droplet size={20} color={colors.deepTeal} />
-              <Text style={s.rowTitle}>
+              <Text style={[s.rowTitle, { flexShrink: 1 }]}>
                 {water.totalMl} / {water.dailyGoalMl} ml
               </Text>
             </View>
-            <Text style={s.small}>{waterPct}% of daily goal</Text>
+            <Text style={[s.small, { flexShrink: 1, textAlign: 'right' }]}>{waterPct}% of daily goal</Text>
           </View>
           <View style={s.waterBarTrack}>
             <View style={[s.waterBarFill, { width: `${waterPct}%` }]} />

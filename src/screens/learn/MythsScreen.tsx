@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, ChevronRight, Search } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useResponsiveContentStyle } from '../../theme/responsive';
 import { searchMyths } from '../../lib/mythContent';
 import { loadMyths } from '../../lib/contentLibrary';
 import { Myth } from '../../lib/mythContent';
@@ -11,6 +12,7 @@ import { Myth } from '../../lib/mythContent';
 export default function MythsScreen({ navigation }: any) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Myth[] | null>(null);
+  const contentStyle = useResponsiveContentStyle(s.content);
 
   useEffect(() => {
     let active = true;
@@ -40,7 +42,7 @@ export default function MythsScreen({ navigation }: any) {
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView style={s.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={contentStyle} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Pressable style={s.back} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>

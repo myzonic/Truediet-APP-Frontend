@@ -211,7 +211,8 @@ export async function updateMeal(
  */
 export async function loadCheckins(): Promise<HungerCheckin[]> {
   try {
-    const res = await apiFetch<{ checkins: HungerCheckin[] }>('/api/hunger', { method: 'GET' });
+    const res = await apiFetch<{ checkins: HungerCheckin[] } | HungerCheckin[]>('/api/hunger', { method: 'GET' });
+    if (Array.isArray(res)) return res;
     return res?.checkins ?? [];
   } catch (error) {
     if (!isOfflineError(error)) throw error;
@@ -260,7 +261,8 @@ export async function addCheckin(input: {
  */
 export async function loadWeights(): Promise<WeightEntry[]> {
   try {
-    const res = await apiFetch<{ entries: WeightEntry[] }>('/api/weight', { method: 'GET' });
+    const res = await apiFetch<{ entries: WeightEntry[] } | WeightEntry[]>('/api/weight', { method: 'GET' });
+    if (Array.isArray(res)) return res;
     return res?.entries ?? [];
   } catch (error) {
     if (!isOfflineError(error)) throw error;

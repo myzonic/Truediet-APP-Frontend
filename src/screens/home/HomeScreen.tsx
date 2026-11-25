@@ -43,7 +43,9 @@ interface Insight {
 export default function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { data, updateData } = useOnboarding();
-  const { gridItemWidth, gutter } = useLayoutMetrics();
+  const { innerWidth, columnsFor, gridItemWidth, gutter } = useLayoutMetrics();
+  const summaryCols = columnsFor(3, 96);
+  const summaryWidth = gridItemWidth(summaryCols);
   const hour = new Date().getHours();
   const baseGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const firstName = user?.name ? user.name.trim().split(/\s+/)[0] : '';
@@ -215,16 +217,16 @@ export default function HomeScreen({ navigation }: any) {
           actionText="Open Track"
           onAction={() => navigation.navigate('Track')}
         />
-        <View style={[s.summaryRow, { gap: gutter }]}>
-          <Pressable style={s.summaryCard} onPress={() => open('MealLog')}>
+        <View style={[s.summaryRow, { flexWrap: 'wrap', gap: gutter }]}>
+          <Pressable style={[s.summaryCard,{ width: summaryWidth, flex: 0, flexBasis: 'auto', flexGrow: 0 }]} onPress={() => open('MealLog')}>
             <Text style={s.summaryValue}>{progress?.today.meals ?? recentMeals.length}</Text>
             <Text style={s.summaryLabel}>Meals today</Text>
           </Pressable>
-          <Pressable style={s.summaryCard} onPress={() => open('HungerFullness')}>
+          <Pressable style={[s.summaryCard,{ width: summaryWidth, flex: 0, flexBasis: 'auto', flexGrow: 0 }]} onPress={() => open('HungerFullness')}>
             <Text style={s.summaryValue}>{progress?.today.checkins ?? 0}</Text>
             <Text style={s.summaryLabel}>Check-ins today</Text>
           </Pressable>
-          <Pressable style={s.summaryCard} onPress={() => open('ProgressPatterns')}>
+          <Pressable style={[s.summaryCard,{ width: summaryCols === 2 ? innerWidth : summaryWidth, flex: 0, flexBasis: 'auto', flexGrow: 0 }]} onPress={() => open('ProgressPatterns')}>
             <Text style={s.summaryValue}>{progress?.week.meals ?? 0}</Text>
             <Text style={s.summaryLabel}>Meals this week</Text>
           </Pressable>

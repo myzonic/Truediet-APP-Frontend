@@ -4,12 +4,13 @@ import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Sha
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Bell, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, CircleHelp, Clock3, CreditCard, LockKeyhole, MessageSquare, Phone, ShieldCheck, Sparkles, Star, Video } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useLayoutMetrics } from '../../theme/responsive';
 import { loadPlans, startCheckout } from '../../lib/subscription';
 import { cancelAppointment, clearAppointment, listAppointments, loadAppointment } from '../../lib/appointments';
 import { disablePushNotifications, getPermissionState, isPushSupported, readStoredPushToken, requestPushPermissionAndRegister } from '../../lib/notifications';
 import { apiFetch } from '../../lib/api-client';
 
-const Shell=({navigation,children}:{navigation:any;children:React.ReactNode})=><SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>;
+const Shell=({navigation,children}:{navigation:any;children:React.ReactNode})=>{const {contentWidth,horizontalPadding}=useLayoutMetrics();return <SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={[s.content,{maxWidth:contentWidth,paddingHorizontal:horizontalPadding}]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}><ArrowLeft size={22} color={colors.text}/></Pressable>{children}</ScrollView></SafeAreaView>;};
 
 const Accordion=({q,a}:{q:string;a:string})=>{const [open,setOpen]=useState(false);return <Pressable style={s.faq} onPress={()=>setOpen(!open)}><View style={s.faqHead}><Text style={s.faqQ}>{q}</Text>{open?<ChevronUp size={19} color={colors.muted}/>:<ChevronDown size={19} color={colors.muted}/>}</View>{open?<Text style={s.faqA}>{a}</Text>:null}</Pressable>;};
 

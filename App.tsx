@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Platform } from 'react-native';
+import { Platform, Text } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useFonts } from 'expo-font';
 import { OnboardingProvider } from './src/context/OnboardingContext';
@@ -12,6 +12,15 @@ import { configureNotifications, resolveNotificationTarget } from './src/lib/not
 import { installWebAlert } from './src/lib/feedback';
 
 installWebAlert();
+
+/**
+ * RN Text accepts 1.3x the declared size at most. This keeps large OS font
+ * settings from breaking fixed-height rows, buttons and tab labels while still
+ * respecting the user's accessibility preference.
+ */
+const textDefaults = (Text as any).defaultProps || {};
+textDefaults.maxFontSizeMultiplier = 1.3;
+(Text as any).defaultProps = textDefaults;
 
 /** Screens that mean "not signed in yet"; a tap must not push past them. */
 const ONBOARDING_ROUTES = new Set([

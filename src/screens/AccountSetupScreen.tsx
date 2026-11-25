@@ -595,7 +595,8 @@ const s = StyleSheet.create({
     marginTop: spacing.lg,
   },
   verifySecondaryButton: {
-    height: dimensions.buttonHeightSmall,
+    minHeight: dimensions.buttonHeightSmall,
+    paddingVertical: spacing.sm,
     width: '100%',
     borderRadius: radius.md,
     borderWidth: 1,
@@ -613,6 +614,8 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.deepTeal,
+    flexShrink: 1,
+    textAlign: 'center',
   },
   verifyBackLink: {
     marginTop: spacing.xs,

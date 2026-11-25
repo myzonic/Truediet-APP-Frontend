@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Sc
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Mic, Search } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useLayoutMetrics } from '../../theme/responsive';
 import { Pill, PillGroup } from '../../components/Pill';
 import { addMeal, MealType } from '../../lib/track';
 
@@ -41,6 +42,7 @@ export default function MealLogScreen({ navigation, route }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
 
   const canSave = food.trim().length > 0 && !saving;
 
@@ -79,7 +81,7 @@ export default function MealLogScreen({ navigation, route }: any) {
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView style={{ flex: 1, width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ width: '100%' }} contentContainerStyle={[s.content,{ maxWidth: contentWidth, paddingHorizontal: horizontalPadding }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Pressable style={s.back} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}>
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>

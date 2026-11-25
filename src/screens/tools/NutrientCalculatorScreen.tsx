@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useLayoutMetrics } from '../../theme/responsive';
 import { Pill, PillGroup } from '../../components/Pill';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -43,6 +44,10 @@ export default function NutrientCalculatorScreen({ navigation }: any) {
   const [customCarbs, setCustomCarbs] = useState('');
   const [customFat, setCustomFat] = useState('');
   const [saving, setSaving] = useState(false);
+  const { innerWidth, columnsFor, gutter } = useLayoutMetrics();
+  const gridCols = columnsFor(2, 120);
+  const cardInnerWidth = Math.max(0, innerWidth - 2 * (spacing.cardPadding + 1));
+  const gridWidth = gridCols === 2 ? (cardInnerWidth - gutter) / 2 - 0.5 : cardInnerWidth;
 
   const filteredDatabase = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -125,20 +130,20 @@ export default function NutrientCalculatorScreen({ navigation }: any) {
         {/* Totals Summary */}
         <View style={s.totalsCard}>
           <Text style={s.totalsLabel}>MEAL ESTIMATE</Text>
-          <View style={s.totalsGrid}>
-            <View style={s.totalItem}>
+          <View style={[s.totalsGrid,{ gap: gutter }]}>
+            <View style={[s.totalItem,{ width: gridWidth, flexBasis: 'auto', flexGrow: 0 }]}>
               <Text style={s.totalVal}>{Math.round(totals.calories)}</Text>
               <Text style={s.totalKey}>kcal</Text>
             </View>
-            <View style={s.totalItem}>
+            <View style={[s.totalItem,{ width: gridWidth, flexBasis: 'auto', flexGrow: 0 }]}>
               <Text style={s.totalVal}>{totals.protein.toFixed(1)}g</Text>
               <Text style={s.totalKey}>Protein</Text>
             </View>
-            <View style={s.totalItem}>
+            <View style={[s.totalItem,{ width: gridWidth, flexBasis: 'auto', flexGrow: 0 }]}>
               <Text style={s.totalVal}>{totals.carbs.toFixed(1)}g</Text>
               <Text style={s.totalKey}>Carbs</Text>
             </View>
-            <View style={s.totalItem}>
+            <View style={[s.totalItem,{ width: gridWidth, flexBasis: 'auto', flexGrow: 0 }]}>
               <Text style={s.totalVal}>{totals.fat.toFixed(1)}g</Text>
               <Text style={s.totalKey}>Fat</Text>
             </View>
@@ -218,11 +223,11 @@ export default function NutrientCalculatorScreen({ navigation }: any) {
             placeholderTextColor={colors.muted}
             style={s.input}
           />
-          <View style={s.customGrid}>
-            <TextInput value={customCalories} onChangeText={setCustomCalories} keyboardType="numeric" placeholder="kcal" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
-            <TextInput value={customProtein} onChangeText={setCustomProtein} keyboardType="numeric" placeholder="Protein (g)" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
-            <TextInput value={customCarbs} onChangeText={setCustomCarbs} keyboardType="numeric" placeholder="Carbs (g)" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
-            <TextInput value={customFat} onChangeText={setCustomFat} keyboardType="numeric" placeholder="Fat (g)" placeholderTextColor={colors.muted} style={[s.input, { flexBasis: '47%', flexGrow: 1, minWidth: 0 }]} />
+          <View style={[s.customGrid,{ gap: gutter }]}>
+            <TextInput value={customCalories} onChangeText={setCustomCalories} keyboardType="numeric" placeholder="kcal" placeholderTextColor={colors.muted} style={[s.input, { width: gridWidth }]} />
+            <TextInput value={customProtein} onChangeText={setCustomProtein} keyboardType="numeric" placeholder="Protein (g)" placeholderTextColor={colors.muted} style={[s.input, { width: gridWidth }]} />
+            <TextInput value={customCarbs} onChangeText={setCustomCarbs} keyboardType="numeric" placeholder="Carbs (g)" placeholderTextColor={colors.muted} style={[s.input, { width: gridWidth }]} />
+            <TextInput value={customFat} onChangeText={setCustomFat} keyboardType="numeric" placeholder="Fat (g)" placeholderTextColor={colors.muted} style={[s.input, { width: gridWidth }]} />
           </View>
           <Pressable style={s.secondaryBtn} onPress={addCustomFood}>
             <Text style={s.secondaryBtnText}>+ Add Custom Item</Text>

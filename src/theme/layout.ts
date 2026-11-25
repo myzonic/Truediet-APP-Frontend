@@ -1,16 +1,15 @@
-import { Dimensions } from 'react-native';
+import { CONTENT_MAX_WIDTH_LIMIT } from './responsive';
 
 /**
- * Content width for the app's reading column.
+ * Reading-column caps.
  *
- * Phones render full width; tablets and unfolded/foldable devices cap the
- * column so lines of text stay readable instead of stretching across the
- * screen. The app is portrait-locked, so reading the size once at module load
- * is sufficient.
+ * These are upper bounds, not fixed widths. Screens combine them with
+ * `width: '100%'` so phones always fill the viewport while tablets and
+ * unfolded foldables stay at a readable maximum. Unlike the old module-load
+ * `Dimensions.get()` values, these constants remain correct after rotation,
+ * split-screen and fold/unfold changes.
  */
-const { width } = Dimensions.get('window');
-
-export const CONTENT_MAX_WIDTH = Math.min(560, width);
+export const CONTENT_MAX_WIDTH = CONTENT_MAX_WIDTH_LIMIT;
 
 /** Bottom tab bar follows the same column so it lines up with the content. */
-export const TAB_BAR_MAX_WIDTH = Math.min(560, width);
+export const TAB_BAR_MAX_WIDTH = CONTENT_MAX_WIDTH_LIMIT;

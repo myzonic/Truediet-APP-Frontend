@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useResponsiveContentStyle } from '../../theme/responsive';
 import { allArticles, findArticle, findArticleByTitle, LearnArticle } from '../../lib/learnContent';
 import { loadArticle } from '../../lib/contentLibrary';
 import { saveContent } from '../../lib/content';
@@ -21,6 +22,7 @@ export default function ArticleScreen({ navigation, route }: any) {
   const [topicTitle, setTopicTitle] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const contentStyle = useResponsiveContentStyle(s.content);
 
   useEffect(() => {
     let active = true;
@@ -84,7 +86,7 @@ export default function ArticleScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={contentStyle}>
         <Pressable style={s.back} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>

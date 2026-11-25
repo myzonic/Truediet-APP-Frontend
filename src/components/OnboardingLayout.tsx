@@ -4,6 +4,7 @@ import { ArrowLeft, ShieldCheck } from 'lucide-react-native';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../theme/layout';
 import { colors } from '../theme/colors';
+import { useLayoutMetrics } from '../theme/responsive';
 import { typography } from '../theme/typography';
 import { dimensions, radius, spacing } from '../theme/tokens';
 
@@ -26,21 +27,33 @@ export default function OnboardingLayout({
   continueText?: string;
   children: React.ReactNode;
 }) {
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView
         style={s.kav}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={s.phone}>
-        <View style={s.top}>
-          <Pressable onPress={onBack} style={s.back} hitSlop={6}>
+        <View style={[s.phone, { maxWidth: contentWidth }]}>
+        <View style={[s.top, { paddingHorizontal: horizontalPadding }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={onBack}
+            style={s.back}
+            hitSlop={6}
+          >
             <ArrowLeft size={21} color={colors.deepTeal} />
           </Pressable>
-          <Image source={require('../../assets/truediet-logo.png')} style={s.brand} resizeMode="contain" />
+          <Image
+            accessibilityLabel="TrueDiet logo"
+            source={require('../../assets/truediet-logo.png')}
+            style={s.brand}
+            resizeMode="contain"
+          />
           <View style={s.back} />
         </View>
-        <View style={s.progress}>
+        <View style={[s.progress, { paddingHorizontal: horizontalPadding }]}>
           <View style={s.progressText}>
             <Text style={s.step}>ASSESSMENT · STEP {step}/4</Text>
             <Text style={s.step}>{step * 25}%</Text>
@@ -49,17 +62,19 @@ export default function OnboardingLayout({
             <View style={[s.fill, { width: `${step * 25}%` }]} />
           </View>
         </View>
-        <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ width: '100%' }} contentContainerStyle={[s.content, { paddingHorizontal: horizontalPadding }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <Text style={s.title}>{title}</Text>
           <Text style={s.subtitle}>{subtitle}</Text>
           <View style={s.options}>{children}</View>
         </ScrollView>
-        <View style={s.footer}>
+        <View style={[s.footer, { paddingHorizontal: horizontalPadding }]}>
           <View style={s.trust}>
             <ShieldCheck size={15} color={colors.green} />
             <Text style={s.trustText}>Customized by Registered Dietitians</Text>
           </View>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={continueText}
             disabled={continueDisabled}
             onPress={onContinue}
             style={({ pressed }) => [s.button, continueDisabled && s.disabled, pressed && !continueDisabled && s.pressed]}
@@ -78,7 +93,7 @@ const s = StyleSheet.create({
   kav: { flex: 1, width: '100%', alignItems: 'center' },
   phone: { flex: 1, width: '100%', maxWidth: CONTENT_MAX_WIDTH, backgroundColor: colors.surface },
   top: { height: 54, paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  back: { width: dimensions.backButtonSize, height: dimensions.backButtonSize, alignItems: 'center', justifyContent: 'center' },
+  back: { width: dimensions.backButtonSize, height: dimensions.backButtonSize, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   brand: { width: 94, height: 38 },
   progress: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
   progressText: { flexDirection: 'row', justifyContent: 'space-between' },

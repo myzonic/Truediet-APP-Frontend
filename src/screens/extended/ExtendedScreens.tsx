@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, CircleHelp, CreditCard, FileText, Heart, LockKeyhole, MessageSquare, Search, Settings, ShieldCheck, UserRound } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useResponsiveContentStyle } from '../../theme/responsive';
 import { GoogleIcon } from '../../components/GoogleIcon';
 import { loadContent, loadSavedContent } from '../../lib/content';
 import { loadThreads, loadThread, sendMessage } from '../../lib/messages';
@@ -254,6 +255,7 @@ function AuthScreen({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const contentStyle = useResponsiveContentStyle(s.auth);
   const config: any = {
     Login: ['WELCOME BACK', 'Log in to True Diet.'],
     CreateAccount: ['CREATE ACCOUNT', 'Start saving your personalized experience.'],
@@ -331,7 +333,7 @@ function AuthScreen({
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView style={{ flex: 1, width: '100%', alignItems: 'center' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={s.scroll} contentContainerStyle={s.auth} keyboardShouldPersistTaps="handled">
+        <ScrollView style={s.scroll} contentContainerStyle={contentStyle} keyboardShouldPersistTaps="handled">
           <Pressable style={s.authBack} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Welcome')} hitSlop={6} accessibilityRole="button" accessibilityLabel="Go back">
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>
@@ -400,6 +402,7 @@ export function ExtendedScreen({ navigation, route }: any) {
 
 function GenericScreen({ navigation, name }: { navigation: any; name: string }) {
   const d = screens[name] || screens.Resources;
+  const contentStyle = useResponsiveContentStyle(s.content);
   const [query, setQuery] = useState('');
   const [remoteItems, setRemoteItems] = useState<Item[] | null>(null);
   const [searchResults, setSearchResults] = useState<Item[] | null>(null);
@@ -472,7 +475,7 @@ function GenericScreen({ navigation, name }: { navigation: any; name: string }) 
   };
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <ScrollView style={s.scroll} contentContainerStyle={contentStyle} keyboardShouldPersistTaps="handled">
         <Pressable style={s.back} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>
@@ -512,6 +515,7 @@ function GenericScreen({ navigation, name }: { navigation: any; name: string }) 
 }
 
 function MessageThreadView({ navigation, route }: any) {
+  const contentStyle = useResponsiveContentStyle(s.content);
   const [messages, setMessages] = useState<any[]>([]);
   const [threadId, setThreadId] = useState<string | undefined>(route?.params?.threadId);
   const [loading, setLoading] = useState(true);
@@ -565,7 +569,7 @@ function MessageThreadView({ navigation, route }: any) {
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView style={{ flex: 1, width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+        <ScrollView style={s.scroll} contentContainerStyle={contentStyle} keyboardShouldPersistTaps="handled">
           <Pressable style={s.back} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8}>
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>

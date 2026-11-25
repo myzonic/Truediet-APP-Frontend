@@ -9,7 +9,7 @@ import TrackScreen from '../screens/track/TrackScreen';
 import ToolsScreen from '../screens/tools/ToolsScreen';
 import { ProfileHubScreen } from '../screens/profile/ProfileScreens';
 import { colors } from '../theme/colors';
-import { TAB_BAR_MAX_WIDTH } from '../theme/layout';
+import { useLayoutMetrics } from '../theme/responsive';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const icons = {
@@ -24,6 +24,7 @@ export default function MainTabNavigator() {
   // The tab bar grows by the device's bottom inset (home indicator on iPhone,
   // gesture bar on Android) and keeps equal-width columns for the 5 tabs.
   const insets = useSafeAreaInsets();
+  const { contentWidth } = useLayoutMetrics();
 
   return (
     <Tab.Navigator
@@ -41,7 +42,7 @@ export default function MainTabNavigator() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
           width: '100%',
-          maxWidth: TAB_BAR_MAX_WIDTH,
+          maxWidth: contentWidth,
           alignSelf: 'center',
         },
         tabBarAllowFontScaling: false,

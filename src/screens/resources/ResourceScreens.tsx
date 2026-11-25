@@ -5,6 +5,7 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, BookOpen, CalendarDays, ChevronRight, Clock3, FileText, Headphones, Heart, ListChecks, Mic, Play, Rss, Search, ShieldCheck, ShoppingCart, Sparkles } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useLayoutMetrics, useResponsiveContentStyle } from '../../theme/responsive';
 import { allArticles } from '../../lib/learnContent';
 import { listRegistrations, registerForSession, unregisterFromSession, Registration } from '../../lib/registrations';
 import { hubItems, HubItem } from '../../lib/libraryContent';
@@ -12,7 +13,10 @@ import { loadLibrary, LibraryItem, ResourceCategory, loadResourceCategories, loa
 import { loadSavedContent, ContentSummary, saveContent } from '../../lib/content';
 import { listProgress, recordResourceView, completeResource, ResourceProgressItem } from '../../lib/resourceHub';
 
-const Shell=({navigation,children,hideBack}:{navigation:any;children:React.ReactNode;hideBack?:boolean})=><SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>{hideBack?null:<Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}><ArrowLeft size={22} color={colors.text}/></Pressable>}{children}</ScrollView></SafeAreaView>;
+const Shell=({navigation,children,hideBack}:{navigation:any;children:React.ReactNode;hideBack?:boolean})=>{
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
+  return <SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={[s.content,{ maxWidth: contentWidth, paddingHorizontal: horizontalPadding }]} showsVerticalScrollIndicator={false}>{hideBack?null:<Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}><ArrowLeft size={22} color={colors.text}/></Pressable>}{children}</ScrollView></SafeAreaView>;
+};
 
 const Row=({icon:Icon,title,subtitle,onPress}:{icon:any;title:string;subtitle:string;onPress:()=>void})=><Pressable style={s.row} onPress={onPress}><View style={s.rowIcon}><Icon size={21} color={colors.deepTeal}/></View><View style={s.rowText}><Text style={s.rowTitle}>{title}</Text><Text style={s.rowSub}>{subtitle}</Text></View><ChevronRight size={19} color={colors.muted}/></Pressable>;
 
@@ -26,6 +30,9 @@ export function ResourcesHubScreen({navigation}:any){
   const [recently,setRecently]=useState<LibraryItem[]>([]);
   const [continueItems,setContinueItems]=useState<ResourceProgressItem[]>([]);
   const [loading,setLoading]=useState(true);
+  const { columnsFor, gridItemWidth, gutter } = useLayoutMetrics();
+  const quickCols = columnsFor(2, 140);
+  const quickWidth = gridItemWidth(quickCols);
   useEffect(()=>{let active=true;Promise.all([loadLibrary('resource'),loadSavedContent(),loadResourceCategories(),loadResourceRecommended(),loadResourceRecentlyAdded()]).then(([i,s,c,r,rec])=>{if(active){setItems(i);setSaved(s);setCategories(c);setRecommended(r);setRecently(rec);}}).catch(()=>{/* keep whatever loaded*/}).finally(()=>{if(active)setLoading(false);});listProgress().then((p)=>{if(active)setContinueItems(p.continue.slice(0,3));}).catch(()=>{/* anonymous or offline */});return()=>{active=false;};},[]);
   const ICONS:Record<string,any>={book:BookOpen,heart:Heart,shield:ShieldCheck,calendar:CalendarDays,headphones:Headphones};
   const hub=hubItems.map((h:HubItem)=>({...h,icon:ICONS[h.icon]||BookOpen}));
@@ -59,7 +66,7 @@ export function ResourcesHubScreen({navigation}:any){
     </View>
     <View style={s.section}>
       <Text style={s.sectionTitle}>Quick Actions</Text>
-      <View style={s.quickGrid}>{quickActions.map((q)=>(<Pressable key={q.title} style={s.quickItem} onPress={q.action}><View style={s.quickIcon}><q.icon size={20} color={colors.deepTeal}/></View><View style={s.quickBody}><Text style={s.quickTitle}>{q.title}</Text><Text style={s.quickSub}>{q.subtitle}</Text></View></Pressable>))}</View>
+      <View style={[s.quickGrid,{ gap: gutter }]}>{quickActions.map((q)=>(<Pressable key={q.title} style={[s.quickItem,{ width: quickWidth, flexBasis: 'auto', flexGrow: 0 }]} onPress={q.action}><View style={s.quickIcon}><q.icon size={20} color={colors.deepTeal}/></View><View style={s.quickBody}><Text style={s.quickTitle}>{q.title}</Text><Text style={s.quickSub}>{q.subtitle}</Text></View></Pressable>))}</View>
     </View>
     <View style={s.section}>
       <Text style={s.sectionTitle}>Browse Categories</Text>
@@ -104,6 +111,7 @@ export function ResourceDetailScreen({navigation,route}:any){
 }
 
 export function ResourceSearchScreen({navigation}:any){
+  const contentStyle=useResponsiveContentStyle(s.content);
   const [query,setQuery]=useState('');
   const [debounced,setDebounced]=useState('');
   const [type,setType]=useState('all');
@@ -113,16 +121,17 @@ export function ResourceSearchScreen({navigation}:any){
   useEffect(()=>{const t=setTimeout(()=>{setDebounced(query.trim());},300);return()=>{clearTimeout(t);};},[query]);
   useEffect(()=>{let active=true;setLoading(true);searchResources(debounced||'resource',type==='all'?'resource':type,category==='all'?undefined:category).then((r)=>{if(active)setResults(r);}).catch(()=>{if(active)setResults([]);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[debounced,type,category]);
   const TYPE_OPTIONS=[{value:'all',label:'All'},{value:'resource',label:'Guides'},{value:'article',label:'Articles'},{value:'myth',label:'Myths'},{value:'podcast',label:'Podcasts'},{value:'webinar',label:'Webinars'},{value:'class',label:'Classes'}];
-  return <SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}><ArrowLeft size={22} color={colors.text}/></Pressable><Text style={s.eyebrow}>SEARCH</Text><Text style={s.title}>Find what you need.</Text><Text style={s.copy}>Search True Diet guides, articles, myths, podcasts, and classes.</Text><View style={s.searchBar}><Search size={18} color={colors.muted}/><TextInput value={query} onChangeText={setQuery} placeholder="Search resources…" placeholderTextColor={colors.muted} style={s.searchInput}/></View><View style={s.chipRow}>{TYPE_OPTIONS.map((o)=><Pressable key={o.value} style={type===o.value?s.chipActive:s.chip} onPress={()=>setType(o.value)}><Text style={type===o.value?s.chipTextActive:s.chipText}>{o.label}</Text></Pressable>)}</View>{loading?<Text style={s.hint}>Searching…</Text>:<><Text style={s.resultCount}>{results.length} result{results.length===1?'':'s'}</Text>{results.length===0?<Text style={s.hint}>No results found. Try a different search.</Text>:results.map((r:LibraryItem)=><Pressable key={r.slug} style={s.card} onPress={()=>navigation.navigate('ResourceDetail',{slug:r.slug})}><Text style={s.label}>{(r.category||'').toUpperCase()}</Text><Text style={s.cardTitle}>{r.title}</Text><Text style={s.cardSummary}>{r.subtitle}</Text><Text style={s.read}>{r.durationMinutes?`${r.durationMinutes} min read`:'Guide'}</Text></Pressable>)}</>}</ScrollView></SafeAreaView>;
+  return <SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={contentStyle} keyboardShouldPersistTaps="handled"><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}><ArrowLeft size={22} color={colors.text}/></Pressable><Text style={s.eyebrow}>SEARCH</Text><Text style={s.title}>Find what you need.</Text><Text style={s.copy}>Search True Diet guides, articles, myths, podcasts, and classes.</Text><View style={s.searchBar}><Search size={18} color={colors.muted}/><TextInput value={query} onChangeText={setQuery} placeholder="Search resources…" placeholderTextColor={colors.muted} style={s.searchInput}/></View><View style={s.chipRow}>{TYPE_OPTIONS.map((o)=><Pressable key={o.value} style={type===o.value?s.chipActive:s.chip} onPress={()=>setType(o.value)}><Text style={type===o.value?s.chipTextActive:s.chipText}>{o.label}</Text></Pressable>)}</View>{loading?<Text style={s.hint}>Searching…</Text>:<><Text style={s.resultCount}>{results.length} result{results.length===1?'':'s'}</Text>{results.length===0?<Text style={s.hint}>No results found. Try a different search.</Text>:results.map((r:LibraryItem)=><Pressable key={r.slug} style={s.card} onPress={()=>navigation.navigate('ResourceDetail',{slug:r.slug})}><Text style={s.label}>{(r.category||'').toUpperCase()}</Text><Text style={s.cardTitle}>{r.title}</Text><Text style={s.cardSummary}>{r.subtitle}</Text><Text style={s.read}>{r.durationMinutes?`${r.durationMinutes} min read`:'Guide'}</Text></Pressable>)}</>}</ScrollView></SafeAreaView>;
 }
 
 export function ResourceCategoryScreen({navigation,route}:any){
+  const contentStyle=useResponsiveContentStyle(s.content);
   const category=(route?.params?.category || 'general').toLowerCase();
   const [items,setItems]=useState<LibraryItem[]>([]);
   const [loading,setLoading]=useState(true);
   useEffect(()=>{let active=true;setLoading(true);loadLibrary('resource').then((all)=>{if(!active)return;const filtered=all.filter((i)=>Boolean(i.category)&&i.category!.toLowerCase()===category);setItems(filtered);}).catch(()=>{if(active)setItems([]);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[category]);
   const title=(route?.params?.title as string) || category.split('-').map((w)=>w[0].toUpperCase()+w.slice(1)).join(' ');
-  return <SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={s.content}><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}><ArrowLeft size={22} color={colors.text}/></Pressable><Text style={s.eyebrow}>CATEGORY</Text><Text style={s.title}>{title}</Text><Text style={s.copy}>Resources in this category.</Text>{loading?<Text style={s.hint}>Loading resources…</Text>:<><Text style={s.resultCount}>{items.length} resource{items.length===1?'':'s'}</Text>{items.length===0?<Text style={s.hint}>No resources in this category yet.</Text>:items.map((item:LibraryItem)=><Pressable key={item.slug} style={s.card} onPress={()=>navigation.navigate('ResourceDetail',{slug:item.slug})}><Text style={s.label}>{(item.category||'').toUpperCase()}</Text><Text style={s.cardTitle}>{item.title}</Text><Text style={s.cardSummary}>{item.subtitle}</Text><Text style={s.read}>{item.durationMinutes?`${item.durationMinutes} min read`:'Guide'}</Text></Pressable>)}</>}</ScrollView></SafeAreaView>;
+  return <SafeAreaView style={s.safe}><ScrollView style={{ width: '100%' }} contentContainerStyle={contentStyle}><Pressable style={s.back} onPress={()=>navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}><ArrowLeft size={22} color={colors.text}/></Pressable><Text style={s.eyebrow}>CATEGORY</Text><Text style={s.title}>{title}</Text><Text style={s.copy}>Resources in this category.</Text>{loading?<Text style={s.hint}>Loading resources…</Text>:<><Text style={s.resultCount}>{items.length} resource{items.length===1?'':'s'}</Text>{items.length===0?<Text style={s.hint}>No resources in this category yet.</Text>:items.map((item:LibraryItem)=><Pressable key={item.slug} style={s.card} onPress={()=>navigation.navigate('ResourceDetail',{slug:item.slug})}><Text style={s.label}>{(item.category||'').toUpperCase()}</Text><Text style={s.cardTitle}>{item.title}</Text><Text style={s.cardSummary}>{item.subtitle}</Text><Text style={s.read}>{item.durationMinutes?`${item.durationMinutes} min read`:'Guide'}</Text></Pressable>)}</>}</ScrollView></SafeAreaView>;
 }
 
 export function NutritionReferenceScreen({navigation}:any){

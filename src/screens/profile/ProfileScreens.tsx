@@ -182,6 +182,13 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
   const [errorStatus, setErrorStatus] = useState('');
+  const { columnsFor, gridItemWidth, gutter } = useLayoutMetrics();
+  const fieldCols = columnsFor(3, 96);
+  const fieldWidth = gridItemWidth(fieldCols);
+  const lastFieldStyle =
+    fieldCols === 2
+      ? { width: '100%' as const, flex: 0, flexBasis: 'auto' as const, flexGrow: 0 }
+      : { width: fieldWidth, flex: 0, flexBasis: 'auto', flexGrow: 0, minWidth: 0 };
 
   useEffect(() => {
     let active = true;
@@ -295,8 +302,8 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
         ))}
       </PillGroup>
 
-      <View style={s.fieldRow}>
-        <View style={s.fieldCol}>
+      <View style={[s.fieldRow,{ gap: gutter }]}>
+        <View style={[s.fieldCol,{ width: fieldWidth, flex: 0, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]}>
           <Text style={s.label}>Age</Text>
           <TextInput
             value={age}
@@ -307,7 +314,7 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
             style={s.input}
           />
         </View>
-        <View style={s.fieldCol}>
+        <View style={[s.fieldCol,{ width: fieldWidth, flex: 0, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]}>
           <Text style={s.label}>Height</Text>
           <TextInput
             value={height}
@@ -317,7 +324,7 @@ export function NutritionProfileSettingsScreen({ navigation }: any) {
             style={s.input}
           />
         </View>
-        <View style={s.fieldCol}>
+        <View style={[s.fieldCol, lastFieldStyle]}>
           <Text style={s.label}>Weight</Text>
           <TextInput
             value={weight}
@@ -1166,7 +1173,9 @@ export function SavedContentScreen({ navigation }: any) {
 
 export function ProfileHubScreen({ navigation }: any) {
   const { user, signOutUser } = useAuth();
-  const { horizontalPadding, gutter, gridItemWidth } = useLayoutMetrics();
+  const { horizontalPadding, columnsFor, gridItemWidth, gutter } = useLayoutMetrics();
+  const quickCols = columnsFor(2, 132);
+  const quickWidth = gridItemWidth(quickCols);
   const [goal, setGoal] = useState<string>('');
   const name = user?.name || 'Guest Member';
   const email = user?.email || 'Not signed in';
@@ -1275,22 +1284,22 @@ export function ProfileHubScreen({ navigation }: any) {
 
         {/* Quick Stats / Shortcuts */}
         <View style={[s.quickGrid, { gap: gutter }]}>
-          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('ProgressPatterns')}>
+          <Pressable style={[s.quickCard, { width: quickWidth }]} onPress={() => go('ProgressPatterns')}>
             <TrendingUp size={20} color={colors.deepTeal} />
             <Text style={s.quickCardTitle}>My Progress</Text>
             <Text style={s.quickCardSub}>Weekly patterns & weight</Text>
           </Pressable>
-          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('SavedContent')}>
+          <Pressable style={[s.quickCard, { width: quickWidth }]} onPress={() => go('SavedContent')}>
             <Heart size={20} color={colors.green} />
             <Text style={s.quickCardTitle}>Saved Library</Text>
             <Text style={s.quickCardSub}>Articles, recipes & guides</Text>
           </Pressable>
-          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('MealPlans')}>
+          <Pressable style={[s.quickCard, { width: quickWidth }]} onPress={() => go('MealPlans')}>
             <CalendarDays size={20} color={colors.deepTeal} />
             <Text style={s.quickCardTitle}>My Meal Plans</Text>
             <Text style={s.quickCardSub}>Weekly plans & groceries</Text>
           </Pressable>
-          <Pressable style={[s.quickCard, { width: gridItemWidth(2) }]} onPress={() => go('MealLog')}>
+          <Pressable style={[s.quickCard, { width: quickWidth }]} onPress={() => go('MealLog')}>
             <Utensils size={20} color={colors.orange} />
             <Text style={s.quickCardTitle}>My Food Diary</Text>
             <Text style={s.quickCardSub}>Log meals & check-ins</Text>

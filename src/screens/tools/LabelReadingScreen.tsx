@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useResponsiveContentStyle } from '../../theme/responsive';
 
 const steps: [string, string][] = [
   ['Serving Size', 'Start by understanding the serving information so the rest of the label has context.'],
@@ -17,10 +18,11 @@ const steps: [string, string][] = [
 
 export default function LabelReadingScreen({ navigation }: any) {
   const [open, setOpen] = useState<number | null>(1);
+  const contentStyle = useResponsiveContentStyle(s.content);
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={contentStyle} showsVerticalScrollIndicator={false}>
         <Pressable
           style={s.back}
           onPress={() => navigation.goBack()}

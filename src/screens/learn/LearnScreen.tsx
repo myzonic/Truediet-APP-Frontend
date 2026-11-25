@@ -187,7 +187,7 @@ export default function LearnScreen({ navigation }: any) {
         ) : (
           <>
             <View style={[s.categoryGrid, { gap: gutter }]}>
-              {CATEGORIES.map((category) => {
+              {CATEGORIES.map((category, index) => {
                 const Icon = category.icon;
                 const active = selectedCategory?.key === category.key;
                 return (
@@ -196,6 +196,9 @@ export default function LearnScreen({ navigation }: any) {
                     style={[
                       s.categoryCard,
                       { width: gridItemWidth(categoryColumns) },
+                      index === CATEGORIES.length - 1 && categoryColumns === 2
+                        ? { width: '100%', flexBasis: 'auto', flexGrow: 0 }
+                        : null,
                       active && s.categoryCardActive,
                     ]}
                     onPress={() => setSelectedCategory(category)}

@@ -7,57 +7,78 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { dimensions, radius, spacing } from '../theme/tokens';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { useLayoutMetrics } from '../theme/responsive';
 
 export default function WelcomeScreen({ navigation }: { navigation: any }) {
-  const Feature = ({ icon: Icon, text, color, shifted = false }: { icon: any; text: string; color: string; shifted?: boolean }) => (
-    <View style={[s.feature, shifted && s.featureShifted]}>
-      <Icon size={19} color={color} />
-      <Text style={s.featureText}>{text}</Text>
+  const { columnsFor, gridItemWidth, gutter, height } = useLayoutMetrics();
+  const compactHeight = height <= 640;
+  // Two tidy columns on normal phones, one on very narrow devices. A fixed
+  // percentage made long labels wrap unevenly at 320pt.
+  const columns = columnsFor(2, 132);
+  const itemWidth = gridItemWidth(columns);
+
+  const Feature = ({ icon: Icon, text, color }: { icon: any; text: string; color: string }) => (
+    <View style={[s.feature, compactHeight && s.featureCompact, { width: itemWidth }]}>
+      <Icon size={compactHeight ? 17 : 19} color={color} />
+      <Text style={[s.featureText, compactHeight && s.featureTextCompact]}>{text}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScreenContainer fill>
+      <ScreenContainer fill contentContainerStyle={compactHeight ? s.contentCompact : undefined}>
         <View style={s.wrap}>
-          <View style={s.trust}>
+          <View style={[s.trust, compactHeight && s.trustCompact]}>
             <ShieldCheck size={13} color={colors.green} />
             <Text style={s.trustText}>Evidence-Based · Private by Design</Text>
           </View>
-          <View style={s.badge}>
+          <View style={[s.badge, compactHeight && s.badgeCompact]}>
             <View style={s.dot} />
             <Text style={s.badgeText}>CLINICAL DIETETICS STANDARD</Text>
           </View>
-          <View style={s.main}>
-            <Image source={require('../../assets/truediet-logo.png')} style={s.logo} />
-            <Text style={s.title}>
+          <View style={[s.main, compactHeight && s.mainCompact]}>
+            <Image
+              source={require('../../assets/truediet-logo.png')}
+              style={[s.logo, compactHeight && s.logoCompact]}
+              accessible
+              accessibilityLabel="TrueDiet logo"
+            />
+            <Text style={[s.title, compactHeight && s.titleCompact]}>
               Real Nutrition.{'\n'}
               Real Science.{'\n'}
               <Text style={s.orange}>Real Results.</Text>
             </Text>
-            <Text style={s.copy}>
+            <Text style={[s.copy, compactHeight && s.copyCompact]}>
               Cut through nutrition confusion with evidence-based guidance, practical tools, and personalized support from a Registered Dietitian.
             </Text>
-            <View style={s.line}>
+            <View style={[s.line, compactHeight && s.lineCompact]}>
               <View style={s.green} />
               <View style={s.orangeLine} />
             </View>
-            <View style={s.grid}>
-              <Feature shifted icon={ShieldCheck} text="Trusted Guidance" color={colors.green} />
+            <View style={[s.grid, compactHeight && s.gridCompact, { columnGap: gutter }]}>
+              <Feature icon={ShieldCheck} text="Trusted Guidance" color={colors.green} />
               <Feature icon={BookOpen} text="Expert Education" color={colors.deepTeal} />
-              <Feature shifted icon={ChartNoAxesColumnIncreasing} text="Track & Improve" color={colors.green} />
+              <Feature icon={ChartNoAxesColumnIncreasing} text="Track & Improve" color={colors.green} />
               <Feature icon={UserRoundCheck} text="Personalized Support" color={colors.orange} />
             </View>
           </View>
-          <View style={s.actions}>
+          <View style={[s.actions, compactHeight && s.actionsCompact]}>
             <Pressable
               onPress={() => navigation.navigate('Goal')}
-              style={({ pressed }) => [s.start, pressed && s.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Get Started"
+              style={({ pressed }) => [s.start, compactHeight && s.startCompact, pressed && s.pressed]}
             >
               <Text style={s.startText}>Get Started</Text>
             </Pressable>
-            <Pressable onPress={() => navigation.navigate('AccountSetup', { mode: 'signin' })} hitSlop={10}>
-              <Text style={s.login}>I Already Have an Account</Text>
+            <Pressable
+              onPress={() => navigation.navigate('AccountSetup', { mode: 'signin' })}
+              accessibilityRole="button"
+              accessibilityLabel="I Already Have an Account"
+              hitSlop={{ top: 14, bottom: 14, left: 10, right: 10 }}
+              style={[s.loginPressable, compactHeight && s.loginPressableCompact]}
+            >
+              <Text style={[s.login, compactHeight && s.loginCompact]}>I Already Have an Account</Text>
             </Pressable>
           </View>
         </View>
@@ -163,20 +184,17 @@ const s = StyleSheet.create({
     rowGap: spacing.md,
   },
   feature: {
-    width: '47.8%',
     minHeight: 22,
+    paddingLeft: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  featureShifted: {
-    paddingLeft: spacing.sm,
-  },
   featureText: {
     fontFamily: typography.ui,
-    flex: 1,
     flexShrink: 1,
     marginLeft: spacing.sm,
     fontSize: 12.5,
+    lineHeight: 17,
     color: '#31445B',
     fontWeight: '600',
   },
@@ -210,6 +228,26 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  // Invisible padding only: the visible text position and footer spacing stay
+  // exactly where they were, but the whole row is a 44pt touch target.
+  loginPressable: { minHeight: 44, marginBottom: -15 },
+  // Compact-height phones only. These values keep the approved hierarchy and
+  // copy intact while making both actions reachable on the initial screen.
+  contentCompact: { paddingBottom: spacing.md },
+  trustCompact: { marginTop: spacing.sm },
+  badgeCompact: { marginTop: 6, minHeight: 40 },
+  mainCompact: { marginTop: spacing.sm },
+  logoCompact: { width: 100, height: 66 },
+  titleCompact: { marginTop: 6, fontSize: 28, lineHeight: 31 },
+  copyCompact: { marginTop: spacing.sm, fontSize: 14, lineHeight: 22 },
+  lineCompact: { marginTop: spacing.sm },
+  gridCompact: { marginTop: spacing.sm },
+  featureCompact: { minHeight: 18, paddingLeft: 2 },
+  featureTextCompact: { marginLeft: 5, fontSize: 12, lineHeight: 16 },
+  actionsCompact: { paddingBottom: spacing.md },
+  startCompact: { minHeight: dimensions.buttonHeightSmall, paddingVertical: 8 },
+  loginCompact: { marginTop: spacing.sm },
+  loginPressableCompact: { marginBottom: -19 },
   pressed: {
     opacity: 0.85,
   },

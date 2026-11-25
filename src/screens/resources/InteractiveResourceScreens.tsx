@@ -13,6 +13,7 @@ import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, CalendarDays, Check, ChevronRight, FileText, ListChecks, Plus, ShoppingCart, Sparkles, Trash2 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useLayoutMetrics } from '../../theme/responsive';
 import {
   MealPlanSummary, MealPlanDetail as MealPlanDetailType, GroceryListSummary, GroceryListDetail as GroceryListDetailType,
   WorksheetSummary, WorksheetDetail as WorksheetDetailType, ChecklistSummary, ChecklistDetail as ChecklistDetailType,
@@ -30,10 +31,11 @@ const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function Shell({ navigation, children, title }: { navigation: any; children: React.ReactNode; title: string }) {
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView style={s.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={[s.content,{ maxWidth: contentWidth, paddingHorizontal: horizontalPadding }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Pressable style={s.back} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={6}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>
@@ -599,6 +601,9 @@ export function MyResourcesScreen({ navigation }: { navigation: any }) {
   const [progress, setProgress] = useState<ResourceProgressItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { columnsFor, gridItemWidth, gutter } = useLayoutMetrics();
+  const toolCols = columnsFor(3, 96);
+  const toolWidth = gridItemWidth(toolCols);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -620,13 +625,13 @@ export function MyResourcesScreen({ navigation }: { navigation: any }) {
     <Shell navigation={navigation} title="My Resources">
       <Text style={s.copy}>Everything you are working through, in one place.</Text>
 
-      <View style={s.toolGrid}>
-        <Pressable style={s.toolTile} onPress={() => navigation.navigate('MealPlans')}><CalendarDays size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Meal Plans</Text></Pressable>
-        <Pressable style={s.toolTile} onPress={() => navigation.navigate('GroceryLists')}><ShoppingCart size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Grocery Lists</Text></Pressable>
-        <Pressable style={s.toolTile} onPress={() => navigation.navigate('Worksheets')}><FileText size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Worksheets</Text></Pressable>
-        <Pressable style={s.toolTile} onPress={() => navigation.navigate('Checklists')}><ListChecks size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Checklists</Text></Pressable>
-        <Pressable style={s.toolTile} onPress={() => navigation.navigate('ResourceTemplates')}><Sparkles size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Templates</Text></Pressable>
-        <Pressable style={s.toolTile} onPress={() => navigation.navigate('SavedContent')}><ChevronRight size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Saved</Text></Pressable>
+      <View style={[s.toolGrid,{ gap: gutter }]}>
+        <Pressable style={[s.toolTile,{ width: toolWidth, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]} onPress={() => navigation.navigate('MealPlans')}><CalendarDays size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Meal Plans</Text></Pressable>
+        <Pressable style={[s.toolTile,{ width: toolWidth, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]} onPress={() => navigation.navigate('GroceryLists')}><ShoppingCart size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Grocery Lists</Text></Pressable>
+        <Pressable style={[s.toolTile,{ width: toolWidth, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]} onPress={() => navigation.navigate('Worksheets')}><FileText size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Worksheets</Text></Pressable>
+        <Pressable style={[s.toolTile,{ width: toolWidth, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]} onPress={() => navigation.navigate('Checklists')}><ListChecks size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Checklists</Text></Pressable>
+        <Pressable style={[s.toolTile,{ width: toolWidth, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]} onPress={() => navigation.navigate('ResourceTemplates')}><Sparkles size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Templates</Text></Pressable>
+        <Pressable style={[s.toolTile,{ width: toolWidth, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]} onPress={() => navigation.navigate('SavedContent')}><ChevronRight size={22} color={colors.deepTeal} /><Text style={s.toolTileText}>Saved</Text></Pressable>
       </View>
 
       <Status loading={loading} error={error} />

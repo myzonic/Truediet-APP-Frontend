@@ -97,7 +97,7 @@ export default function RecipeFinderScreen({ navigation }: any) {
                 <View style={s.cardBody}>
                   <Text style={s.cardTitle}>{r.title}</Text>
                   <Text style={s.cardMeta}>{r.time} · {r.category}</Text>
-                  <Text style={s.cardDesc} numberOfLines={2}>
+                  <Text style={s.cardDesc}>
                     {r.whyItWorks}
                   </Text>
                 </View>

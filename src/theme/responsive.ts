@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { StyleProp, useWindowDimensions, ViewStyle } from 'react-native';
 
 /**
  * Responsive layout helpers.
@@ -84,4 +84,14 @@ export function useLayoutMetrics(): LayoutMetrics {
     columnsFor,
     gridItemWidth,
   };
+}
+
+/**
+ * Standard content-container style for legacy full-screen ScrollViews.
+ * Keeping the horizontal padding and width cap here prevents screens from
+ * drifting apart when the breakpoint rules change.
+ */
+export function useResponsiveContentStyle(style?: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
+  return [style, { maxWidth: contentWidth, paddingHorizontal: horizontalPadding }];
 }

@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, Bookmark } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useResponsiveContentStyle } from '../../theme/responsive';
 import { findMyth, myths, Myth } from '../../lib/mythContent';
 import { loadMyths } from '../../lib/contentLibrary';
 import { saveContent } from '../../lib/content';
@@ -19,6 +20,7 @@ export default function MythDetailScreen({ navigation, route }: any) {
   const params = route.params || {};
   const [myth, setMyth] = useState<Myth | null>(null);
   const [saving, setSaving] = useState(false);
+  const contentStyle = useResponsiveContentStyle(s.content);
 
   useEffect(() => {
     let active = true;
@@ -67,7 +69,7 @@ export default function MythDetailScreen({ navigation, route }: any) {
   }
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={contentStyle}>
         <Pressable style={s.back} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>

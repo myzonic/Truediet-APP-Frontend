@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import OnboardingLayout from '../components/OnboardingLayout';
 import OptionCard from '../components/OptionCard';
@@ -9,7 +9,19 @@ import { dimensions, radius, spacing } from '../theme/tokens';
 
 export default function PersonalDetailsScreen({ navigation }: { navigation: AppNavigation }) {
   const { data, updateData } = useOnboarding();
-  const valid = !!(data.age.trim() && data.sex && data.height.trim() && data.weight.trim());
+  const [ageRejected, setAgeRejected] = useState(false);
+  const ageFormatValid = /^\d+$/.test(data.age.trim());
+  const showAgeError = ageRejected || (data.age.trim().length > 0 && !ageFormatValid);
+  const valid = !!(ageFormatValid && data.sex && data.height.trim() && data.weight.trim());
+
+  const handleAgeChange = (age: string) => {
+    if (/^\d*$/.test(age)) {
+      setAgeRejected(false);
+      updateData({ age });
+    } else {
+      setAgeRejected(true);
+    }
+  };
 
   return (
     <OnboardingLayout
@@ -22,12 +34,18 @@ export default function PersonalDetailsScreen({ navigation }: { navigation: AppN
     >
       <Text style={s.label}>Age</Text>
       <TextInput
+        accessibilityLabel="Age"
         value={data.age}
-        onChangeText={age => updateData({ age })}
+        onChangeText={handleAgeChange}
         keyboardType="number-pad"
         placeholder="Enter your age"
-        style={s.input}
+        style={[s.input, showAgeError && s.inputError]}
       />
+      {showAgeError && (
+        <Text accessibilityRole="alert" style={s.error}>
+          Age must contain numbers only.
+        </Text>
+      )}
       <Text style={s.label}>Sex</Text>
       {['Female', 'Male', 'Prefer not to say'].map(x => (
         <OptionCard key={x} label={x} selected={data.sex === x} onPress={() => updateData({ sex: x })} />
@@ -35,11 +53,11 @@ export default function PersonalDetailsScreen({ navigation }: { navigation: AppN
       <View style={s.row}>
         <View style={s.col}>
           <Text style={s.label}>Height</Text>
-          <TextInput value={data.height} onChangeText={height => updateData({ height })} placeholder={"e.g. 5'7\""} style={s.input} />
+          <TextInput accessibilityLabel="Height" value={data.height} onChangeText={height => updateData({ height })} placeholder={"e.g. 5'7\""} style={s.input} />
         </View>
         <View style={s.col}>
           <Text style={s.label}>Weight</Text>
-          <TextInput value={data.weight} onChangeText={weight => updateData({ weight })} keyboardType="decimal-pad" placeholder="e.g. 150 lb" style={s.input} />
+          <TextInput accessibilityLabel="Weight" value={data.weight} onChangeText={weight => updateData({ weight })} keyboardType="decimal-pad" placeholder="e.g. 150 lb" style={s.input} />
         </View>
       </View>
     </OnboardingLayout>
@@ -64,6 +82,15 @@ const s = StyleSheet.create({
     borderRadius: radius.md,
     color: colors.charcoal,
     fontSize: 15,
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  error: {
+    marginBottom: spacing.sm,
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '500',
   },
   row: {
     flexDirection: 'row',

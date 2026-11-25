@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, CheckCircle2, ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useLayoutMetrics } from '../../theme/responsive';
 import { Pill, PillGroup } from '../../components/Pill';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -58,6 +59,13 @@ export default function NutritionAssessmentScreen({ navigation }: any) {
   const [saving, setSaving] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState('');
+  const { columnsFor, gridItemWidth, gutter } = useLayoutMetrics();
+  const fieldCols = columnsFor(3, 96);
+  const fieldWidth = gridItemWidth(fieldCols);
+  const lastFieldStyle =
+    fieldCols === 2
+      ? { width: '100%' as const, flex: 0, flexBasis: 'auto' as const, flexGrow: 0 }
+      : { width: fieldWidth, flex: 0, flexBasis: 'auto', flexGrow: 0, minWidth: 0 };
 
   useEffect(() => {
     let active = true;
@@ -163,16 +171,16 @@ export default function NutritionAssessmentScreen({ navigation }: any) {
                 <Pill key={x} label={x} selected={sex === x} onPress={() => setSex(x)} />
               ))}
             </PillGroup>
-            <View style={s.fieldRow}>
-              <View style={s.fieldCol}>
+            <View style={[s.fieldRow,{ gap: gutter }]}>
+              <View style={[s.fieldCol,{ width: fieldWidth, flex: 0, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]}>
                 <Text style={s.label}>Age</Text>
                 <TextInput value={age} onChangeText={setAge} keyboardType="number-pad" placeholder="e.g. 34" placeholderTextColor={colors.muted} style={s.input} />
               </View>
-              <View style={s.fieldCol}>
+              <View style={[s.fieldCol,{ width: fieldWidth, flex: 0, flexBasis: 'auto', flexGrow: 0, minWidth: 0 }]}>
                 <Text style={s.label}>Height</Text>
                 <TextInput value={height} onChangeText={setHeight} placeholder="e.g. 168 cm" placeholderTextColor={colors.muted} style={s.input} />
               </View>
-              <View style={s.fieldCol}>
+              <View style={[s.fieldCol, lastFieldStyle]}>
                 <Text style={s.label}>Current Weight</Text>
                 <TextInput value={weight} onChangeText={setWeight} placeholder="e.g. 72 kg" placeholderTextColor={colors.muted} style={s.input} />
               </View>

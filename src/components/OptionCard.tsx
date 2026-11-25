@@ -4,11 +4,12 @@ import { Check } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { dimensions, radius, spacing } from '../theme/tokens';
 
-export default function OptionCard({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+export default function OptionCard({ label, selected, onPress, multiple = false }: { label: string; selected: boolean; onPress: () => void; multiple?: boolean }) {
   return (
     <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityRole={multiple ? 'checkbox' : 'radio'}
+      aria-checked={selected}
+      accessibilityState={{ checked: selected, selected }}
       onPress={onPress}
       style={({ pressed }) => [styles.card, selected && styles.selected, pressed && styles.pressed]}
     >

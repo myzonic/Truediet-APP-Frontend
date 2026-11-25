@@ -7,12 +7,14 @@ import { useOnboarding } from '../context/OnboardingContext';
 import { useAuth } from '../context/AuthContext';
 import { loadProfile } from '../lib/profile';
 import { colors } from '../theme/colors';
+import { useLayoutMetrics } from '../theme/responsive';
 import { spacing } from '../theme/tokens';
 
 export default function NutritionProfileScreen({ navigation }: { navigation: any }) {
   const { data, updateData } = useOnboarding();
   const { user } = useAuth();
   const [hydrating, setHydrating] = useState(false);
+  const { contentWidth, horizontalPadding } = useLayoutMetrics();
 
   useEffect(() => {
     let active = true;
@@ -56,9 +58,9 @@ export default function NutritionProfileScreen({ navigation }: { navigation: any
 
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.phone}>
+      <View style={[s.phone, { maxWidth: contentWidth }]}>
         <Image source={require('../../assets/truediet-logo.png')} style={s.logo} />
-        <ScrollView contentContainerStyle={s.wrap} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[s.wrap, { paddingHorizontal: horizontalPadding }]} showsVerticalScrollIndicator={false}>
           <Text style={s.eyebrow}>PERSONALIZED EDUCATION</Text>
           <Text style={s.title}>A clearer path starts here.</Text>
           <Text style={s.copy}>

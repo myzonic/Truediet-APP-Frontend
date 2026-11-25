@@ -4,11 +4,13 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CONTENT_MAX_WIDTH } from '../../theme/layout';
 import { ArrowLeft, ChevronRight } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useResponsiveContentStyle } from '../../theme/responsive';
 import { loadTopics, LearnArticle } from '../../lib/contentLibrary';
 
 export default function TopicScreen({ navigation, route }: any) {
   const title = route.params?.title || route.params?.category || 'Nutrition Basics';
   const [topic, setTopic] = useState<{ title: string; intro: string; articles: LearnArticle[] } | null>(null);
+  const contentStyle = useResponsiveContentStyle(s.content);
 
   useEffect(() => {
     let active = true;
@@ -30,7 +32,7 @@ export default function TopicScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView style={{ width: '100%' }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={contentStyle} showsVerticalScrollIndicator={false}>
         <Pressable style={s.back} onPress={() => navigation.goBack()}>
           <ArrowLeft size={22} color={colors.text} />
         </Pressable>
